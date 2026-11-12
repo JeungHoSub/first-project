@@ -1,0 +1,12 @@
+# 대용량 미디어·비밀값은 git에 올리지 않음
+**/input/
+**/output-media/
+*.mp4
+*.mp3
+*.wav
+*.mov
+.env
+client_secret*.json
+token*.json
+__pycache__/
+node_modules/

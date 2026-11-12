@@ -13,6 +13,24 @@
 | `projects/<이름>/` | 프로젝트별 작업 공간. `brief.md`(목표), `log.md`(진행·인계 기록), `outputs/`(결과물) |
 | `review/QUEUE.md` | 사용자 검토 대기열. 사용자는 여기만 보면 된다. |
 
+## 프로젝트와 담당 에이전트
+
+에이전트는 **역할별**로 두고 여러 프로젝트가 같이 쓴다. 프로젝트 고유 내용은 `brief.md`와 전용 스킬에 있다.
+
+| 프로젝트 | 폴더 | 주요 담당 | 전용 스킬 |
+|---|---|---|---|
+| 클로드 강의 | `claude-lecture` | lecture-writer | audio-lecture-script |
+| 매직고스톱 | `magic-gostop` | planner → game-designer → developer | — |
+| 술게임 | `drinking-game` | planner → game-designer → developer | — |
+| 책 읽어주기 유튜브 | `book-podcast` | researcher → content-writer → media-producer | copyright-check, youtube-upload |
+| 쇼츠 편집·자동업로드 | `shorts-auto` | media-producer → content-writer → developer | youtube-upload, copyright-check |
+| 음악·동영상 업로드 | `music-video-upload` | researcher → media-producer → developer | copyright-check, youtube-upload |
+| 입찰 플랫폼 | `g2b-bid-platform` | researcher → planner → developer | g2b-bid-data |
+
+공통: 모든 프로젝트의 마지막은 `reviewer` → 사용자 검토. 스킬이 없으면 `skill-scout`.
+업로드 모듈처럼 여러 프로젝트가 같이 쓰는 코드는 `projects/shared/`에 둔다.
+세션 운영 방법은 `SESSIONS.md`, 할 일은 `TODO.md`.
+
 ## 메인 세션(= 총괄 매니저)의 규칙
 
 메인 Claude 세션이 오케스트레이터다. 사용자가 일을 주면:
