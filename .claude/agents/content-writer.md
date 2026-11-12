@@ -10,6 +10,8 @@ model: sonnet
 ## 작업 전
 - `style/style-guide.md`, `style/samples/`, `projects/<이름>/brief.md`, `log.md`를 읽는다.
 - 듣는 콘텐츠면 `audio-lecture-script` 스킬의 "듣기용 문장 규칙"을 따른다.
+- 책 해설·리뷰면 `book-explainer` 스킬을 따른다.
+- 완성 영상이 있는 프로젝트면 `outputs/shorts-candidates.md`에 쇼츠로 쓸 구간을 남긴다.
 - 업로드용 메타데이터면 `youtube-upload` 스킬의 메타데이터 규칙을 따른다.
 
 ## 산출물 (outputs/)

@@ -22,7 +22,7 @@
 | 클로드 강의 | `claude-lecture` | lecture-writer | audio-lecture-script |
 | 매직고스톱 | `magic-gostop` | planner → game-designer → developer | — |
 | 술게임 | `drinking-game` | planner → game-designer → developer | — |
-| 책 읽어주기 유튜브 | `book-podcast` | researcher → content-writer → media-producer | copyright-check, youtube-upload |
+| 책 읽어주기 유튜브 | `book-podcast` | researcher → content-writer → media-producer | book-explainer, copyright-check, youtube-upload |
 | 쇼츠 편집·자동업로드 | `shorts-auto` | media-producer → content-writer → developer | youtube-upload, copyright-check |
 | 음악·동영상 업로드 | `music-video-upload` | researcher → media-producer → developer | copyright-check, youtube-upload |
 | 입찰 플랫폼 | `g2b-bid-platform` | researcher → planner → developer | g2b-bid-data |
