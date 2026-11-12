@@ -4,3 +4,4 @@
 
 | 날짜 | 프로젝트 | 결과물 | 상태 | 피드백 |
 |---|---|---|---|---|
+| 2026-11-12 | magic-gostop | outputs/effects-design.md, outputs/effects.csv | 검토 대기 | |

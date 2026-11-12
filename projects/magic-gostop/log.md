@@ -5,3 +5,9 @@
 - 결과물: brief.md
 - 다음 담당: 사용자 — brief.md의 "확인 필요" 답변
 - 넘길 메모: 답변이 오면 planner가 spec.md / roadmap.md 작성
+
+## 2026-11-12 총괄(메인 세션)
+- 한 일: 사용자 효과 시스템 구상(31종, 등급 배수, 훅 6곳)을 GDD 초안과 밸런싱용 CSV로 정리, 정리 중 발견한 쟁점 4가지 메모
+- 결과물: outputs/effects-design.md, outputs/effects.csv (엑셀에서 열림, 등급별 확률 자동 계산값 포함)
+- 다음 담당: 사용자 검토 → game-designer(기본 고스톱 규칙 GDD) → developer(룰 엔진 + 훅)
+- 넘길 메모: 남은 결정 — 플랫폼, D3 등급 의미, B 계열 동시 발동 우선순위, 게임 머니 환전 불가 명시
