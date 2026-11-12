@@ -5,8 +5,8 @@
 | 단계 | 이름 | 담당 에이전트 | 할 일 | 산출물 | 완료 기준 |
 |---|---|---|---|---|---|
 | 1 | 기획 | planner | 형태·MVP 게임 후보·안전 요구사항 정리, 확인 항목 정리 | `outputs/spec.md`, `outputs/roadmap.md` | 사용자가 spec을 읽고 확인 항목(형태·게임 수·수익)에 답함 |
-| 2 | 게임 설계 | game-designer | 게임별 규칙(3문장 이내), 카드·벌칙 콘텐츠(음주/비음주 쌍), 카드 JSON 스키마 | `outputs/games.md`, `outputs/cards/*.json` | 게임당 규칙이 명확, 모든 벌칙 카드가 두 모드 문구 보유, 과음 유도 표현 0건 |
-| 2.5 | 1차 검수 | reviewer | 규칙 명확성, 안전 문구, 저작권(기존 게임 복제 여부) 점검 | `outputs/review-1.md` | 지적사항 반영 완료 |
+| 2 | 게임 설계 | game-designer | 게임별 규칙(3문장 이내), 카드·벌칙 콘텐츠(음주/비음주 쌍), 카드 JSON 스키마 | `outputs/rules.md`, `outputs/content-missions.md` (카드 JSON 변환은 3단계 developer) | 게임당 규칙이 명확, 모든 벌칙 카드가 두 모드 문구 보유, 과음 유도 표현 0건 |
+| 2.5 | 1차 검수 | reviewer | 규칙 명확성, 안전 문구, 저작권(기존 게임 복제 여부) 점검 | `outputs/review-notes.md` | 지적사항 반영 완료 |
 | 3 | 프로토타입 | developer | 부품 먼저: 플레이어 입력·카드 뽑기·룰렛·타이머. 게임 1~2개 연결 | `outputs/prototype/` (실행 가능) | 폰 브라우저에서 첫 게임을 끝까지 플레이 가능 |
 | 4 | MVP | developer → reviewer | 나머지 게임 연결, 모드 선택, 성인 확인·안내 문구, 오프라인(PWA), 정적 호스팅 배포 | 배포 URL, `outputs/mvp/`, 사용 안내 | 아래 MVP 체크리스트 통과, reviewer 통과 후 `review/QUEUE.md` 등록 |
 | 5 | 피드백 | 총괄 + planner | 사용자·지인 실사용 후 피드백 수집, 우선순위 정리, 학습된 선호는 style-guide에 추가 | `outputs/feedback.md` | 개선 항목이 우선순위와 함께 정리됨 |
