@@ -1,0 +1,102 @@
+{
+ "episode": "ep01",
+ "vocal_language": "ko",
+ "songs": [
+  {
+   "num": "01",
+   "title": "첫눈이 오기 전에",
+   "caption": "2000s Korean ballad, emotional clear female vocal, soft piano intro, gentle strings, slow tempo 68 bpm, warm reverb, nostalgic, heartfelt, Korean lyrics",
+   "lyrics": "[Intro]\n\n[Verse 1]\n찬 바람이 먼저 와서\n네 안부를 묻고 가네\n아무렇지 않은 척\n창문을 닫아 보지만\n\n[Pre-Chorus]\n하얗게 숨이 번지면\n너도 이 밤을 걷고 있을까\n\n[Chorus]\n첫눈이 오기 전에\n한 번만 더 불러 볼게\n닿지 않아도 괜찮아\n이 마음이 녹기 전에\n\n[Verse 2]\n같이 걷던 골목길엔\n노란 불빛만 남아서\n네가 웃던 자리에\n내 그림자만 길어져\n\n[Chorus]\n첫눈이 오기 전에\n한 번만 더 불러 볼게\n닿지 않아도 괜찮아\n이 마음이 녹기 전에\n\n[Outro]\n첫눈이 오면\n그땐 웃으며 보낼게",
+   "bpm": 68,
+   "duration": 160
+  },
+  {
+   "num": "02",
+   "title": "퇴근길",
+   "caption": "mellow Korean hip-hop, smooth laid-back male rap, soft sung chorus, lo-fi boom bap drums, Rhodes piano, jazzy chords, 84 bpm, city night, warm, Korean lyrics",
+   "lyrics": "[Intro]\n\n[Verse 1]\n셔츠 단추 하나 풀고 이어폰을 꽂아\n오늘도 버텼다고 나한테 먼저 말해\n창밖에 번지는 불빛들은 느리게\n지하철 창에 비친 얼굴, 그래도 괜찮네\n\n[Chorus]\n퇴근길 이 노래만큼은\n아무 생각 말고 걸어가\n오늘 하루 수고했어\n천천히, 천천히 집으로\n\n[Verse 2]\n편의점 앞 따뜻한 캔 하나 손에 쥐고\n내일 걱정은 내일의 내가 하기로\n누가 알아주지 않아도 알아\n조용히 잘해 온 거, 그거면 돼\n\n[Chorus]\n퇴근길 이 노래만큼은\n아무 생각 말고 걸어가\n오늘 하루 수고했어\n천천히, 천천히 집으로\n\n[Outro]\n천천히, 집으로",
+   "bpm": 84,
+   "duration": 160
+  },
+  {
+   "num": "03",
+   "title": "너의 계절",
+   "caption": "emotional Korean ballad, high clear female vocal with powerful chorus, string section, piano, slow build, 72 bpm, melancholic, cinematic, Korean lyrics",
+   "lyrics": "[Verse 1]\n네가 좋아하던 계절이 와\n거리마다 너의 색이 번져\n아무 일 없던 것처럼\n나만 여기 멈춰 서 있어\n\n[Pre-Chorus]\n지우려 하면 할수록\n더 선명해지는 걸\n\n[Chorus]\n너의 계절이 오면\n나는 또 너를 앓아\n바람 끝에 묻어 온\n네 목소리에 울어\n보내야 한다는 걸\n이제는 알지만\n이 계절만큼은\n너를 그리워할게\n\n[Verse 2]\n낙엽 위에 남긴 발자국도\n금세 바람이 데려가겠지\n그래도 오늘 하루만\n너를 기억하게 해 줘\n\n[Chorus]\n너의 계절이 오면\n나는 또 너를 앓아\n바람 끝에 묻어 온\n네 목소리에 울어\n\n[Outro]\n이 계절이 지나면\n나도 괜찮아질게",
+   "bpm": 72,
+   "duration": 160
+  },
+  {
+   "num": "04",
+   "title": "따뜻한 커피 한 잔",
+   "caption": "Korean R&B hip-hop, smooth male rap and soft female vocal duet, jazzy guitar, mellow bass, light drums, 88 bpm, cozy cafe, warm and intimate, Korean lyrics",
+   "lyrics": "[Verse 1 - male rap]\n창가 자리, 김 서린 유리 위에\n손가락으로 그린 작은 웃음 하나\n말없이 건네는 따뜻한 잔에\n오늘 하루가 조금 녹아내려\n\n[Chorus - female]\n따뜻한 커피 한 잔\n너와 나 사이 그 온도\n서두르지 않아도 돼\n이대로 조금만 더\n\n[Verse 2 - male rap]\n바쁘게 지나간 계절 사이로\n우리 대화는 늘 느리게 흘러\n별것 없는 얘기에 웃는 너\n그게 내겐 제일 큰 위로\n\n[Chorus - female]\n따뜻한 커피 한 잔\n너와 나 사이 그 온도\n서두르지 않아도 돼\n이대로 조금만 더\n\n[Outro]\n조금만 더, 여기 있자",
+   "bpm": 88,
+   "duration": 160
+  },
+  {
+   "num": "05",
+   "title": "창문에 쓴 이름",
+   "caption": "2000s Korean ballad, tender female vocal, acoustic piano, soft cello, slow 66 bpm, rainy night, longing, intimate, Korean lyrics",
+   "lyrics": "[Verse 1]\n비가 그친 창문 위에\n네 이름을 써 보았어\n금세 흐려질 걸 알면서\n몇 번이고 다시 써\n\n[Chorus]\n지워지면 또 쓰고\n흐려지면 또 불러\n너는 모르겠지만\n나는 아직 여기 있어\n\n[Verse 2]\n잘 지내냐는 그 흔한 말\n끝내 보내지 못하고\n식어 버린 찻잔처럼\n밤이 조용히 깊어 가\n\n[Bridge]\n언젠가 이 창이 맑아지면\n그때는 웃을 수 있을까\n\n[Chorus]\n지워지면 또 쓰고\n흐려지면 또 불러\n너는 모르겠지만\n나는 아직 여기 있어",
+   "bpm": 66,
+   "duration": 160
+  },
+  {
+   "num": "06",
+   "title": "막차",
+   "caption": "chill Korean hip-hop, relaxed male rap, dreamy female hook, lo-fi beat, vinyl crackle, soft synth pads, 82 bpm, late night city, bittersweet, Korean lyrics",
+   "lyrics": "[Verse 1 - male rap]\n정류장 불빛 아래 혼자 남은 밤\n휴대폰 화면엔 보내지 못한 말\n막차 시간은 다 와 가는데\n마음은 아직 어제에 서 있네\n\n[Hook - female]\n막차를 기다려\n오늘이 끝나기 전에\n조금만 더 너를\n생각해도 될까\n\n[Verse 2 - male rap]\n창밖으로 흘러가는 간판들\n한 칸씩 멀어지는 우리 동네\n덜컹이는 소리에 기대어\n눈 감으면 네가 웃던 그 장면\n\n[Hook - female]\n막차를 기다려\n오늘이 끝나기 전에\n조금만 더 너를\n생각해도 될까\n\n[Outro]\n종점까지, 천천히",
+   "bpm": 82,
+   "duration": 160
+  },
+  {
+   "num": "07",
+   "title": "그리움은 천천히",
+   "caption": "mid-tempo Korean pop ballad, bright clear female vocal, acoustic guitar, piano, light drums, 92 bpm, hopeful, warm, Korean lyrics",
+   "lyrics": "[Verse 1]\n아침 햇살이 길어지면\n조금씩 괜찮아지더라\n네 생각에 멈추던 날도\n이젠 가끔이 되었어\n\n[Chorus]\n그리움은 천천히\n아주 천천히 걸어가\n서두르지 않아도\n언젠간 웃게 될 거야\n고마웠던 날들만\n가슴에 남겨 둘게\n그리움은 천천히\n봄을 향해 가\n\n[Verse 2]\n좋아하던 노래가 나와도\n이제는 끝까지 들어\n울지 않고 따라 부르는\n나를 보면 조금 신기해\n\n[Chorus]\n그리움은 천천히\n아주 천천히 걸어가\n서두르지 않아도\n언젠간 웃게 될 거야",
+   "bpm": 92,
+   "duration": 160
+  },
+  {
+   "num": "08",
+   "title": "별일 없지",
+   "caption": "mellow Korean hip-hop, warm conversational male rap, soft female backing vocals, jazzy piano loop, boom bap drums, 86 bpm, friendly, nostalgic, Korean lyrics",
+   "lyrics": "[Verse 1]\n오랜만에 네 이름이 떠서\n괜히 웃음부터 나왔어\n요즘 어때, 밥은 잘 먹고\n그때처럼 늦게 자는 건 아니지\n\n[Chorus]\n별일 없지, 그거면 돼\n멀리 있어도 다 알아\n힘든 날엔 연락해\n늘 여기 있을게\n\n[Verse 2]\n학교 앞 분식집은 없어졌대\n우리 앉던 자리엔 카페가 생겼고\n변한 게 많아도 이상하게\n너랑은 어제 본 것 같아\n\n[Chorus]\n별일 없지, 그거면 돼\n멀리 있어도 다 알아\n힘든 날엔 연락해\n늘 여기 있을게\n\n[Outro]\n조만간 보자, 진짜로",
+   "bpm": 86,
+   "duration": 160
+  },
+  {
+   "num": "09",
+   "title": "주말 오후의 산책",
+   "caption": "light Korean R&B pop, sweet female vocal, groovy bass, acoustic guitar, finger snaps, 98 bpm, sunny afternoon, cheerful and relaxed, Korean lyrics",
+   "lyrics": "[Verse 1]\n알람 없이 눈을 뜬 주말\n창문 너머 햇살이 불러\n운동화 끈 느슨하게 매고\n목적지 없이 걸어 볼래\n\n[Chorus]\n주말 오후의 산책\n바람이 등을 밀어 줘\n아무것도 안 해도\n오늘은 충분해\n\n[Verse 2]\n공원 벤치 위 고양이 하나\n나처럼 느긋하게 졸고 있어\n붕어빵 냄새 따라가다\n괜히 웃음이 새어 나와\n\n[Chorus]\n주말 오후의 산책\n바람이 등을 밀어 줘\n아무것도 안 해도\n오늘은 충분해\n\n[Outro]\n라라라, 천천히 걸어",
+   "bpm": 98,
+   "duration": 160
+  },
+  {
+   "num": "10",
+   "title": "가로등 아래",
+   "caption": "2000s Korean ballad, soft breathy female vocal, piano and gentle strings, slow 70 bpm, quiet night street, wistful, Korean lyrics",
+   "lyrics": "[Verse 1]\n가로등 아래 멈춰 서면\n그날의 네가 보여\n잘 가라는 말 대신\n한참을 손 흔들던\n\n[Chorus]\n불빛이 꺼지기 전에\n한 번만 돌아봐 줘\n이 길 끝에서 나는\n아직 너를 기다려\n\n[Verse 2]\n계절이 몇 번 바뀌어도\n이 길은 그대로라서\n아무도 없는 밤에도\n네 발소리가 들려\n\n[Chorus]\n불빛이 꺼지기 전에\n한 번만 돌아봐 줘\n이 길 끝에서 나는\n아직 너를 기다려\n\n[Outro]\n이제는 나도\n천천히 걸어갈게",
+   "bpm": 70,
+   "duration": 160
+  },
+  {
+   "num": "11",
+   "title": "고마웠어",
+   "caption": "powerful Korean ballad, emotional high female vocal, grand piano, full string orchestra, slow build to climactic chorus, 74 bpm, tearful, cinematic, Korean lyrics",
+   "lyrics": "[Verse 1]\n말하지 못했던 게 있어\n너무 늦어 버린 말\n네가 곁에 있을 때\n당연하다 믿었던 말\n\n[Pre-Chorus]\n이제야 알 것 같아\n그 모든 날이 선물이었단 걸\n\n[Chorus]\n고마웠어, 정말 고마웠어\n내 가장 빛나던 날에\n네가 있어서\n미안해, 그리고 고마워\n이 말만은 꼭\n너에게 닿기를\n\n[Verse 2]\n네가 남긴 작은 습관들\n아직 내 하루에 살아\n웃을 때 고개 숙이는 것도\n너를 닮아 버렸어\n\n[Chorus]\n고마웠어, 정말 고마웠어\n내 가장 빛나던 날에\n네가 있어서\n\n[Outro]\n잘 지내, 정말로",
+   "bpm": 74,
+   "duration": 160
+  },
+  {
+   "num": "12",
+   "title": "잘 자, 오늘도",
+   "caption": "lo-fi Korean R&B, soft whispery male and female vocals, gentle Rhodes, slow lazy drums, rain ambience, 72 bpm, lullaby, calm, sleepy, Korean lyrics",
+   "lyrics": "[Verse 1]\n불을 끄고 누운 방 안\n하루가 천천히 가라앉아\n잘한 일도 못한 일도\n이불 속에 묻어 둘래\n\n[Chorus]\n잘 자, 오늘도\n수고 많았어\n내일은 내일의 바람이\n너를 깨워 줄 거야\n\n[Verse 2]\n창밖엔 빗소리 조금\n마음엔 작은 불빛 하나\n아무 말 안 해도 돼\n그냥 눈을 감으면 돼\n\n[Chorus]\n잘 자, 오늘도\n수고 많았어\n내일은 내일의 바람이\n너를 깨워 줄 거야\n\n[Outro]\n잘 자, 잘 자",
+   "bpm": 72,
+   "duration": 160
+  }
+ ]
+}

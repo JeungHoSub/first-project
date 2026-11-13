@@ -42,3 +42,13 @@
 - 결과물: outputs/ep01-tracklist.md, outputs/ep01-metadata.md, outputs/pricing-3services.md, rights.md, tools/make_playlist_video.py, tools/README.md
 - 다음 담당: 사용자 — Suno Pro 가입 → 12곡 생성·다운로드 → 스크립트 실행(또는 곡 파일 전달)
 - 넘길 메모: 곡 생성은 사용자 계정으로만 가능하다(이 세션은 Suno에 접근할 수 없음). 가수 이름은 프롬프트에 넣지 않는다. 채널은 계정 1개에 재생목록으로 테마를 나누는 것을 추천했다. 30분×2 반복은 플리 채널에서 흔한 형식이지만, 매번 같은 구성으로만 올리면 반복 콘텐츠로 볼 위험이 있어 회차마다 곡·배경을 새로 만든다.
+
+## 2026-11-13 총괄(music-video-upload 세션)
+- 한 일: 사용자 결정에 따라 음악 생성을 ACE-Step 1.5(MIT 라이선스, 한국어 `ko` 지원)로 전환했다. 공식 저장소 코드를 확인해 12곡을 일괄 생성하는 스크립트와 Colab 노트북(T4 무료 GPU)을 만들었다. 노트북은 설치 → 생성 → 후보 고르기 → 1시간 영상 → Drive 저장 순서로 진행된다.
+- 결과물: outputs/ep01-songs.json, tools/gen_songs_acestep.py, tools/ep01_acestep_colab.ipynb, rights.md(서비스 열 갱신)
+- 다음 담당: 사용자 — Colab에서 노트북 실행, 곡 후보 청취·선택
+- 넘길 메모:
+  - 이 클라우드 세션은 GPU가 없고 huggingface.co 접속이 막혀 직접 생성하지 못했다. 그래서 Hugging Face 접속을 허용한 개인 환경 `first-project`를 새로 만들었다(다음 세션부터 선택 가능).
+  - 노트북은 실제 GPU에서 돌려 보지 못했다. 설정 파일 생성(dry-run)만 검증했다. 오류가 나면 메시지를 받아 수정한다.
+  - acemusic.ai(공식 무료 웹)는 상업 이용 약관을 확인하지 못해 쓰지 않았다.
+  - 한국어 보컬 품질은 아직 미확인이다. 결과를 들어 보고 Suno와 비교해 판단한다.
