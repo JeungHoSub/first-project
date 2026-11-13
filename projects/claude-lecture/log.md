@@ -23,3 +23,9 @@
 - 결과물: outputs/tts-alternatives.md
 - 다음 담당: 사용자 — 2~12화 대본(또는 1화 대본)을 source/에 넣기, TTS 후보 선택
 - 넘길 메모: 사용자 방향 = 12화까지 완결 후 부족한 부분 리뷰. 대본이 들어오면 reviewer가 12화 전체 검수 → 보강 회차 기획.
+
+## 2026-11-13 총괄(메인 세션)
+- 한 일: Google Cloud TTS 변환 스크립트 작성(챕터별 mp3 → episode.mp3, 진행자/해설자 2목소리, 챕터 시각 출력, 챕터 단위 재생성). 대본 파싱만 오프라인 테스트, 실제 API 호출은 키가 없어 미실행.
+- 결과물: tools/gcloud_tts.py
+- 다음 담당: 사용자 — (1) PC의 '강의 만들기' 세션 결과물(EP001 대본, EP002 research·outline·대본, 파이프라인 문서)을 이 저장소 project/claude-lecture 브랜치에 푸시 (2) Google Cloud TTS API 키를 환경 설정에 등록
+- 넘길 메모: EP001·EP002는 PC 로컬 세션(앱이 만든 폴더)에서 만들어져 GitHub에 없음 → 클라우드 세션들은 내용을 볼 수 없다. 앞으로 모든 결과물은 이 저장소에 커밋·푸시하는 것으로 통일 필요. 기본 음성 ko-KR-Neural2-A(진행자)/C(해설자), 키 등록 후 list-voices로 Chirp3-HD 음성도 비교.
