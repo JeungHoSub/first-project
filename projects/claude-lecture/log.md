@@ -17,3 +17,9 @@
 - 결과물: outputs/curriculum-draft-review.md, outputs/curriculum-draft.md(수정 반영)
 - 다음 담당: 사용자 — 기존 강의 1편을 `source/`에 넣기 (2026-11-13 Remote Control로 PC에서 가져올 예정)
 - 넘길 메모: 1편이 들어오면 lecture-writer가 말투·구성 분석 → 1편 위치(가정 A/B/C) 확정 → curriculum-draft-v2.md 작성 → reviewer 재검수. 그때 같이 정할 제안: 5회가 Claude Code(6회) 전에 파일 개념을 전제함, 6회 개념 1·2 불일치, 12회 Remote Control/전체 지도 분리 여부, 분량 기준(brief 3,000~5,000자 vs 스킬 3,000~6,000자), 빈틈 후보(권한 승인·민감정보·MCP). review/QUEUE.md 등록은 이 세션 범위 밖이라 하지 않음.
+
+## 2026-11-13 총괄(메인 세션)
+- 한 일: 사용자 1화 유튜브 공개 확인(https://youtu.be/G1DZntyZjBQ — 이 세션에서 유튜브 접속이 막혀 내용은 못 봄). 2~12화 대본을 저장소 전 브랜치에서 찾았으나 없음. 일레븐랩스 대체 무료 TTS 조사.
+- 결과물: outputs/tts-alternatives.md
+- 다음 담당: 사용자 — 2~12화 대본(또는 1화 대본)을 source/에 넣기, TTS 후보 선택
+- 넘길 메모: 사용자 방향 = 12화까지 완결 후 부족한 부분 리뷰. 대본이 들어오면 reviewer가 12화 전체 검수 → 보강 회차 기획.
