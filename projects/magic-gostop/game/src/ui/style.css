@@ -323,3 +323,8 @@ button.card:disabled { cursor: default; }
 .hint.safe { background: #a9b0ad; }
 .hint.risk { background: #ffd23a; box-shadow: 0 0 8px 2px rgba(255,210,58,.75); animation: tagpulse 1.2s ease-in-out infinite; }
 .hand { padding-top: 14px; }
+
+/* 난이도 버튼 */
+button.lv { font: inherit; font-size: .68rem; font-weight: 700; color: var(--text); background: rgba(0,0,0,.3); border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; margin-left: 4px; cursor: pointer; }
+button.lv[data-level="normal"] { color: #ffe08f; border-color: rgba(240,195,90,.6); }
+button.lv[data-level="hard"] { color: #fff; background: linear-gradient(180deg, #e0383f, var(--red-deep)); border-color: #ff8a8a; }

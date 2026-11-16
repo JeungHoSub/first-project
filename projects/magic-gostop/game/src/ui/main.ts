@@ -1,6 +1,6 @@
 import { applyAction, createGame, getLegalActions, score, PI_VALUE } from '../engine';
 import type { Action, Card, GameEvent, GameState, PlayerId } from '../engine';
-import { chooseAction } from '../ai/simple';
+import { chooseAction, AI_LEVELS, type AiLevel } from '../ai/simple';
 import { cardArt } from './art';
 import * as sfx from './sound';
 
@@ -489,8 +489,18 @@ async function perform(a: Action) {
     await wait(AI_THINK);
     if (no !== gameNo) return;
     busy = false;
-    perform(chooseAction(s));
+    perform(chooseAction(s, level));
   }
+}
+
+// 상대 난이도 (패 분배는 난이도와 무관하게 항상 무작위)
+let level: AiLevel = 'easy';
+try { const v = localStorage.getItem('mg-level'); if (v && AI_LEVELS.some((l) => l.id === v)) level = v as AiLevel; } catch { /* 무시 */ }
+function syncLevel() {
+  const i = AI_LEVELS.findIndex((l) => l.id === level);
+  const b = $('btn-level');
+  b.textContent = `${AI_LEVELS[i].label} ▾`;
+  b.dataset.level = level;
 }
 
 // 나가리면 다음 판 점수에 배수가 붙는다 (×2, 최대 ×4)
@@ -579,5 +589,13 @@ $('btn-info-close').addEventListener('click', () => { $('info').hidden = true; }
 $('btn-sound').addEventListener('click', () => { sfx.unlock(); sfx.setMuted(!sfx.isMuted()); syncSoundBtn(); if (!sfx.isMuted()) sfx.slap(0.6); });
 document.addEventListener('pointerdown', () => sfx.unlock(), { capture: true });
 syncSoundBtn();
+syncLevel();
+$('btn-level').addEventListener('click', () => {
+  const i = AI_LEVELS.findIndex((l) => l.id === level);
+  level = AI_LEVELS[(i + 1) % AI_LEVELS.length].id as AiLevel;
+  try { localStorage.setItem('mg-level', level); } catch { /* 무시 */ }
+  syncLevel();
+  banner(`상대: ${AI_LEVELS.find((l) => l.id === level)!.label}`);
+});
 $('sp-cancel').addEventListener('click', () => { $('special').hidden = true; });
 newGame();

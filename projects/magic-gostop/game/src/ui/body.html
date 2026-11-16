@@ -12,7 +12,7 @@
     <div class="seat-head">
       <div class="avatar ai" id="opp-avatar">AI</div>
       <div class="pinfo">
-        <div class="pname">상대 <span class="lv">쉬움</span><span class="turn-tag">차례</span></div>
+        <div class="pname">상대 <button class="lv" id="btn-level" type="button" aria-label="난이도 바꾸기">쉬움</button><span class="turn-tag">차례</span></div>
         <div class="opp-fan" id="opp-fan" aria-hidden="true"></div>
         <span class="sr" id="opp-hand">10</span>
       </div>
@@ -110,7 +110,7 @@
       <li><b>박</b> · 피박(진 쪽 피 1~5장)·광박(진 쪽 광 0장)·멍따(이긴 쪽 열끗 7장 이상) 각각 ×2</li>
       <li><b>총통·국진·나가리</b> · 처음에 같은 월 4장이면 총통 10점(나가리 이월도 곱함). 9월 열끗(국진)은 유리한 쪽(열끗/쌍피)으로 자동 계산. 나가리면 다음 판 ×2 (최대 ×4)</li>
       <li><b>고/스톱</b> · 7점부터. 고 1번마다 +1점, 3고 ×2, 4고 ×4</li>
-      <li><b>상대</b> · 임시 AI(쉬움). 먹을 수 있는 좋은 패를 먼저 냅니다.</li>
+      <li><b>상대 난이도</b> · 상대 이름 옆 버튼으로 쉬움·보통·어려움을 고릅니다. 난이도와 상관없이 패는 항상 무작위로 섞이고, AI는 내 손패와 더미 순서를 보지 않습니다.</li>
     </ul>
     <div class="sheet-title small">다음 단계에서 넣을 것</div>
     <ul class="info-list muted">

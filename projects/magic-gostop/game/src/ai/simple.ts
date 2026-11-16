@@ -1,4 +1,6 @@
 import { getLegalActions, score } from '../engine';
+import { chooseNormal } from './normal';
+import { chooseHard, type HardOptions } from './hard';
 import type { Action, Card, GameState } from '../engine';
 
 /** 카드 가치 (AI 판단용 대략값). */
@@ -17,7 +19,7 @@ export function cardValue(c: Card): number {
  * - 고르기: 가치가 큰 바닥 패.
  * - 고/스톱: 남은 손패가 3장 이상이고 점수가 10점 미만이면 고.
  */
-export function chooseAction(s: GameState): Action {
+export function chooseEasy(s: GameState): Action {
   const legal = getLegalActions(s);
   if (s.phase === 'goStop') {
     const total = score(s.captured[s.turn], s.options).total;
@@ -49,4 +51,18 @@ export function chooseAction(s: GameState): Action {
   const a = best!.a;
   const shake = a.type === 'play' && legal.find((l) => l.type === 'play' && l.cardId === a.cardId && l.shake);
   return shake || a;
+}
+
+export type AiLevel = 'easy' | 'normal' | 'hard';
+export const AI_LEVELS: { id: AiLevel; label: string }[] = [
+  { id: 'easy', label: '쉬움' },
+  { id: 'normal', label: '보통' },
+  { id: 'hard', label: '어려움' },
+];
+
+/** 난이도별 AI. 인자 하나면 쉬움. 항상 getLegalActions 중 하나를 돌려준다. */
+export function chooseAction(s: GameState, level: AiLevel = 'easy', opts?: HardOptions): Action {
+  if (level === 'hard') return chooseHard(s, opts);
+  if (level === 'normal') return chooseNormal(s);
+  return chooseEasy(s);
 }
