@@ -574,6 +574,11 @@ button.lv[data-level="hard"] { color: #fff; background: linear-gradient(180deg, 
 
 @media (min-width: 700px) { .mat { min-height: calc(var(--cw-floor) * 3.3); } .seat { padding: 6px 12px; } .hand { padding-top: 12px; } }
 @media (min-width: 700px) and (max-height: 760px) { :root { --cw-hand: clamp(48px, 8.4vh, 74px); --cw-cap: clamp(30px, 5vh, 46px); --cw-floor: clamp(40px, 6.8vh, 60px); } .app { gap: 6px; padding-block: 6px; } }
+/* 처음 화면: 화투 부채꼴이 제목을 가리지 않게 위로 올리고 제목을 앞에 */
+.home-fan { height: 176px; margin-bottom: 4px; }
+.home-fan .card { bottom: 34px; }
+.home-title { position: relative; z-index: 2; }
+@media (max-height: 620px) { .home-fan { height: 140px; } .home-fan .card { width: 60px; --cw: 60px; margin-left: -30px; bottom: 30px; } }
 </style>
 <div class="app" id="app">
   <header class="top">

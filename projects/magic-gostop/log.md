@@ -194,3 +194,7 @@
 - 결과물: game/src/ui/(collection.ts 재작성, main.ts, sound.ts, body.html, style.css), brief.md, outputs/stage1-preview.html (v16)
 - 다음 담당: 사용자
 - 넘길 메모: 예전 테스트 수집 데이터(mg-collection)는 새 형식(mg-items-v2)으로 옮기지 않음(테스트용)
+
+## 2026-11-16 총괄
+- 한 일: 처음 화면에서 화투 부채꼴이 제목을 가리던 문제 수정(부채꼴을 위로 올리고 제목을 앞에). iPhone SE·13·PC에서 카드 아래 끝과 제목 사이 20px 간격 확인
+- 결과물: game/src/ui/style.css, outputs/stage1-preview.html (v17)
