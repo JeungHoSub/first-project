@@ -100,6 +100,8 @@ export interface GameState {
   ppeok: Record<number, PlayerId>;
   /** 이번 차례 정산에서 아직 가져오지 못한 상대 피 장수(차례가 끝날 때 한꺼번에 가져온다). 차례 사이엔 항상 0 */
   stealDue: number;
+  /** 국진(9월 열끗)을 어떻게 셀지: 'auto'(유리한 쪽) / 'yeol' / 'pi'. 사람이 고르면 고정된다 */
+  gukjinAs?: [GukjinMode, GukjinMode];
   captured: [Card[], Card[]];
   pending: PendingChoice | null;
   goCount: [number, number];
@@ -109,6 +111,8 @@ export interface GameState {
   events: GameEvent[]; // 추가만 되는 로그 (3·4단계 훅/연출용)
   result: GameResult | null;
 }
+
+export type GukjinMode = 'auto' | 'yeol' | 'pi';
 
 export type Action =
   | { type: 'play'; cardId: string; shake?: true }

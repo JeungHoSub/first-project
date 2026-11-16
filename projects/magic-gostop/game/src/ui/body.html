@@ -110,7 +110,7 @@
       <li><b>뻑·쪽·따닥·싹쓸이</b> · 뻑은 3장이 바닥에 남고, 그 3장을 먹으면 상대 피 1장(자기가 싼 뻑이면 2장). 쪽·따닥·싹쓸이는 피 1장. 보너스 패(2피·3피)는 바로 내 피가 됩니다.</li>
       <li><b>표시</b> · 바닥에서 빛나는 패(▼)는 지금 먹을 수 있는 패. 테두리 색은 바닥 같은 월 장수: <span style="color:#f0c35a">금색 1장</span>, <span style="color:#4fb4ff">파랑 2장(골라 먹기)</span>, <span style="color:#ff5a5f">빨강 3장(다 먹고 피 뺏기)</span>. <span style="color:#b9c2be">회색 ▼</span>는 남은 같은 월이 모두 내 손에 있어 나만 먹을 수 있는 패(급하지 않음). 겹친 바닥 패에는 장수 배지가 붙고, 바닥 2장에 내가 1장이면 "택1". 손패 위 <span style="color:#a9b0ad">●회색</span>은 같은 월이 내 손에만 남아 나중에 내도 되는 패, <span style="color:#ffd23a">▲노랑</span>은 바닥 1장에 남은 1장이 아직 안 나와 쌀(뻑) 위험이 있는 패</li>
       <li><b>박</b> · 피박(진 쪽 피 1~5장)·광박(진 쪽 광 0장)·멍따(이긴 쪽 열끗 7장 이상) 각각 ×2</li>
-      <li><b>총통·국진·나가리</b> · 처음에 같은 월 4장이면 총통 10점(나가리 이월도 곱함). 9월 열끗(국진)은 유리한 쪽(열끗/쌍피)으로 자동 계산. 나가리면 다음 판 ×2 (최대 ×4)</li>
+      <li><b>총통·국진·나가리</b> · 처음에 같은 월 4장이면 총통 10점(나가리 이월도 곱함). 9월 열끗(국진)을 먹으면 열끗으로 쓸지 쌍피로 쓸지 고릅니다(상대는 자동으로 유리한 쪽). 나가리면 다음 판 ×2 (최대 ×4)</li>
       <li><b>고/스톱</b> · 7점부터. 고 1번마다 +1점, 3고 ×2, 4고 ×4</li>
       <li><b>상대 난이도</b> · 상대 이름 옆 버튼으로 쉬움·보통·어려움을 고릅니다. 난이도와 상관없이 패는 항상 무작위로 섞이고, AI는 내 손패와 더미 순서를 보지 않습니다.</li>
     </ul>
@@ -181,5 +181,17 @@
     <ul class="id-list" id="id-list"></ul>
     <p class="dt-note">효과는 아직 판에 적용되지 않는 설계안입니다. 등급이 높을수록 강해집니다.</p>
     <button class="big stop-btn" id="btn-id-close" type="button">닫기</button>
+  </div>
+</div>
+
+<div class="sheet" id="gukjin" hidden>
+  <div class="sheet-card">
+    <div class="sheet-kicker">국진 (9월 열끗)</div>
+    <div class="gk-top"><div class="gk-card" id="gk-card"></div><div class="sheet-title">국진을 무엇으로 쓸까요?</div></div>
+    <p class="sheet-sub">열끗으로 쓰면 열끗·멍따에, 쌍피로 쓰면 피 2장으로 셉니다. 한 번 정하면 이번 판 끝까지 그대로입니다.</p>
+    <div class="gs-btns">
+      <button class="big stop-btn" id="btn-gk-yeol" type="button">열끗<small id="gk-yeol-pts"></small></button>
+      <button class="big go-btn" id="btn-gk-pi" type="button">쌍피<small id="gk-pi-pts"></small></button>
+    </div>
   </div>
 </div>

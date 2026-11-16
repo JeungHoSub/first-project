@@ -198,3 +198,11 @@
 ## 2026-11-16 총괄
 - 한 일: 처음 화면에서 화투 부채꼴이 제목을 가리던 문제 수정(부채꼴을 위로 올리고 제목을 앞에). iPhone SE·13·PC에서 카드 아래 끝과 제목 사이 20px 간격 확인
 - 결과물: game/src/ui/style.css, outputs/stage1-preview.html (v17)
+
+## 2026-11-16 총괄
+- 한 일: 사용자 요청
+  - 국진 선택: 내가 9월 열끗(국진)을 먹으면 "열끗 / 쌍피" 선택 창(각각 지금 점수 표시). 엔진에 gukjinAs 상태·setGukjin()·scoreOf() 추가, 고/스톱 자격·정산·피박 판정에 반영(바꿔서 자격이 없어지면 다음 차례로). AI는 계속 자동(유리한 쪽). 테스트 2개 추가
+  - 크기: 바닥 패 키움, 먹은 패·손패 살짝 줄임
+  - 먹을 수 있는 손패를 18px 위로(전 6px) 확실히 튀어나오게
+- 확인: 테스트 109/109, 타입 검사, iPhone SE·13·Pixel 7·iPad Mini·1440×900·1366×680 한 화면, 국진 창 동작, 오류 없음
+- 결과물: game/src/engine/(types.ts, game.ts, score.ts, index.ts), tests/engine.test.ts, game/src/ui/(main.ts, body.html, style.css), outputs/stage1-preview.html (v18)

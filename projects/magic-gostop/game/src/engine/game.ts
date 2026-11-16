@@ -4,7 +4,7 @@ import { score, settleWin } from './score';
 import type { EngineHooks } from './hooks';
 import {
   DEFAULT_OPTIONS,
-  type Action, type Card, type GameResult, type GameState, type PlayerId, type RuleOptions,
+  type Action, type Card, type GukjinMode, type GameResult, type GameState, type PlayerId, type RuleOptions,
 } from './types';
 
 const HAND = 10;
@@ -42,6 +42,7 @@ export function createGame(seed: string | number, options: Partial<RuleOptions> 
     deck, // 나머지 20장
     ppeok: {},
     stealDue: 0,
+    gukjinAs: ['auto', 'auto'],
     captured: [[], []],
     pending: null,
     goCount: [0, 0],
@@ -214,7 +215,7 @@ export function applyAction(state: GameState, action: Action, hooks?: EngineHook
     }
     case 'go': {
       const p = s.turn;
-      const total = score(s.captured[p], s.options).total;
+      const total = scoreOf(s, p).total;
       s.goCount[p] += 1;
       s.lastGoScore[p] = total;
       s.events.push({ type: 'go', player: p, goCount: s.goCount[p], score: total });
@@ -223,7 +224,7 @@ export function applyAction(state: GameState, action: Action, hooks?: EngineHook
     }
     case 'stop': {
       const p = s.turn;
-      s.events.push({ type: 'stop', player: p, score: score(s.captured[p], s.options).total });
+      s.events.push({ type: 'stop', player: p, score: scoreOf(s, p).total });
       finish(s, p, 'stop');
       break;
     }
@@ -352,8 +353,29 @@ function finishTurn(ctx: Ctx) {
   endTurn(ctx);
 }
 
+/** 국진 선택을 반영한 점수 */
+export function scoreOf(s: GameState, p: PlayerId) {
+  const m = s.gukjinAs?.[p] ?? 'auto';
+  return score(s.captured[p], s.options, m === 'auto' ? undefined : m);
+}
+
+/**
+ * 국진을 열끗/쌍피 중 무엇으로 셀지 정한다(사람용). 새 state를 돌려준다.
+ * 바꾼 결과 지금 고/스톱 대기인데 더는 자격이 안 되면 그대로 다음 차례로 넘긴다.
+ */
+export function setGukjin(state: GameState, p: PlayerId, mode: 'yeol' | 'pi'): GameState {
+  let s: GameState = structuredClone(state);
+  const prev: [GukjinMode, GukjinMode] = s.gukjinAs ?? ['auto', 'auto'];
+  s.gukjinAs = (p === 0 ? [mode, prev[1]] : [prev[0], mode]) as [GukjinMode, GukjinMode];
+  if (s.phase === 'goStop' && s.turn === p && !canGoStop(s, p)) {
+    const ctx: Ctx = { get s() { return s; }, call: () => {} };
+    nextTurn(ctx);
+  }
+  return s;
+}
+
 function canGoStop(s: GameState, p: PlayerId): boolean {
-  const total = score(s.captured[p], s.options).total;
+  const total = scoreOf(s, p).total;
   return total >= s.options.winScore && total > s.lastGoScore[p];
 }
 
@@ -374,7 +396,7 @@ function nextTurn(ctx: Ctx) {
 
 /** 판 종료. stopper가 있으면 그 사람이 승자, 없으면 패가 떨어진 정산. */
 function finish(s: GameState, stopper: PlayerId | null, by: 'stop' | 'exhaust') {
-  const sc = [score(s.captured[0], s.options).total, score(s.captured[1], s.options).total];
+  const sc = [scoreOf(s, 0).total, scoreOf(s, 1).total];
   let winner: PlayerId | null = stopper;
   if (winner === null) {
     const ok = [sc[0] >= s.options.winScore, sc[1] >= s.options.winScore];
@@ -384,7 +406,7 @@ function finish(s: GameState, stopper: PlayerId | null, by: 'stop' | 'exhaust') 
   }
   let result: GameResult;
   if (winner === null) result = { type: 'nagari', nextCarry: Math.min(s.options.carry * 2, 4) }; // R12
-  else result = settleWin(winner, s.captured, s.goCount[winner], s.shakes[winner], s.options, by);
+  else result = settleWin(winner, s.captured, s.goCount[winner], s.shakes[winner], s.options, by, s.gukjinAs?.[winner], s.gukjinAs?.[(1 - winner) as PlayerId]);
   s.result = result;
   s.phase = 'ended';
   s.events.push({ type: 'end', result });

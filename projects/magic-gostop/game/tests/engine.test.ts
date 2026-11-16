@@ -956,3 +956,33 @@ describe('자동 대전 1000판', () => {
     for (const k of ['ppeok', 'ppeokEat', 'jjok', 'ttadak', 'sweep', 'bonus', 'draw', 'steal'] as const) expect(seen[k], k).toBeGreaterThan(0);
   });
 });
+
+describe('국진 선택 (사람이 고정)', () => {
+  it('setGukjin으로 열끗/쌍피 고정 — scoreOf와 정산에 반영, 원본 state 불변', async () => {
+    const { createGame, setGukjin, scoreOf } = await import('../src/engine');
+    const s0 = createGame('gk', { bonus: { two: 0, three: 0 } });
+    const s = structuredClone(s0);
+    s.captured[0] = ['02-Y-0', '04-Y-0', '05-Y-0', '06-Y-0', '09-Y-0'].map((id) => ({ id, month: Number(id.slice(0, 2)), kind: 'Y', tag: id === '09-Y-0' ? 'gukjin' : undefined })) as never;
+    expect(scoreOf(s, 0).total).toBe(1); // 자동: 열끗 5장 1점
+    const asPi = setGukjin(s, 0, 'pi');
+    expect(asPi.gukjinAs).toEqual(['pi', 'auto']);
+    expect(scoreOf(asPi, 0).total).toBe(0); // 열끗 4장 + 피 2 → 0점
+    expect(s.gukjinAs).toEqual(['auto', 'auto']);
+  });
+  it('고/스톱 대기 중 국진을 바꿔 자격이 없어지면 다음 차례로 넘어감', async () => {
+    const { createGame, setGukjin } = await import('../src/engine');
+    const s = createGame('gk2', { bonus: { two: 0, three: 0 } });
+    s.captured[0] = ['02-Y-0', '04-Y-0', '05-Y-0', '06-Y-0', '07-Y-0', '08-Y-1', '10-Y-0', '09-Y-0']
+      .map((id) => ({ id, month: Number(id.slice(0, 2)), kind: 'Y', tag: id === '09-Y-0' ? 'gukjin' : undefined })) as never; // 열끗 8장 = 4점, 국진 빼면 7장 3점
+    (s.captured[0] as unknown[]).push(...['01-P-0', '01-P-1', '03-P-0', '03-P-1', '04-P-0', '04-P-1', '05-P-0', '05-P-1'].map((id) => ({ id, month: Number(id.slice(0, 2)), kind: 'P' })));
+    s.options.winScore = 4; s.phase = 'goStop'; s.turn = 0;
+    const r = setGukjin(s, 0, 'pi'); // 열끗 7장 3점 + 피 10장 1점 = 4점 → 여전히 자격
+    expect(r.phase).toBe('goStop');
+    const r2 = setGukjin(s, 0, 'yeol'); // 열끗 8장 4점 + 피 8장 0점 = 4점 → 자격
+    expect(r2.phase).toBe('goStop');
+    s.captured[0] = s.captured[0].slice(0, 8);
+    const r3 = setGukjin(s, 0, 'pi'); // 열끗 7장 3점 + 피 2 → 3점 < 4 → 다음 차례
+    expect(r3.phase).toBe('play');
+    expect(r3.turn).toBe(1);
+  });
+});

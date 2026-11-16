@@ -83,12 +83,12 @@ export function settle(
  * 피박: 승자 피 점수 + 패자 피 합 0~5 (패자 국진은 쌍피로 세어 유리하게). 광박: 승자 광 점수 + 패자 광 0장.
  * 멍따: 승자 열끗 7장 이상 (패자 조건 없음). 국진은 승자 계산(winScore)이 어느 쪽으로 셌는지를 따른다.
  */
-export function judgeBak(winnerScore: ScoreResult, winner: readonly Card[], loser: readonly Card[], options: RuleOptions = DEFAULT_OPTIONS): { bak: Bak; bakMultiplier: number } {
+export function judgeBak(winnerScore: ScoreResult, winner: readonly Card[], loser: readonly Card[], options: RuleOptions = DEFAULT_OPTIONS, loserGukjinAsPi = true): { bak: Bak; bakMultiplier: number } {
   const off = !options.special.bak;
   const gj = winnerScore.gukjin === 'pi';
   const yeolCount = winner.filter((c) => c.kind === 'Y' && !(gj && isGukjin(c))).length;
   const bak: Bak = {
-    pi: !off && winnerScore.details.some((d) => d.key === 'pi') && piSum(loser, true) >= 1 && piSum(loser, true) <= 5, // 사용자 확정: 1~5장만 (0장은 피박 아님)
+    pi: !off && winnerScore.details.some((d) => d.key === 'pi') && piSum(loser, loserGukjinAsPi) >= 1 && piSum(loser, loserGukjinAsPi) <= 5, // 사용자 확정: 1~5장만 (0장은 피박 아님)
     gwang: !off && winnerScore.details.some((d) => d.key === 'gwang') && !loser.some((c) => c.kind === 'G'),
     meong: !off && yeolCount >= 7,
   };
@@ -99,14 +99,16 @@ export function judgeBak(winnerScore: ScoreResult, winner: readonly Card[], lose
 export function settleWin(
   winner: PlayerId, captured: readonly [readonly Card[], readonly Card[]], goCount: number, shakes: number,
   options: RuleOptions, by: 'stop' | 'exhaust',
+  winnerGukjin: 'auto' | 'yeol' | 'pi' = 'auto', loserGukjin: 'auto' | 'yeol' | 'pi' = 'auto',
 ): Extract<GameResult, { type: 'win' }> {
   const w = captured[winner];
   const l = captured[1 - winner];
   const carry = options.carry;
   let best: Extract<GameResult, { type: 'win' }> | null = null;
-  for (const gj of ['yeol', 'pi'] as const) {
+  const modes = winnerGukjin === 'auto' ? (['yeol', 'pi'] as const) : ([winnerGukjin] as const);
+  for (const gj of modes) {
     const sc = scoreWith(w, gj);
-    const { bak, bakMultiplier } = judgeBak(sc, w, l, options);
+    const { bak, bakMultiplier } = judgeBak(sc, w, l, options, loserGukjin === 'yeol' ? false : true);
     const r: Extract<GameResult, { type: 'win' }> = {
       type: 'win', winner, base: sc.total, goCount, by, bak, nextCarry: 1,
       ...settle(sc.total, goCount, options, shakes, bakMultiplier, carry),

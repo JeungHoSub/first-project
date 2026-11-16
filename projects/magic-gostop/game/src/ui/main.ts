@@ -1,4 +1,4 @@
-import { applyAction, createGame, getLegalActions, score, PI_VALUE } from '../engine';
+import { applyAction, createGame, getLegalActions, score, scoreOf, setGukjin, PI_VALUE } from '../engine';
 import type { Action, Card, GameEvent, GameState, PlayerId } from '../engine';
 import { chooseAction, AI_LEVELS, type AiLevel } from '../ai/simple';
 import { cardArt } from './art';
@@ -94,7 +94,7 @@ function showCapsDetail() {
   const view = s;
   const grid = $('cd-grid'); grid.innerHTML = '';
   ([AI, ME] as PlayerId[]).forEach((p) => {
-    const sc = score(view.captured[p]);
+    const sc = scoreOf(view, p);
     const col = document.createElement('section');
     col.className = 'cd-col';
     col.innerHTML = `<div class="cd-head"><b>${p === ME ? '나' : '상대'}</b><span>${sc.total}점</span></div><div class="cd-caps"></div>
@@ -110,7 +110,7 @@ function render(view: GameState) {
   const live = view === s && !busy;
   const legal = live ? getLegalActions(view) : [];
   const myTurn = live && view.turn === ME && view.phase !== 'ended';
-  const sc = [score(view.captured[0]), score(view.captured[1])];
+  const sc = [scoreOf(view, 0), scoreOf(view, 1)];
 
   for (const [p, sfx] of [[ME, 'my'], [AI, 'opp']] as const) {
     const b = $(`${sfx}-score`);
@@ -258,7 +258,7 @@ function render(view: GameState) {
     }
   }
 
-  const gs = myTurn && view.phase === 'goStop';
+  const gs = myTurn && view.phase === 'goStop' && $('gukjin').hidden;
   $('gostop').hidden = !gs;
   if (gs) {
     const n = view.goCount[ME];
@@ -269,6 +269,30 @@ function render(view: GameState) {
       : '마지막 차례라 스톱만 할 수 있습니다.';
     ($('btn-go') as HTMLButtonElement).hidden = !canGo;
   }
+}
+
+// ---------- 국진 선택 ----------
+function askGukjin(): Promise<void> {
+  return new Promise((done) => {
+    const y = score(s.captured[ME], s.options, 'yeol').total;
+    const p = score(s.captured[ME], s.options, 'pi').total;
+    $('gk-yeol-pts').textContent = `지금 점수 ${y}점`;
+    $('gk-pi-pts').textContent = `지금 점수 ${p}점`;
+    $('gk-card').innerHTML = '';
+    $('gk-card').append(cardEl(byId('09-Y-0')));
+    $('gukjin').hidden = false;
+    sfx.click();
+    const pick = (mode: 'yeol' | 'pi') => {
+      $('gukjin').hidden = true;
+      s = setGukjin(s, ME, mode);
+      banner(mode === 'pi' ? '국진 → 쌍피' : '국진 → 열끗');
+      sfx.click();
+      render(s);
+      done();
+    };
+    ($('btn-gk-yeol') as HTMLButtonElement).onclick = () => pick('yeol');
+    ($('btn-gk-pi') as HTMLButtonElement).onclick = () => pick('pi');
+  });
 }
 
 // ---------- 손패 힌트 ----------
@@ -564,6 +588,12 @@ async function perform(a: Action) {
   busy = false;
   await show(s, flip && !document.querySelector(`#floor [data-id="${CSS.escape(flip)}"]`) ? { deck: new Set([flip]) } : {});
   if (no !== gameNo) return;
+  // 내가 국진(9월 열끗)을 먹었고 아직 안 정했으면: 열끗으로 쓸지 쌍피로 쓸지 묻는다
+  const tookGukjin = evs.some((e) => e.type === 'capture' && e.player === ME && e.cards.includes('09-Y-0'));
+  if (tookGukjin && (s.gukjinAs?.[ME] ?? 'auto') === 'auto') {
+    await askGukjin();
+    if (no !== gameNo) return;
+  }
   if (evs.some((e) => e.type === 'steal')) { sfx.steal(); }
   const goEv = evs.find((e) => e.type === 'go');
   if (goEv && goEv.type === 'go') { banner(`${goEv.goCount}고!`); sfx.go(); sfx.buzz(30); }
@@ -603,7 +633,7 @@ type WinExtra = { by: string; bak?: { pi: boolean; gwang: boolean; meong: boolea
 
 function showResult() {
   const r = s.result!;
-  const sc = [score(s.captured[0]), score(s.captured[1])];
+  const sc = [scoreOf(s, 0), scoreOf(s, 1)];
   const x = r as unknown as WinExtra;
   carry = x.nextCarry ?? 1;
   $('result').hidden = false;
@@ -727,7 +757,7 @@ function setLevel(l: AiLevel) {
 }
 function showHome() {
   gameNo++; busy = false;
-  for (const id of ['result', 'special', 'choose', 'gostop', 'info', 'reward', 'collection', 'caps-detail', 'item-detail']) $(id).hidden = true;
+  for (const id of ['result', 'special', 'choose', 'gostop', 'info', 'reward', 'collection', 'caps-detail', 'item-detail', 'gukjin']) $(id).hidden = true;
   syncHome();
   $('home').hidden = false;
 }
@@ -752,6 +782,7 @@ async function newGame() {
   $('result').hidden = true;
   $('special').hidden = true;
   $('choose').hidden = true;
+  $('gukjin').hidden = true;
   render(s);
   await dealIn(no);
   if (no !== gameNo) return;
@@ -830,4 +861,4 @@ $('btn-sfx').addEventListener('click', () => { sfx.unlock(); sfx.setMuted(!sfx.i
 $('btn-reward-ok').addEventListener('click', () => { $('reward').hidden = true; });
 document.addEventListener('pointerdown', () => { if (!$('home').hidden) return; sfx.startBgm(); }, { capture: true });
 showHome();
-(window as unknown as { __mgTest?: unknown }).__mgTest = { explodeAt }; // 화면 점검용(폭탄 연출 미리보기)
+(window as unknown as { __mgTest?: unknown }).__mgTest = { explodeAt, askGukjin }; // 화면 점검용(폭탄 연출 미리보기)
