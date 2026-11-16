@@ -170,11 +170,22 @@ function render(view: GameState) {
         if (view.pending && (c.id === view.pending.card.id || c.id === view.pending.later?.id)) el.classList.add('held');
         if (myTurn && view.phase === 'play' && view.hands[ME].some((h) => h.month === c.month)) {
           el.classList.add('target');
-          const n = view.floor.filter((f) => f.month === c.month).length;
-          if (n >= 2) { el.classList.add(n >= 3 ? 'm3' : 'm2'); grp.classList.add(n >= 3 ? 'g3' : 'g2'); }
+          const k = monthState(view, c.month);
+          if (k.onlyMe) { el.classList.add('mine-only'); grp.classList.add('gonly'); }
+          else if (k.floorN >= 2) { el.classList.add(k.floorN >= 3 ? 'm3' : 'm2'); grp.classList.add(k.floorN >= 3 ? 'g3' : 'g2'); }
         }
         grp.append(el);
       }
+    }
+    // 겹친 장수 배지(2장 이상), 내가 1장 들고 바닥 2장이면 "택1"
+    const fn = floorCards.filter((f) => f.month === m).length;
+    if (fn >= 2) {
+      const k = monthState(view, m);
+      const badge = document.createElement('span');
+      badge.className = 'stack-n' + (fn >= 3 ? ' s3' : '');
+      badge.textContent = myTurn && view.phase === 'play' && fn === 2 && k.mineN === 1 && !k.onlyMe ? '2 · 택1' : String(fn);
+      if (badge.textContent.includes('택1')) badge.classList.add('pick1');
+      grp.append(badge);
     }
     floor.append(grp);
   }
@@ -191,8 +202,9 @@ function render(view: GameState) {
     if (canPlay && (onFloor.has(c.month) || c.month === 13)) {
       b.classList.add('match');
       // 바닥 같은 월 장수에 따라 색: 1장 금색 / 2장 파랑(골라 먹기) / 3장 빨강(다 먹고 피 뺏기)
-      const n = view.floor.filter((f) => f.month === c.month).length;
-      if (n >= 2) b.classList.add(n >= 3 ? 'm3' : 'm2');
+      const k = monthState(view, c.month);
+      if (k.onlyMe && k.floorN > 0) b.classList.add('mine-only');
+      else if (k.floorN >= 2) b.classList.add(k.floorN >= 3 ? 'm3' : 'm2');
     }
     // 힌트 점: 회색 = 남은 같은 월이 내 손에만 있어 나중에 내도 되는 패, 노랑 = 바닥 1장 + 남은 1장이 아직 안 나와 뻑(쌀) 위험이 있는 패
     if (canPlay && c.month !== 13) {
@@ -259,6 +271,14 @@ function render(view: GameState) {
 }
 
 // ---------- 손패 힌트 ----------
+/** 한 월의 상황: 바닥·내 손·이미 먹힌 장수와, 내가 볼 수 없는 곳(상대 손·더미)에 남은 장수 */
+function monthState(view: GameState, m: number) {
+  const floorN = view.floor.filter((f) => f.month === m).length;
+  const mineN = view.hands[ME].filter((h) => h.month === m).length;
+  const goneN = view.captured[0].filter((x) => x.month === m).length + view.captured[1].filter((x) => x.month === m).length;
+  const unseen = 4 - floorN - mineN - goneN;
+  return { floorN, mineN, goneN, unseen, onlyMe: mineN > 0 && unseen <= 0 };
+}
 function hintFor(view: GameState, c: Card): 'safe' | 'risk' | null {
   const m = c.month;
   const floorN = view.floor.filter((f) => f.month === m).length;

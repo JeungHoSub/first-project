@@ -171,3 +171,9 @@
 - 확인: 테스트 107/107, iPhone SE·13·Pixel 7 한 화면, 오류 없음
 - 결과물: game/src/ui/(main.ts, body.html, style.css), outputs/stage1-preview.html (v13)
 - 다음 담당: 사용자
+
+## 2026-11-16 총괄
+- 한 일: 사용자 요청 — 바닥 패 중 나만 먹을 수 있는 것(같은 월 나머지가 모두 내 손·먹힌 패)에 회색 ▼·회색 테두리(손패도 회색). 겹친 바닥 패에 장수 배지(2·3), 바닥 2장 + 내 손 1장이면 파란 "2 · 택1". 규칙 안내 범례 추가
+- 확인: 휴대폰 화면에서 회색(4월 3장+내 1장)과 "택1"(2월 2장+내 1장) 동시 표시, 오류 없음
+- 결과물: game/src/ui/(main.ts, style.css, body.html), outputs/stage1-preview.html (v14)
+- 다음 담당: 사용자
