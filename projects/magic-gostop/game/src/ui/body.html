@@ -5,23 +5,20 @@
   </header>
 
   <section class="side opp" aria-label="상대">
-    <div class="who"><span class="name">상대 (AI)</span><span class="score" id="opp-score">0점</span><span class="go" id="opp-go"></span></div>
-    <div class="opp-hand" id="opp-hand"></div>
+    <div class="who"><span class="name">상대 (AI)</span><span class="score" id="opp-score">0점</span><span class="go" id="opp-go"></span><span class="opp-hand" id="opp-hand"></span></div>
     <div class="caps" id="opp-caps"></div>
   </section>
 
   <section class="table" aria-label="바닥">
     <div class="feed" id="feed" aria-live="polite"></div>
-    <div class="floor-wrap">
+    <div class="floor" id="floor">
       <div class="deck" id="deck"><div class="back"></div><span id="deck-n">20</span></div>
-      <div class="floor" id="floor"></div>
     </div>
-    <div class="prompt" id="prompt"></div>
   </section>
 
   <section class="side me" aria-label="나">
     <div class="caps" id="my-caps"></div>
-    <div class="who"><span class="name">나</span><span class="score" id="my-score">0점</span><span class="go" id="my-go"></span></div>
+    <div class="who"><span class="name">나</span><span class="score" id="my-score">0점</span><span class="go" id="my-go"></span><span class="prompt" id="prompt"></span></div>
     <div class="hand" id="hand"></div>
   </section>
 
@@ -63,7 +60,7 @@
       <li>뻑, 따닥, 쪽, 싹쓸이, 피 뺏기</li>
       <li>흔들기, 폭탄, 총통, 피박·광박·멍따, 국진 선택</li>
       <li>매직 카드: 엿보기, 패 바꾸기, 방패, 바닥 정리</li>
-      <li>화투 그림 (지금은 월·종류를 글자와 색으로 표시)</li>
+      <li>화투 그림 다듬기 (지금 그림은 직접 그린 1차 버전)</li>
     </ul>
     <p class="seed">판 번호 <span id="seed"></span></p>
     <button class="big stop-btn" id="btn-info-close" type="button">닫기</button>

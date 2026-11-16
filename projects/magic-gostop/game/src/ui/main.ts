@@ -1,6 +1,7 @@
 import { applyAction, createGame, getLegalActions, score } from '../engine';
 import type { Action, Card, GameEvent, GameState, PlayerId } from '../engine';
 import { chooseAction } from '../ai/simple';
+import { cardArt } from './art';
 
 // 화면 = 엔진 상태를 그리기만 한다. 규칙 판단은 전부 엔진(getLegalActions/applyAction)에 맡긴다.
 const ME: PlayerId = 0;
@@ -17,6 +18,16 @@ let s: GameState;
 let busy = false;
 let fresh = new Set<string>();
 
+// 바닥 자리 12곳: 가운데 더미를 둘러싸게 위 4 / 왼쪽 2 / 오른쪽 2 / 아래 4.
+const SLOTS: [number, number][] = [
+  [13, 17], [37, 15], [63, 15], [87, 17], // 0~3 위
+  [9, 50], [28, 50], [72, 50], [91, 50], // 4~7 왼쪽 둘, 오른쪽 둘
+  [13, 83], [37, 85], [63, 85], [87, 83], // 8~11 아래
+];
+const SLOT_ORDER = [1, 2, 9, 10, 5, 6, 0, 11, 3, 8, 4, 7]; // 처음 8장이 더미 둘레에 고르게
+const slotOf = new Map<number, number>();
+function hash(t: string) { let h = 7; for (const ch of t) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return h; }
+
 function cardName(c: Card) {
   return `${c.month}월 ${c.tag === 'bi' ? '비광' : KIND_LABEL[c.kind]}`;
 }
@@ -26,9 +37,7 @@ function cardEl(c: Card, tag: 'div' | 'button' = 'div'): HTMLElement {
   el.className = `card k-${c.kind}${c.tag ? ' t-' + c.tag : ''}`;
   el.style.setProperty('--mc', MONTH_COLOR[c.month]);
   el.dataset.id = c.id;
-  const kd = c.kind === 'G' ? '光' : c.kind === 'T' ? (c.tag === 'hong' ? '홍' : c.tag === 'cheong' ? '청' : c.tag === 'cho' ? '초' : '띠') : KIND_LABEL[c.kind];
-  const sub = c.tag ? TAG_LABEL[c.tag] : c.kind === 'G' ? '광' : '';
-  el.innerHTML = `<span class="band"><span class="mo">${c.month}</span><span class="fl">${FLOWER[c.month]}</span></span><span class="kd"><span>${kd}</span></span><span class="sub">${sub}</span>`;
+  el.innerHTML = `${cardArt(c)}<span class="mo">${c.month}</span>`;
   el.setAttribute('aria-label', `${FLOWER[c.month]} ${cardName(c)}${c.tag ? ' ' + TAG_LABEL[c.tag] : ''}`);
   if (tag === 'button') (el as HTMLButtonElement).type = 'button';
   return el;
@@ -43,7 +52,8 @@ function renderCaps(target: HTMLElement, cards: Card[]) {
     const g = document.createElement('div');
     g.className = 'cap-group';
     g.innerHTML = `<div class="cap-label">${label}<b>${n}</b></div><div class="cap-cards"></div>`;
-    const box = g.querySelector('.cap-cards')!;
+    const box = g.querySelector('.cap-cards') as HTMLElement;
+    box.style.setProperty('--n', String(Math.max(list.length, 1)));
     list.forEach((c) => { const el = cardEl(c); if (fresh.has(c.id)) el.classList.add('fresh'); box.append(el); });
     target.append(g);
   }
@@ -61,18 +71,29 @@ function render() {
   $('deck-n').textContent = `${s.deck.length}장`;
   $('seed').textContent = s.seed;
 
-  const oh = $('opp-hand'); oh.innerHTML = '';
-  s.hands[AI].forEach(() => { const b = document.createElement('div'); b.className = 'back'; oh.append(b); });
+  $('opp-hand').textContent = `손패 ${s.hands[AI].length}장`;
 
   renderCaps($('opp-caps'), s.captured[AI]);
   renderCaps($('my-caps'), s.captured[ME]);
 
-  // 바닥: 같은 월끼리 묶어서
-  const floor = $('floor'); floor.innerHTML = '';
-  const months = [...new Set(s.floor.map((c) => c.month))].sort((a, b) => a - b);
+  // 바닥: 가운데 더미를 중심으로 둥글게 뿌린다. 같은 월은 한 자리에 겹쳐 놓고, 자리는 판이 끝날 때까지 유지한다.
+  const floor = $('floor'); floor.querySelectorAll('.floor-month').forEach((n) => n.remove());
+  const onFloor = new Set(s.floor.map((c) => c.month));
+  for (const [m] of slotOf) if (!onFloor.has(m)) slotOf.delete(m);
   const pickable = myTurn && s.phase === 'chooseMatch' ? new Set(s.pending!.options) : new Set<string>();
-  for (const m of months) {
+  for (const c of s.floor) {
+    if (!slotOf.has(c.month)) {
+      const used = new Set(slotOf.values());
+      slotOf.set(c.month, SLOT_ORDER.find((i) => !used.has(i)) ?? 0);
+    }
+  }
+  for (const m of [...onFloor]) {
+    const [x, y] = SLOTS[slotOf.get(m)!];
     const grp = document.createElement('div'); grp.className = 'floor-month';
+    if (s.floor.some((f) => f.month === m && pickable.has(f.id))) grp.classList.add('choosing');
+    const j = hash(s.seed + m);
+    grp.style.left = `${x + ((j % 7) - 3) * 0.6}%`; grp.style.top = `${y + (((j >> 3) % 7) - 3) * 0.8}%`;
+    grp.style.setProperty('--rot', `${(hash(String(m) + s.seed) % 15) - 7}deg`);
     for (const c of s.floor.filter((f) => f.month === m)) {
       if (pickable.has(c.id)) {
         const b = cardEl(c, 'button'); b.classList.add('pick');
@@ -100,7 +121,7 @@ function render() {
   let prompt = '';
   if (s.phase === 'ended') prompt = '';
   else if (s.turn === AI) prompt = '상대 차례';
-  else if (s.phase === 'play') prompt = '낼 패를 고르세요 · 금색 테두리는 먹을 수 있는 패';
+  else if (s.phase === 'play') prompt = '낼 패를 고르세요 (금색 = 먹을 수 있음)';
   else if (s.phase === 'chooseMatch') prompt = `${cardName(s.pending!.card)}로 먹을 패를 고르세요`;
   $('prompt').textContent = prompt;
 
@@ -187,6 +208,7 @@ function runAi() {
 function newGame() {
   const seed = Math.floor(Math.random() * 1e9).toString(36);
   s = createGame(seed);
+  slotOf.clear();
   for (const c of [...s.hands[0], ...s.hands[1], ...s.floor, ...s.deck]) allCards.set(c.id, c);
   fresh = new Set();
   $('feed').innerHTML = '새 판입니다. 내가 선입니다.';
