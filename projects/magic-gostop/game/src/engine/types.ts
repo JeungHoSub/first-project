@@ -1,6 +1,6 @@
 // 엔진 공용 타입. 모든 상태는 직렬화 가능한 plain object.
 
-export type Kind = 'G' | 'Y' | 'T' | 'P' | 'D'; // 광 / 열끗 / 띠 / 피 / 쌍피
+export type Kind = 'G' | 'Y' | 'T' | 'P' | 'D' | 'B2' | 'B3'; // 광 / 열끗 / 띠 / 피 / 쌍피 / 보너스 2피 / 보너스 3피 (보너스는 month 13)
 export type Tag = 'hong' | 'cheong' | 'cho' | 'godori' | 'gukjin' | 'bi';
 export type PlayerId = 0 | 1;
 
@@ -17,6 +17,8 @@ export interface RuleOptions {
   goBonusMode: 'n'; // R02 고 가산 방식 (1단계는 +n만)
   goMultiplierFrom: number; // 이 고 횟수부터 배수 ×2^(n-from+1) (기본 3)
   dealer: PlayerId; // 선 (기본 0)
+  /** 보너스 패 장수 (2피짜리 two장, 3피짜리 three장). 둘 다 0이면 기본 48장 */
+  bonus: { two: number; three: number };
   // --- 특수 룰 스위치. ppeok/ttadak/jjok/sweep/shake/bomb만 엔진이 읽는다(끄면 1단계 단순 처리). 나머지는 아직 자리만 ---
   special: {
     ppeok: boolean; ttadak: boolean; jjok: boolean; sweep: boolean;
@@ -31,6 +33,7 @@ export const DEFAULT_OPTIONS: RuleOptions = {
   goBonusMode: 'n',
   goMultiplierFrom: 3,
   dealer: 0,
+  bonus: { two: 2, three: 1 },
   special: {
     ppeok: true, ttadak: true, jjok: true, sweep: true,
     shake: true, bomb: true, chongtong: false, bak: false, gukjin: 'yeolggeut',
@@ -66,6 +69,8 @@ export type GameEvent =
   | { type: 'jjok'; player: PlayerId; month: number }
   | { type: 'ttadak'; player: PlayerId; month: number }
   | { type: 'sweep'; player: PlayerId }
+  | { type: 'bonus'; player: PlayerId; card: string; from: 'hand' | 'flip' | 'deal' } // 보너스 패 획득
+  | { type: 'draw'; player: PlayerId; card: string } // 보너스를 내고 더미에서 손패로 가져옴
   | { type: 'end'; result: GameResult };
 
 export type GameResult =

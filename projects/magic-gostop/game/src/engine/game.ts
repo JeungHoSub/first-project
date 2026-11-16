@@ -1,4 +1,4 @@
-import { ALL_CARDS } from './cards';
+import { ALL_CARDS, buildBonusCards, isBonus } from './cards';
 import { shuffle } from './rng';
 import { score, settle } from './score';
 import type { EngineHooks } from './hooks';
@@ -17,11 +17,13 @@ export function createGame(seed: string | number, options: Partial<RuleOptions> 
     ...options,
     special: { ...DEFAULT_OPTIONS.special, ...options.special },
     magic: { ...DEFAULT_OPTIONS.magic, ...options.magic },
+    bonus: { ...DEFAULT_OPTIONS.bonus, ...options.bonus },
   };
-  const deck = shuffle(ALL_CARDS, seed).map((c) => ({ ...c }));
+  const full = [...ALL_CARDS, ...buildBonusCards(opts.bonus.two, opts.bonus.three)];
+  const deck = shuffle(full, seed).map((c) => ({ ...c }));
   const hands: [Card[], Card[]] = [deck.splice(0, HAND), deck.splice(0, HAND)];
   const floor = deck.splice(0, FLOOR);
-  return {
+  const state: GameState = {
     seed: String(seed),
     options: opts,
     phase: 'play',
@@ -40,6 +42,16 @@ export function createGame(seed: string | number, options: Partial<RuleOptions> 
     events: [{ type: 'deal', seed: String(seed) }],
     result: null,
   };
+  // 처음 바닥에 깔린 보너스 패: 선이 가져가고 더미에서 채운다 (또 보너스면 반복)
+  for (let i = 0; i < state.floor.length; i++) {
+    while (isBonus(state.floor[i])) {
+      const [b] = state.floor.splice(i, 1, ...(state.deck.length ? state.deck.splice(0, 1) : []));
+      state.captured[opts.dealer].push(b);
+      state.events.push({ type: 'bonus', player: opts.dealer, card: b.id, from: 'deal' });
+      if (i >= state.floor.length) break;
+    }
+  }
+  return state;
 }
 
 export function getLegalActions(s: GameState): Action[] {
@@ -109,6 +121,19 @@ export function applyAction(state: GameState, action: Action, hooks?: EngineHook
       const p = s.turn;
       const idx = s.hands[p].findIndex((c) => c.id === action.cardId);
       const [card] = s.hands[p].splice(idx, 1);
+      if (isBonus(card)) {
+        // 보너스 패: 바로 획득, 더미에서 1장 손패로 가져와 같은 사람이 다시 낸다
+        s.captured[p].push(card);
+        s.events.push({ type: 'bonus', player: p, card: card.id, from: 'hand' });
+        if (s.deck.length > 0) {
+          const d = s.deck.shift()!;
+          s.hands[p].push(d);
+          s.events.push({ type: 'draw', player: p, card: d.id });
+        } else if (handsLeft(s) === 0 || s.hands[p].length + s.dummies[p] === 0) {
+          endTurn(ctx); // 더 낼 패가 없으면 차례 종료
+        }
+        break;
+      }
       if (action.shake) {
         s.shakes[p] += 1;
         const shown = [card, ...s.hands[p].filter((c) => c.month === card.month)];
@@ -182,8 +207,11 @@ function capture(s: GameState, cards: Card[]) {
 function steal(s: GameState, p: PlayerId) {
   const from = (1 - p) as PlayerId;
   const src = s.captured[from];
-  let i = src.findIndex((c) => c.kind === 'P');
-  if (i < 0) i = src.findIndex((c) => c.kind === 'D');
+  let i = -1;
+  for (const k of ['P', 'D', 'B2', 'B3']) { // 가능한 한 작은 피부터
+    i = src.findIndex((c) => c.kind === k);
+    if (i >= 0) break;
+  }
   if (i < 0) return;
   const [card] = src.splice(i, 1);
   s.captured[p].push(card);
@@ -217,9 +245,16 @@ function resolveOne(s: GameState, card: Card, source: 'hand' | 'flip', later: Ca
 function flipAndSettle(ctx: Ctx, hand: Card | null) {
   const s = ctx.s;
   let flipped: Card | null = null;
-  if (s.deck.length > 0) {
-    flipped = s.deck.shift()!;
-    s.events.push({ type: 'flip', player: s.turn, card: flipped.id });
+  while (s.deck.length > 0) {
+    const f = s.deck.shift()!;
+    s.events.push({ type: 'flip', player: s.turn, card: f.id });
+    if (isBonus(f)) { // 보너스: 획득하고 한 장 더 뒤집는다
+      s.captured[s.turn].push(f);
+      s.events.push({ type: 'bonus', player: s.turn, card: f.id, from: 'flip' });
+      continue;
+    }
+    flipped = f;
+    break;
   }
   const p = s.turn;
   const sp = s.options.special;

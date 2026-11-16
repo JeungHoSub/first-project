@@ -1,5 +1,6 @@
 import type { Card, ScoreDetail, ScoreResult, RuleOptions, GameResult } from './types';
 import { DEFAULT_OPTIONS } from './types';
+import { PI_VALUE } from './cards';
 
 /** 획득 패로 기본 점수를 매번 처음부터 계산한다. 순수 함수. (국진은 1단계에서 열끗 고정) */
 export function score(captured: readonly Card[], _options: RuleOptions = DEFAULT_OPTIONS): ScoreResult {
@@ -11,7 +12,7 @@ export function score(captured: readonly Card[], _options: RuleOptions = DEFAULT
   const gwang = captured.filter((c) => c.kind === 'G');
   const yeol = captured.filter((c) => c.kind === 'Y');
   const tti = captured.filter((c) => c.kind === 'T');
-  const pi = captured.reduce((n, c) => n + (c.kind === 'D' ? 2 : c.kind === 'P' ? 1 : 0), 0);
+  const pi = captured.reduce((n, c) => n + (PI_VALUE[c.kind] ?? 0), 0);
 
   // 광
   const g = gwang.length;

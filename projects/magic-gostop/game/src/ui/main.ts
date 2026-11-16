@@ -1,4 +1,4 @@
-import { applyAction, createGame, getLegalActions, score } from '../engine';
+import { applyAction, createGame, getLegalActions, score, PI_VALUE } from '../engine';
 import type { Action, Card, GameEvent, GameState, PlayerId } from '../engine';
 import { chooseAction } from '../ai/simple';
 import { cardArt } from './art';
@@ -15,8 +15,8 @@ const AI_THINK = 550; // 상대가 내기 전 뜸
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const wait = (ms: number) => new Promise((r) => setTimeout(r, reduced ? 0 : ms));
 
-const FLOWER = ['', '송학', '매조', '벚꽃', '흑싸리', '난초', '모란', '홍싸리', '공산', '국화', '단풍', '오동', '비'];
-const KIND_LABEL: Record<Card['kind'], string> = { G: '광', Y: '열끗', T: '띠', P: '피', D: '쌍피' };
+const FLOWER = ['', '송학', '매조', '벚꽃', '흑싸리', '난초', '모란', '홍싸리', '공산', '국화', '단풍', '오동', '비', '보너스'];
+const KIND_LABEL: Record<Card['kind'], string> = { G: '광', Y: '열끗', T: '띠', P: '피', D: '쌍피', B2: '보너스 2피', B3: '보너스 3피' };
 const TAG_LABEL: Record<string, string> = { hong: '홍단', cheong: '청단', cho: '초단', godori: '고도리', gukjin: '국진', bi: '비광' };
 
 const $ = (id: string) => document.getElementById(id)!;
@@ -36,13 +36,13 @@ function hash(t: string) { let h = 7; for (const ch of t) h = (h * 31 + ch.charC
 
 const allCards = new Map<string, Card>();
 const byId = (id: string) => allCards.get(id)!;
-const cardName = (c: Card) => `${c.month}월 ${c.tag === 'bi' ? '비광' : KIND_LABEL[c.kind]}`;
+const cardName = (c: Card) => (c.month === 13 ? KIND_LABEL[c.kind] : `${c.month}월 ${c.tag === 'bi' ? '비광' : KIND_LABEL[c.kind]}`);
 
 function cardEl(c: Card, tag: 'div' | 'button' = 'div'): HTMLElement {
   const el = document.createElement(tag);
   el.className = `card k-${c.kind}`;
   el.dataset.id = c.id;
-  el.innerHTML = `${cardArt(c)}<span class="mo">${c.month}</span>`;
+  el.innerHTML = `${cardArt(c)}${c.month === 13 ? '' : `<span class="mo">${c.month}</span>`}`;
   el.setAttribute('aria-label', `${FLOWER[c.month]} ${cardName(c)}${c.tag ? ' ' + TAG_LABEL[c.tag] : ''}`);
   if (tag === 'button') (el as HTMLButtonElement).type = 'button';
   return el;
@@ -51,11 +51,11 @@ function cardEl(c: Card, tag: 'div' | 'button' = 'div'): HTMLElement {
 function renderCaps(target: HTMLElement, cards: Card[], details: string[]) {
   target.innerHTML = '';
   const groups: [string, Card['kind'][], string[]][] = [
-    ['광', ['G'], ['gwang']], ['열끗', ['Y'], ['yeol', 'godori']], ['띠', ['T'], ['tti', 'hong', 'cheong', 'cho']], ['피', ['P', 'D'], ['pi']],
+    ['광', ['G'], ['gwang']], ['열끗', ['Y'], ['yeol', 'godori']], ['띠', ['T'], ['tti', 'hong', 'cheong', 'cho']], ['피', ['P', 'D', 'B2', 'B3'], ['pi']],
   ];
   for (const [label, kinds, keys] of groups) {
     const list = cards.filter((c) => kinds.includes(c.kind));
-    const n = label === '피' ? list.reduce((a, c) => a + (c.kind === 'D' ? 2 : 1), 0) : list.length;
+    const n = label === '피' ? list.reduce((a, c) => a + (PI_VALUE[c.kind] ?? 1), 0) : list.length;
     const grp = document.createElement('div');
     grp.className = 'cap-group' + (keys.some((k) => details.includes(k)) ? ' scored' : '');
     grp.innerHTML = `<div class="cap-label">${label}<b>${n}</b></div><div class="cap-cards"></div>`;
@@ -94,7 +94,7 @@ function render(view: GameState) {
 
   // 바닥: 가운데 더미 둘레. 같은 월은 한 자리에 겹쳐 놓고, 자리는 판이 끝날 때까지 유지한다.
   // 고르는 중인 패(pending)도 그 월 자리에 같이 보여 준다.
-  const floorCards = view.pending ? [...view.floor, view.pending.card] : view.floor;
+  const floorCards = view.pending ? [...view.floor, view.pending.card, ...(view.pending.later ? [view.pending.later] : [])] : view.floor;
   const floor = $('floor');
   floor.querySelectorAll('.floor-month').forEach((n) => n.remove());
   const onFloor = new Set(floorCards.map((c) => c.month));
@@ -121,7 +121,7 @@ function render(view: GameState) {
         grp.append(el);
       } else {
         const el = cardEl(c);
-        if (view.pending && c.id === view.pending.card.id) el.classList.add('held');
+        if (view.pending && (c.id === view.pending.card.id || c.id === view.pending.later?.id)) el.classList.add('held');
         grp.append(el);
       }
     }
@@ -137,7 +137,7 @@ function render(view: GameState) {
     const b = cardEl(c, 'button') as HTMLButtonElement;
     const canPlay = canPlayPhase && legal.some((a) => a.type === 'play' && a.cardId === c.id);
     b.disabled = !canPlay;
-    if (canPlay && onFloor.has(c.month)) b.classList.add('match');
+    if (canPlay && (onFloor.has(c.month) || c.month === 13)) b.classList.add('match');
     if (canPlay && specialFor(c, legal)) b.classList.add('triple');
     b.addEventListener('click', () => onHandCard(c));
     hand.append(b);
@@ -330,6 +330,7 @@ function describe(events: GameEvent[]): string {
     else if (e.type === 'shake') parts.push(`<b>${who(e.player)} 흔들기</b>`);
     else if (e.type === 'dummy') parts.push(`<b>${who(e.player)}</b> 빈 패`);
     else if (e.type === 'steal') parts.push(`<b>피 1장 뺏음</b>`);
+    else if ((e.type as string) === 'bonus') parts.push('<b>보너스 패</b>');
     else if (e.type === 'flip') parts.push(`뒤집기 ${cardName(byId(e.card))}`);
     else if (e.type === 'capture') parts.push(`<b>${e.cards.length}장 먹음</b>`);
     else if (e.type === 'place') parts.push('깔림');
@@ -365,37 +366,51 @@ async function perform(a: Action) {
   if (shake && shake.type === 'shake') { await reveal(`${who === ME ? '나' : '상대'} 흔들기!`, shake.cards); if (no !== gameNo) return; }
   const bomb = evs.find((e) => e.type === 'bomb');
 
-  // 1) 낸 패(폭탄이면 3장)를 바닥 같은 월 위로 "탁"
-  const v1: GameState = structuredClone(prev);
-  v1.pending = null;
-  const moved: string[] = [];
-  for (const e of evs) {
-    if (e.type === 'play') moved.push(e.card);
-    else if (e.type === 'choose' && prev.pending) moved.push(prev.pending.card.id);
-    else if (e.type === 'bomb') moved.push(...e.cards);
-  }
-  if (prev.pending && moved.includes(prev.pending.card.id)) v1.floor.push(prev.pending.card);
-  moveToFloor(v1, moved.filter((id) => id !== prev.pending?.card.id), who);
-  if (moved.length && !(prev.pending && moved.length === 1 && moved[0] === prev.pending.card.id)) {
-    moved.forEach((id) => fromOpp?.add(id));
-    if (bomb) { setTimeout(() => { banner('폭탄!'); sfx.bomb(); shakeScreen(true); sfx.buzz([60, 30, 90]); }, MOVE * 0.75); }
-    else slamAt(moved, 0.75);
-    await show(v1, { opp: fromOpp }, bomb ? MOVE + 650 : MOVE + BEAT);
+  // 1) 낸 패(폭탄이면 3장)를 바닥 같은 월 위로 "탁". 고르기 뒤라면 들고 있던 패를 바닥에 둔 채로 시작
+  let v: GameState = structuredClone(prev);
+  v.pending = null;
+  if (prev.pending) { v.floor.push(prev.pending.card); if (prev.pending.later) v.floor.push(prev.pending.later); }
+  const steps = evs.filter((e) => ['play', 'bomb', 'flip', 'bonus', 'draw', 'dummy'].includes(T(e)));
+  let lastFlip: string | null = null;
+  for (const e of steps) {
+    const ev = e as GameEvent & { card?: string; cards?: string[]; from?: string };
+    if (e.type === 'play' || e.type === 'bomb') {
+      const ids = e.type === 'play' ? [e.card] : e.cards;
+      v = structuredClone(v); moveToFloor(v, ids, who);
+      ids.forEach((id) => fromOpp?.add(id));
+      if (e.type === 'bomb') setTimeout(() => { banner('폭탄!'); sfx.bomb(); shakeScreen(true); sfx.buzz([60, 30, 90]); }, MOVE * 0.75);
+      else slamAt(ids, 0.75);
+      await show(v, { opp: fromOpp }, e.type === 'bomb' ? MOVE + 650 : MOVE + BEAT);
+    } else if (e.type === 'dummy') {
+      sfx.tick(); await wait(200);
+    } else if (e.type === 'flip') {
+      v = structuredClone(v);
+      const i = v.deck.findIndex((c) => c.id === e.card);
+      if (i >= 0) v.floor.push(v.deck.splice(i, 1)[0]);
+      lastFlip = e.card;
+      sfx.flip(); slamAt([e.card], 0.55, MOVE * 0.8);
+      await show(v, { deck: new Set([e.card]) }, MOVE + BEAT + 160);
+    } else if (T(e) === 'bonus' && ev.card) {
+      // 보너스 패: 바로 내 피 칸으로
+      v = structuredClone(v);
+      const id = ev.card;
+      const take = (arr: Card[]) => { const i = arr.findIndex((c) => c.id === id); return i >= 0 ? arr.splice(i, 1)[0] : null; };
+      const card = take(v.hands[who]) ?? take(v.floor) ?? take(v.deck) ?? byId(id);
+      v.captured[who].push(card);
+      if (ev.from === 'hand') fromOpp?.add(id);
+      banner('보너스!'); sfx.bonus();
+      await show(v, { opp: fromOpp, deck: ev.from === 'flip' && !document.querySelector(`[data-id="${CSS.escape(id)}"]`) ? new Set([id]) : undefined }, MOVE + BEAT + 120);
+    } else if (T(e) === 'draw' && ev.card) {
+      // 보너스를 낸 뒤 더미에서 한 장 받아 온다
+      v = structuredClone(v);
+      const i = v.deck.findIndex((c) => c.id === ev.card);
+      if (i >= 0) v.hands[who].push(v.deck.splice(i, 1)[0]);
+      sfx.flip();
+      await show(v, { deck: new Set([ev.card]) }, MOVE + BEAT);
+    }
     if (no !== gameNo) return;
   }
-  if (evs.some((e) => e.type === 'dummy')) { sfx.tick(); await wait(200); }
-
-  // 2) 더미에서 뒤집은 패
-  const flip = evs.find((e) => e.type === 'flip');
-  if (flip && flip.type === 'flip') {
-    const v2: GameState = structuredClone(v1);
-    const i = v2.deck.findIndex((c) => c.id === flip.card);
-    if (i >= 0) v2.floor.push(v2.deck.splice(i, 1)[0]);
-    sfx.flip();
-    slamAt([flip.card], 0.55, MOVE * 0.8);
-    await show(v2, { deck: new Set([flip.card]) }, MOVE + BEAT + 160);
-    if (no !== gameNo) return;
-  }
+  const flip = lastFlip;
 
   // 3) 뻑·쪽·따닥·뻑 먹기·싹쓸이 알림
   const special = evs.find((e) => ['ppeok', 'jjok', 'ttadak', 'ppeokEat', 'sweep'].includes(T(e)));
@@ -417,7 +432,7 @@ async function perform(a: Action) {
   }
   s = next;
   busy = false;
-  await show(s, flip && flip.type === 'flip' && !document.querySelector(`#floor [data-id="${CSS.escape(flip.card)}"]`) ? { deck: new Set([flip.card]) } : {});
+  await show(s, flip && !document.querySelector(`#floor [data-id="${CSS.escape(flip)}"]`) ? { deck: new Set([flip]) } : {});
   if (no !== gameNo) return;
   if (evs.some((e) => e.type === 'steal')) { sfx.steal(); }
   const goEv = evs.find((e) => e.type === 'go');
@@ -472,7 +487,7 @@ function newGame() {
   const seed = Math.floor(Math.random() * 1e9).toString(36);
   s = createGame(seed);
   slotOf.clear();
-  for (const c of [...s.hands[0], ...s.hands[1], ...s.floor, ...s.deck]) allCards.set(c.id, c);
+  for (const c of [...s.hands[0], ...s.hands[1], ...s.floor, ...s.deck, ...s.captured[0], ...s.captured[1]]) allCards.set(c.id, c);
   $('feed').innerHTML = '새 판 · 내가 선입니다';
   $('result').hidden = true;
   $('special').hidden = true;

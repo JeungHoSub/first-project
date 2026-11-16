@@ -6,7 +6,8 @@ export function cardValue(c: Card): number {
   if (c.kind === 'G') return 6;
   if (c.tag === 'godori' || c.tag === 'hong' || c.tag === 'cheong' || c.tag === 'cho') return 4;
   if (c.kind === 'Y' || c.kind === 'T') return 3;
-  if (c.kind === 'D') return 2.5;
+  if (c.kind === 'D' || c.kind === 'B2') return 2.5;
+  if (c.kind === 'B3') return 3.5;
   return 1;
 }
 
@@ -28,6 +29,9 @@ export function chooseAction(s: GameState): Action {
     opts.sort((a, b) => cardValue(b) - cardValue(a));
     return { type: 'choose', cardId: opts[0].id };
   }
+  // 보너스 패는 바로 낸다 (한 장 더 받음)
+  const bonusPlay = legal.find((a) => a.type === 'play' && s.hands[s.turn].find((c) => c.id === a.cardId)?.month === 13);
+  if (bonusPlay) return bonusPlay;
   // 폭탄이 되면 무조건 폭탄
   const bomb = legal.find((a) => a.type === 'bomb');
   if (bomb) return bomb;

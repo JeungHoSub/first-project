@@ -38,5 +38,15 @@ for i, fr in enumerate(frames):
     s = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{vb}" preserveAspectRatio="xMidYMid slice">{"".join(body)}</svg>'
     open(os.path.join(outdir, f'{cid}.svg'), 'w').write(s)
     out[cid] = s
+# 사용자 요청 보정: 12월 쌍피의 흰 테두리로 둘러싸인 북 몸통을 검정으로 채우고 흰 선도 검정으로 (2026-11-16)
+fill = '<path d="M423 -844.8 C423 -844.8 437.5 -829.2 469.8 -824.5 C500.8 -820 509 -824.8 509 -824.8 L509 -658.5 C509 -658.5 489.3 -665.2 476.5 -670.8 C463.8 -676.2 429 -696.8 422 -703.5 L423 -844.8 Z" fill="#000000"/>'
+d12 = out['12-D-0']
+parts = re.split(r'(?=<path )', d12)
+# 0: <svg ...>, 1: 바깥 빨강, 2: 안쪽 빨강 바탕 → 그 바로 뒤에 검은 면을 넣어 나머지 선이 위에 그려지게
+parts.insert(3, fill)
+d12 = ''.join(parts).replace('stroke="#ffffff"', 'stroke="#000000"')
+out['12-D-0'] = d12
+open(os.path.join(outdir, '12-D-0.svg'), 'w').write(d12)
+
 open(tsout, 'w').write('// 자동 생성: scripts/hwatu/split_cards.py — 직접 고치지 말 것\n// 화투 일러스트: 사용자가 제공한 디자인메카 화투 일러스트(.ai)에서 변환\nexport const HWATU_SVG: Record<string, string> = ' + json.dumps(out, ensure_ascii=False) + ';\n')
 print(len(out), 'cards;', sum(len(v) for v in out.values()) // 1024, 'KB')

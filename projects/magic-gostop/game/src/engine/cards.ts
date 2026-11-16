@@ -32,3 +32,16 @@ export function buildDeck(): Card[] {
 }
 
 export const ALL_CARDS: readonly Card[] = buildDeck();
+
+/** 보너스 패 (month 13). 2피짜리 two장 + 3피짜리 three장. */
+export function buildBonusCards(two: number, three: number): Card[] {
+  const out: Card[] = [];
+  for (let i = 0; i < two; i++) out.push({ id: `13-B2-${i}`, month: 13, kind: 'B2' });
+  for (let i = 0; i < three; i++) out.push({ id: `13-B3-${i}`, month: 13, kind: 'B3' });
+  return out;
+}
+
+export const BONUS_MONTH = 13;
+export const isBonus = (c: Card): boolean => c.month === BONUS_MONTH;
+/** 피 장수 값: 피 1 / 쌍피 2 / 보너스 2피 2 / 보너스 3피 3 */
+export const PI_VALUE: Record<string, number> = { P: 1, D: 2, B2: 2, B3: 3 };

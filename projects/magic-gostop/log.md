@@ -102,3 +102,16 @@
 - 결과물: game/src/ui/(art.ts, hwatu-data.ts, main.ts, body.html, style.css), game/src/ai/simple.ts, game/src/engine/*, game/scripts/hwatu/, outputs/stage1-preview.html (같은 링크 v6)
 - 다음 담당: 사용자 — 플레이 피드백
 - 넘길 메모: 디자인메카 일러스트의 이용 범위(앱 상업 배포 가능 여부)는 사용자가 구매·다운로드 조건 확인 필요. 예전 직접 그린 그림은 src/ui/art-drawn.ts에 보관
+
+## 2026-11-16 총괄 + developer
+- 한 일: 사용자 요청 반영
+  - 바닥 2장 고르기: 전용 창에서 깔려 있던 두 장만 크게 보여 주고 고르게 함(낸 패는 위에 "낸 패: …"로만 표시)
+  - 타격감: Web Audio로 합성한 효과음(탁/착/먹기/뻑 "뿌웅"/폭탄 "쾅"/흔들기/고/스톱/승패), 착지 때 눌림+퍼지는 고리+진동, 폭탄·뻑 때 화면 흔들림, 먹을 패 번쩍임, 소리 끄기 버튼(♪)
+  - 흔들기: 들고 있는 같은 월 3장을 화면 가운데 펼쳐 1.5초 보여 줌(나·상대 모두)
+  - 엔진(developer): 뻑·쪽·따닥·싹쓸이·뻑 먹기(남뻑 피 1, 자뻑 피 2), 손패+뒤집은 패를 함께 보고 정산하는 구조로 변경. 보너스 패 2피 2장 + 3피 1장(손패로 내면 획득 후 한 장 받아 다시 냄, 뒤집으면 획득 후 한 장 더 뒤집음, 첫 분배 바닥이면 선이 가져감)
+  - 12월 쌍피: 사용자 사진대로 흰 테두리 안쪽(북 몸통)을 검정으로 채움 — 변환 스크립트(split_cards.py)에 보정 단계로 넣음
+  - 보너스 패 그림은 .ai에 없어 직접 그림(노란 바탕 "보너스 2피/3피")
+- 확인: 테스트 73/73, 타입 검사 통과, 휴대폰 크기 자동 3판 완주(고르기 창·흔들기·보너스 확인, 오류 없음)
+- 결과물: game/src/engine/*, game/src/ui/(main.ts, sound.ts, art.ts, hwatu-data.ts, body.html, style.css), game/src/ai/simple.ts, game/scripts/hwatu/split_cards.py, outputs/stage1-preview.html (같은 링크 v7)
+- 다음 담당: 사용자 — 플레이 피드백
+- 넘길 메모: 남은 특수 룰은 총통, 피박·광박·멍따, 국진 선택, 나가리 배수 이월

@@ -5,7 +5,7 @@ import {
 } from '../src/engine';
 
 const byId = (id: string): Card => {
-  const c = ALL_CARDS.find((x) => x.id === id);
+  const c = ALL_CARDS.find((x) => x.id === id) ?? (id.startsWith('13') ? { id, month: 13, kind: id.includes('B3') ? 'B3' : 'B2' } as Card : undefined);
   if (!c) throw new Error('없는 카드 ' + id);
   return { ...c };
 };
@@ -13,17 +13,21 @@ const cards = (...ids: string[]) => ids.map(byId);
 const pts = (...ids: string[]) => score(cards(...ids));
 
 /** 지정한 손패/바닥/더미로 상태를 만든다 (나머지 카드는 상대 손패/더미로 채움). */
-function setup(o: { hand: string[]; floor: string[]; deck: string[]; captured?: string[] }): GameState {
-  const s = createGame('fixed');
-  const used = new Set([...o.hand, ...o.floor, ...o.deck, ...(o.captured ?? [])]);
+function setup(o: { hand: string[]; floor: string[]; deck: string[]; captured?: string[]; hand1?: string[]; captured1?: string[]; emptyDeck?: boolean }): GameState {
+  const s = createGame('fixed', { bonus: { two: 0, three: 0 } });
+  const used = new Set([...o.hand, ...o.floor, ...o.deck, ...(o.captured ?? []), ...(o.hand1 ?? []), ...(o.captured1 ?? [])]);
   const rest = ALL_CARDS.filter((c) => !used.has(c.id)).map((c) => ({ ...c }));
-  s.hands = [cards(...o.hand), rest.splice(0, 10)];
+  s.hands = [cards(...o.hand), o.hand1 ? cards(...o.hand1) : rest.splice(0, 10)];
   s.floor = cards(...o.floor);
-  s.deck = [...cards(...o.deck), ...rest];
-  s.captured = [cards(...(o.captured ?? [])), []];
+  if (o.emptyDeck) s.hands[1].push(...rest); // 더미를 비우되 카드는 상대 손패에 보관
+  s.deck = o.emptyDeck ? cards(...o.deck) : [...cards(...o.deck), ...rest];
+  s.captured = [cards(...(o.captured ?? [])), cards(...(o.captured1 ?? []))];
   return s;
 }
 const play = (s: GameState, id: string) => applyAction(s, { type: 'play', cardId: id });
+const evTypes = (s: GameState) => s.events.map((e) => e.type).filter((t) => t !== 'deal');
+const ids = (cs: Card[]) => cs.map((c) => c.id).sort();
+const fmonth = (s: GameState, m: number) => ids(s.floor.filter((c) => c.month === m));
 
 describe('카드 데이터', () => {
   it('48장, id 유일, 월 12개 x 4장', () => {
@@ -57,8 +61,8 @@ describe('셔플/분배', () => {
     expect(ALL_CARDS.map((c) => c.id)).toEqual(before);
     expect(new Set(r.map((c) => c.id)).size).toBe(48);
   });
-  it('손패 10 / 바닥 8 / 더미 20, 선은 0', () => {
-    const s = createGame(1);
+  it('손패 10 / 바닥 8 / 더미 20, 선은 0 (보너스 끄면 48장)', () => {
+    const s = createGame(1, { bonus: { two: 0, three: 0 } });
     expect([s.hands[0].length, s.hands[1].length, s.floor.length, s.deck.length]).toEqual([10, 10, 8, 20]);
     expect(s.turn).toBe(0);
     expect(countCards(s)).toBe(48);
@@ -83,18 +87,22 @@ describe('매칭 0/1/2/3장', () => {
     expect(s.turn).toBe(1);
   });
   it('2장: 선택 요청 상태로 멈추고, 고른 카드만 먹는다', () => {
-    let s = play(setup({ hand: ['03-P-0'], floor: ['03-T-0', '03-P-1'], deck: ['09-P-0'] }), '03-P-0');
+    const s0 = setup({ hand: ['03-P-0'], floor: ['03-T-0', '03-P-1'], deck: ['09-P-0'] });
+    const deckBefore = s0.deck.length;
+    let s = play(s0, '03-P-0');
     expect(s.phase).toBe('chooseMatch');
     expect(s.turn).toBe(0);
     expect(countCards(s)).toBe(48);
     const acts = getLegalActions(s);
     expect(acts).toEqual([{ type: 'choose', cardId: '03-T-0' }, { type: 'choose', cardId: '03-P-1' }]);
-    const before = s.deck.length;
+    // 뒤집기는 고르기 전에 이미 끝나 있고(더미 19장), 그 패는 정산 대기(pending.later)
+    expect(s.deck).toHaveLength(deckBefore - 1);
+    expect(s.pending?.later?.id).toBe('09-P-0');
     s = applyAction(s, { type: 'choose', cardId: '03-T-0' });
     expect(s.captured[0].map((c) => c.id).sort()).toEqual(['03-P-0', '03-T-0']);
-    expect(s.floor.map((c) => c.id)).toContain('03-P-1');
-    // 선택 후 더미 뒤집기가 이어져 턴이 넘어간다
-    expect(s.deck.length).toBe(before - 1);
+    expect(s.floor.map((c) => c.id).sort()).toEqual(['03-P-1', '09-P-0']);
+    // 선택 후 대기 중이던 뒤집은 패가 정산되어 턴이 넘어간다
+    expect(s.deck).toHaveLength(deckBefore - 1);
     expect(s.turn).toBe(1);
   });
   it('2장: 뒤집은 패가 2장 매칭이면 그때 선택 요청', () => {
@@ -110,15 +118,21 @@ describe('매칭 0/1/2/3장', () => {
     expect(s.captured[0]).toHaveLength(4);
     expect(s.floor.map((c) => c.id).sort()).toEqual(['05-P-0', '09-P-0']);
   });
-  it('손패와 더미가 같은 월이어도 상태가 깨지지 않는다 (순서대로 처리)', () => {
-    // 바닥에 없음 -> 손패 놓임 -> 더미가 같은 월이라 먹음
-    let s = play(setup({ hand: ['03-P-0'], floor: ['01-P-0'], deck: ['03-P-1'] }), '03-P-0');
+  it('특수 룰을 끄면 손패와 더미가 같은 월이어도 1단계 단순 처리 (손패 -> 더미 순서)', () => {
+    const off = (s: GameState) => { Object.assign(s.options.special, { ppeok: false, ttadak: false, jjok: false, sweep: false }); return s; };
+    let s = play(off(setup({ hand: ['03-P-0'], floor: ['01-P-0'], deck: ['03-P-1'] })), '03-P-0');
     expect(s.captured[0].map((c) => c.id).sort()).toEqual(['03-P-0', '03-P-1']);
     expect(countCards(s)).toBe(48);
-    // 바닥 1장 + 손패 먹기 + 더미 같은 월(남은 바닥 0장이면 놓임)
-    s = play(setup({ hand: ['03-P-0'], floor: ['03-T-0'], deck: ['03-P-1'] }), '03-P-0');
+    s = play(off(setup({ hand: ['03-P-0'], floor: ['03-T-0'], deck: ['03-P-1'] })), '03-P-0');
     expect(s.floor.map((c) => c.id)).toContain('03-P-1');
+    expect(s.ppeok).toEqual({});
     expect(countCards(s)).toBe(48);
+    // 바닥 2장: 끄면 고르기 후 더미가 남은 1장과 짝
+    let t = play(off(setup({ hand: ['03-P-0'], floor: ['03-T-0', '03-P-1'], deck: ['03-G-0'] })), '03-P-0');
+    expect(t.phase).toBe('chooseMatch');
+    t = applyAction(t, { type: 'choose', cardId: '03-T-0' });
+    expect(t.captured[0]).toHaveLength(4);
+    expect(t.floor).toHaveLength(0);
   });
   it('불법 행동은 예외, 원본 state는 불변', () => {
     const s = setup({ hand: ['03-P-0'], floor: [], deck: ['05-P-0'] });
@@ -387,20 +401,341 @@ describe('폭탄', () => {
   });
 });
 
+describe('뻑 / 뻑 먹기', () => {
+  const ppeokSetup = () => setup({ hand: ['05-P-0'], floor: ['05-Y-0', '01-P-0'], deck: ['05-T-0', '09-P-0', '10-P-0', '11-P-0'], hand1: ['05-P-1', '12-T-0', '06-P-0'], captured: ['07-P-0', '07-P-1'] });
+  it('바닥 1장 + 손패 짝 + 뒤집은 패 같은 월 -> 3장 모두 바닥에 남고 뻑 월 기록, 이벤트 순서', () => {
+    const s = play(ppeokSetup(), '05-P-0');
+    expect(fmonth(s, 5)).toEqual(['05-P-0', '05-T-0', '05-Y-0']);
+    expect(s.captured[0]).toHaveLength(2); // 먹은 것 없음 (원래 갖고 있던 2장뿐)
+    expect(s.ppeok).toEqual({ 5: 0 });
+    expect(s.turn).toBe(1);
+    expect(countCards(s)).toBe(48);
+    expect(evTypes(s)).toEqual(['play', 'flip', 'ppeok']);
+    const e = s.events.find((x) => x.type === 'ppeok') as { cards: string[] };
+    expect(e).toMatchObject({ player: 0, month: 5 });
+    expect(e.cards.slice().sort()).toEqual(['05-P-0', '05-T-0', '05-Y-0']);
+  });
+  it('ppeok 옵션을 끄면 뻑 없이 단순 처리', () => {
+    const s0 = ppeokSetup();
+    s0.options.special.ppeok = false;
+    const s = play(s0, '05-P-0');
+    expect(ids(s.captured[0])).toEqual(['05-P-0', '05-Y-0', '07-P-0', '07-P-1']);
+    expect(s.floor.map((c) => c.id)).toContain('05-T-0');
+    expect(s.ppeok).toEqual({});
+  });
+  it('남이 싼 뻑을 손패로 먹으면 4장 + 상대 피 1장, 뻑 기록 삭제, 이벤트 순서', () => {
+    let s = play(ppeokSetup(), '05-P-0'); // 0이 뻑
+    s = play(s, '05-P-1'); // 1이 4번째 카드
+    expect(ids(s.captured[1]).filter((i) => i.startsWith('05'))).toEqual(['05-P-0', '05-P-1', '05-T-0', '05-Y-0']);
+    expect(s.captured[1].filter((c) => c.kind === 'P' && c.month === 7)).toHaveLength(1); // 0의 7월 피 1장 이동
+    expect(s.captured[0]).toHaveLength(1);
+    expect(s.ppeok).toEqual({});
+    const after = s.events.slice(s.events.findIndex((e) => e.type === 'ppeok') + 1).map((e) => e.type);
+    expect(after).toEqual(['play', 'flip', 'ppeokEat', 'capture', 'place', 'steal']);
+    expect(s.events.find((e) => e.type === 'ppeokEat')).toEqual({ type: 'ppeokEat', player: 1, month: 5, self: false });
+  });
+  it('자뻑(자기가 싼 뻑을 자기가 먹음)은 상대 피 2장', () => {
+    let s = setup({ hand: ['05-P-0', '05-P-1'], floor: ['05-Y-0', '01-P-0'], deck: ['05-T-0', '09-P-0', '10-P-0'], hand1: ['12-T-0', '06-P-0'], captured1: ['07-P-0', '07-P-1', '08-P-0'] });
+    s = play(s, '05-P-0'); // 뻑
+    s = play(s, '12-T-0');
+    s = play(s, '05-P-1'); // 자뻑
+    expect(s.events.find((e) => e.type === 'ppeokEat')).toEqual({ type: 'ppeokEat', player: 0, month: 5, self: true });
+    expect(s.events.filter((e) => e.type === 'steal')).toHaveLength(2);
+    expect(s.captured[1]).toHaveLength(1);
+    expect(s.captured[0].filter((c) => c.kind === 'P' && c.month !== 5)).toHaveLength(2);
+  });
+  it('뒤집은 패로 뻑을 먹어도 된다 (남의 뻑: 피 1장)', () => {
+    let s = setup({ hand: ['05-P-0'], floor: ['05-Y-0', '01-P-0'], deck: ['05-T-0', '05-P-1', '10-P-0'], hand1: ['12-T-0', '06-P-0'], captured: ['07-P-0'] });
+    s = play(s, '05-P-0'); // 0 뻑
+    s = play(s, '12-T-0'); // 1: 손패 놓고 뒤집은 05-P-1로 4장 먹기
+    expect(ids(s.captured[1]).filter((i) => i.startsWith('05'))).toEqual(['05-P-0', '05-P-1', '05-T-0', '05-Y-0']);
+    expect(s.captured[1].some((c) => c.id === '07-P-0')).toBe(true);
+    expect(s.ppeok).toEqual({});
+  });
+  it('3연뻑 특수 처리 없음: 한 사람이 연속 뻑해도 그냥 기록만', () => {
+    let s = setup({ hand: ['05-P-0', '06-P-0', '07-P-0'], floor: ['05-Y-0', '06-Y-0', '07-Y-0', '01-P-0'], deck: ['05-T-0', '09-P-0', '06-T-0', '10-P-1', '07-T-0'], hand1: ['12-T-0', '11-P-0', '10-P-0'] });
+    s = play(s, '05-P-0'); s = play(s, '12-T-0');
+    s = play(s, '06-P-0'); s = play(s, '11-P-0');
+    s = play(s, '07-P-0');
+    expect(s.ppeok).toEqual({ 5: 0, 6: 0, 7: 0 });
+    expect(s.result).toBeNull();
+  });
+  it('처음부터 바닥에 깔린 3장은 뻑이 아니라서 먹어도 피를 가져오지 않는다', () => {
+    const s = play(setup({ hand: ['03-P-0'], floor: ['03-T-0', '03-P-1', '03-G-0', '05-P-0'], deck: ['09-P-0'], captured1: ['02-P-0'] }), '03-P-0');
+    expect(s.captured[0]).toHaveLength(4);
+    expect(s.captured[1]).toHaveLength(1);
+    expect(evTypes(s)).toEqual(['play', 'flip', 'capture', 'place']);
+  });
+});
+
+describe('쪽 / 따닥', () => {
+  it('쪽: 손패가 놓이고 뒤집은 패가 같은 월 -> 2장 먹고 상대 피 1장', () => {
+    const s = play(setup({ hand: ['03-P-0'], floor: ['01-P-0'], deck: ['03-P-1'], captured1: ['02-P-0', '12-D-0'] }), '03-P-0');
+    expect(ids(s.captured[0])).toEqual(['02-P-0', '03-P-0', '03-P-1']);
+    expect(ids(s.captured[1])).toEqual(['12-D-0']);
+    expect(s.floor.map((c) => c.id)).toEqual(['01-P-0']);
+    expect(evTypes(s)).toEqual(['play', 'flip', 'jjok', 'capture', 'steal']);
+    expect(s.events.find((e) => e.type === 'jjok')).toEqual({ type: 'jjok', player: 0, month: 3 });
+  });
+  it('따닥: 바닥 2장 + 손패 + 뒤집은 패 -> 4장 먹고 상대 피 1장, 고르기 없음', () => {
+    const s = play(setup({ hand: ['03-P-0'], floor: ['03-T-0', '03-G-0', '01-P-0'], deck: ['03-P-1'], captured1: ['02-P-0'] }), '03-P-0');
+    expect(s.phase).toBe('play'); // chooseMatch로 멈추지 않는다
+    expect(s.pending).toBeNull();
+    expect(ids(s.captured[0])).toEqual(['02-P-0', '03-G-0', '03-P-0', '03-P-1', '03-T-0']);
+    expect(s.captured[1]).toHaveLength(0);
+    expect(evTypes(s)).toEqual(['play', 'flip', 'ttadak', 'capture', 'steal']);
+    expect(s.turn).toBe(1);
+  });
+  it('따닥 옵션을 끄면 고르기 -> 남은 1장과 뒤집은 패가 짝 (피 가져오기 없음)', () => {
+    const s0 = setup({ hand: ['03-P-0'], floor: ['03-T-0', '03-G-0', '01-P-0'], deck: ['03-P-1'], captured1: ['02-P-0'] });
+    s0.options.special.ttadak = false;
+    let s = play(s0, '03-P-0');
+    expect(s.phase).toBe('chooseMatch');
+    s = applyAction(s, { type: 'choose', cardId: '03-T-0' });
+    expect(ids(s.captured[0])).toEqual(['03-G-0', '03-P-0', '03-P-1', '03-T-0']);
+    expect(s.captured[1]).toHaveLength(1);
+  });
+  it('쪽 옵션을 끄면 단순 처리', () => {
+    const s0 = setup({ hand: ['03-P-0'], floor: ['01-P-0'], deck: ['03-P-1'], captured1: ['02-P-0'] });
+    s0.options.special.jjok = false;
+    const s = play(s0, '03-P-0');
+    expect(s.captured[1]).toHaveLength(1);
+    expect(ids(s.captured[0])).toEqual(['03-P-0', '03-P-1']);
+  });
+});
+
+describe('싹쓸이', () => {
+  it('차례가 끝났을 때 바닥이 비면 상대 피 1장 (sweep 이벤트 -> steal)', () => {
+    const s = play(setup({ hand: ['03-P-0'], floor: ['03-T-0', '05-P-0'], deck: ['05-P-1'], captured1: ['02-P-0', '02-P-1'] }), '03-P-0');
+    expect(s.floor).toHaveLength(0);
+    expect(s.captured[1]).toHaveLength(1);
+    expect(evTypes(s)).toEqual(['play', 'flip', 'capture', 'capture', 'sweep', 'steal']);
+  });
+  it('뻑이면 바닥이 남으므로 싹쓸이 아님 / 옵션을 끄면 없음', () => {
+    const s = play(setup({ hand: ['05-P-0'], floor: ['05-Y-0'], deck: ['05-T-0'] }), '05-P-0');
+    expect(evTypes(s)).not.toContain('sweep');
+    const s0 = setup({ hand: ['03-P-0'], floor: ['03-T-0', '05-P-0'], deck: ['05-P-1'], captured1: ['02-P-0'] });
+    s0.options.special.sweep = false;
+    const t = play(s0, '03-P-0');
+    expect(t.floor).toHaveLength(0);
+    expect(t.captured[1]).toHaveLength(1);
+    expect(evTypes(t)).not.toContain('sweep');
+  });
+  it('마지막 턴(더미·손패 소진)에도 인정 (R16)', () => {
+    const s = play(setup({ hand: ['03-P-0'], floor: ['03-T-0'], deck: [], emptyDeck: true, hand1: [], captured1: ['02-P-0'] }), '03-P-0');
+    // 더미가 비어 flip 없이 바로 정산
+    expect(evTypes(s)).toEqual(['play', 'capture', 'sweep', 'steal']);
+    expect(s.captured[1]).toHaveLength(0);
+  });
+  it('손패와 뒤집은 패 모두 먹어 비면 싹쓸이, 쪽 후에도 바닥이 비면 겹쳐서 피 2장', () => {
+    const s = play(setup({ hand: ['03-P-0'], floor: [], deck: ['03-P-1'], captured1: ['02-P-0', '02-P-1', '04-P-0'] }), '03-P-0');
+    expect(evTypes(s)).toEqual(['play', 'flip', 'jjok', 'capture', 'steal', 'sweep', 'steal']);
+    expect(s.captured[1]).toHaveLength(1);
+  });
+});
+
+describe('피 가져오기 (R18)', () => {
+  const jjok = (c1: string[]) => play(setup({ hand: ['03-P-0'], floor: ['01-P-0'], deck: ['03-P-1'], captured1: c1 }), '03-P-0');
+  it('일반 피 우선, 없으면 쌍피, 피가 없으면 못 가져옴(열끗·광·띠는 안 가져옴)', () => {
+    let s = jjok(['12-D-0', '02-P-0']);
+    expect(ids(s.captured[1])).toEqual(['12-D-0']);
+    s = jjok(['12-D-0', '01-G-0']);
+    expect(ids(s.captured[1])).toEqual(['01-G-0']);
+    expect(s.captured[0].some((c) => c.id === '12-D-0')).toBe(true);
+    s = jjok(['01-G-0', '02-Y-0']);
+    expect(s.captured[1]).toHaveLength(2);
+    expect(s.events.some((e) => e.type === 'steal')).toBe(false);
+  });
+  it('자뻑 2장인데 상대 피가 1장뿐이면 1장만 가져온다', () => {
+    let s = setup({ hand: ['05-P-0', '05-P-1'], floor: ['05-Y-0', '01-P-0'], deck: ['05-T-0', '09-P-0', '10-P-0'], hand1: ['12-T-0', '06-P-0'], captured1: ['07-P-0', '01-G-0'] });
+    s = play(play(play(s, '05-P-0'), '12-T-0'), '05-P-1');
+    expect(s.events.filter((e) => e.type === 'steal')).toHaveLength(1);
+    expect(ids(s.captured[1])).toEqual(['01-G-0']);
+  });
+  it('뻑 먹기로 4장을 먹어 바닥이 비면 싹쓸이 피도 따로 가져온다', () => {
+    let s = setup({ hand: ['05-P-0'], floor: ['05-Y-0'], deck: ['05-T-0', '09-P-0'], hand1: ['05-P-1', '12-T-0'], captured: ['07-P-0', '08-P-0'] });
+    s = play(s, '05-P-0'); // 뻑 (바닥: 05 x3)
+    s = play(s, '05-P-1'); // 1이 4장 먹기, 뒤집은 09-P-0은 놓임 -> 바닥 비지 않음
+    expect(s.floor.map((c) => c.id)).toEqual(['09-P-0']);
+    expect(s.captured[0]).toHaveLength(1);
+  });
+});
+
+describe('고르기 상태와의 조합', () => {
+  it('손패가 바닥 2장과 짝이고 뒤집은 패가 다른 월이면: 뒤집은 뒤 고르기 대기(source=hand), 이벤트는 flip까지만', () => {
+    const s = play(setup({ hand: ['03-P-0'], floor: ['03-T-0', '03-P-1'], deck: ['09-P-0'] }), '03-P-0');
+    expect(s.phase).toBe('chooseMatch');
+    expect(s.pending).toMatchObject({ source: 'hand', card: { id: '03-P-0' }, later: { id: '09-P-0' } });
+    expect(evTypes(s)).toEqual(['play', 'flip']); // flip 전에 capture 없음, 정산은 선택 뒤
+    expect(countCards(s)).toBe(48);
+  });
+  it('고른 뒤 뒤집은 패가 또 2장 중 선택이 필요하면 다시 대기한다 (source=flip)', () => {
+    let s = play(setup({ hand: ['03-P-0'], floor: ['03-T-0', '03-P-1', '09-P-1', '09-T-0'], deck: ['09-P-0'] }), '03-P-0');
+    s = applyAction(s, { type: 'choose', cardId: '03-T-0' });
+    expect(s.phase).toBe('chooseMatch');
+    expect(s.pending).toMatchObject({ source: 'flip', card: { id: '09-P-0' }, later: null });
+    s = applyAction(s, { type: 'choose', cardId: '09-T-0' });
+    expect(s.phase).toBe('play');
+    expect(s.turn).toBe(1);
+    expect(ids(s.captured[0])).toEqual(['03-P-0', '03-T-0', '09-P-0', '09-T-0']);
+    expect(evTypes(s)).toEqual(['play', 'flip', 'choose', 'capture', 'choose', 'capture']);
+  });
+  it('고르기 대기 중에 모인 피 가져오기는 마지막 선택 뒤 한꺼번에 (capture들 -> steal)', () => {
+    // 손패 03: 2장 중 고르기, 뒤집은 05가 뻑 월(상대 뻑)을 먹음
+    let s = setup({ hand: ['03-P-0'], floor: ['03-T-0', '03-P-1', '05-Y-0', '05-P-0', '05-T-0'], deck: ['05-P-1'], captured1: ['02-P-0'] });
+    s.ppeok = { 5: 1 };
+    s = play(s, '03-P-0');
+    expect(s.phase).toBe('chooseMatch');
+    expect(evTypes(s)).toEqual(['play', 'flip', 'ppeokEat']);
+    expect(s.stealDue).toBe(1);
+    s = applyAction(s, { type: 'choose', cardId: '03-T-0' });
+    expect(evTypes(s)).toEqual(['play', 'flip', 'ppeokEat', 'choose', 'capture', 'capture', 'steal']);
+    expect(s.stealDue).toBe(0);
+    expect(s.captured[1]).toHaveLength(0);
+  });
+  it('손패 2장 중 고르기 상황이어도 뒤집은 패가 같은 월이면 따닥 (고르기 없음)', () => {
+    const s = play(setup({ hand: ['03-P-0'], floor: ['03-T-0', '03-P-1'], deck: ['03-G-0'] }), '03-P-0');
+    expect(s.phase).toBe('play');
+    expect(s.captured[0]).toHaveLength(4);
+  });
+  it('더미가 비어 flip이 없으면 바로 정산 (2장 중 고르기는 손패 선택으로 대기)', () => {
+    let s = play(setup({ hand: ['03-P-0'], floor: ['03-T-0', '03-P-1'], deck: [], emptyDeck: true, hand1: ['12-T-0'] }), '03-P-0');
+    expect(s.phase).toBe('chooseMatch');
+    expect(s.pending?.later).toBeNull();
+    s = applyAction(s, { type: 'choose', cardId: '03-P-1' });
+    expect(evTypes(s)).toEqual(['play', 'choose', 'capture']);
+    expect(s.turn).toBe(1);
+  });
+  it('폭탄/빈 패 뒤 뒤집은 패도 같은 규칙: 뻑 먹기 가능', () => {
+    let s = setup({ hand: ['03-P-0', '03-P-1', '03-T-0', '04-P-0'], floor: ['03-G-0', '05-Y-0', '05-T-0', '05-P-1'], deck: ['05-P-0'], captured1: ['02-P-0'] });
+    s.ppeok = { 5: 1 };
+    s = applyAction(s, { type: 'bomb', month: 3 });
+    expect(s.events.filter((e) => e.type === 'steal')).toHaveLength(1); // 폭탄 피 1장 (상대 피 1장뿐)
+    expect(s.captured[1]).toHaveLength(0);
+    expect(s.events.some((e) => e.type === 'ppeokEat')).toBe(true);
+    expect(s.ppeok).toEqual({});
+    expect(countCards(s)).toBe(48);
+  });
+});
+
+describe('보너스 패 (2피 2장 + 3피 1장)', () => {
+  const BON = { bonus: { two: 2, three: 1 } };
+  it('기본 덱은 51장, 끄면 48장, 보너스는 month 13 / B2 B3', () => {
+    expect(countCards(createGame(7))).toBe(51);
+    expect(countCards(createGame(7, { bonus: { two: 0, three: 0 } }))).toBe(48);
+    const s = createGame(7);
+    const all = [...s.hands[0], ...s.hands[1], ...s.floor, ...s.deck, ...s.captured[0], ...s.captured[1]];
+    expect(all.filter((c) => c.month === 13).map((c) => c.id).sort()).toEqual(['13-B2-0', '13-B2-1', '13-B3-0']);
+    expect(all.filter((c) => c.month === 13).map((c) => c.kind).sort()).toEqual(['B2', 'B2', 'B3']);
+  });
+  it('점수: 피 장수는 P1 D2 B2=2 B3=3', () => {
+    const p = (...i: string[]) => score(cards2(...i)).details.find((d) => d.key === 'pi')?.label;
+    const cards2 = (...ids: string[]) => ids.map((id) => (id.startsWith('13') ? { id, month: 13, kind: id.includes('B3') ? 'B3' : 'B2' } as Card : byId(id)));
+    // 일반 피 5 + B3(3) + B2(2) = 10장
+    expect(p('01-P-0', '01-P-1', '02-P-0', '02-P-1', '03-P-0', '13-B3-0', '13-B2-0')).toBe('피 10장');
+    expect(p('01-P-0', '01-P-1', '02-P-0', '02-P-1', '03-P-0', '13-B3-0')).toBeUndefined(); // 8장
+  });
+  const bonusSetup = (o: Parameters<typeof setup>[0], bonusHand: string[] = []) => {
+    const s = setup(o);
+    for (const id of bonusHand) s.hands[0].push({ id, month: 13, kind: id.includes('B3') ? 'B3' : 'B2' });
+    return s;
+  };
+  it('손패의 보너스: 바로 획득 + 더미에서 손패로 가져오고 같은 사람이 다시 낸다 (차례 유지)', () => {
+    let s = bonusSetup({ hand: ['03-P-0'], floor: ['01-P-0'], deck: ['05-P-0', '06-P-0'] }, ['13-B2-0']);
+    expect(getLegalActions(s)).toContainEqual({ type: 'play', cardId: '13-B2-0' });
+    s = play(s, '13-B2-0');
+    expect(s.turn).toBe(0);
+    expect(s.phase).toBe('play');
+    expect(s.captured[0].map((c) => c.id)).toEqual(['13-B2-0']);
+    expect(s.hands[0].map((c) => c.id)).toEqual(['03-P-0', '05-P-0']);
+    expect(evTypes(s)).toEqual(['bonus', 'draw']);
+    expect(s.events[1]).toEqual({ type: 'bonus', player: 0, card: '13-B2-0', from: 'hand' });
+    s = play(s, '05-P-0');
+    expect(s.turn).toBe(1);
+  });
+  it('더미가 비었으면 획득만 하고 이어서 손패를 낸다 / 손패가 없으면 차례 종료', () => {
+    let s = bonusSetup({ hand: ['03-P-0'], floor: ['01-P-0'], deck: [], emptyDeck: true, hand1: ['12-T-0'] }, ['13-B3-0']);
+    s = play(s, '13-B3-0');
+    expect(s.turn).toBe(0);
+    expect(evTypes(s)).toEqual(['bonus']);
+    expect(getLegalActions(s).length).toBeGreaterThan(0);
+    let t = bonusSetup({ hand: [], floor: ['01-P-0'], deck: [], emptyDeck: true, hand1: ['12-T-0'] }, ['13-B3-0']);
+    t = play(t, '13-B3-0');
+    expect(t.turn).toBe(1); // 교착 없이 상대에게 넘어간다
+    expect(t.phase).toBe('play');
+  });
+  it('더미에서 뒤집은 보너스: 획득하고 한 장 더 뒤집는다 (연속 가능), 이벤트 순서', () => {
+    let s = setup({ hand: ['03-P-0'], floor: ['03-T-0'], deck: ['13-B2-0', '13-B3-0', '05-P-0'] });
+    s = play(s, '03-P-0');
+    expect(evTypes(s).slice(0, 7)).toEqual(['play', 'flip', 'bonus', 'flip', 'bonus', 'flip', 'capture']);
+    expect(s.events.filter((e) => e.type === 'bonus').map((e) => (e as { from: string }).from)).toEqual(['flip', 'flip']);
+    expect(ids(s.captured[0]).filter((i) => i.startsWith('13'))).toEqual(['13-B2-0', '13-B3-0']);
+    expect(s.turn).toBe(1);
+  });
+  it('첫 분배: 바닥의 보너스는 선이 가져가고 더미에서 채운다 (바닥은 항상 8장, 보너스 없음)', () => {
+    let found = 0;
+    for (let i = 0; i < 400 && found < 3; i++) {
+      const s = createGame('bd-' + i, { ...BON, dealer: i % 2 as 0 | 1 });
+      const ev = s.events.filter((e) => e.type === 'bonus');
+      expect(s.floor).toHaveLength(8);
+      expect(s.floor.some((c) => c.month === 13)).toBe(false);
+      expect(countCards(s)).toBe(51);
+      if (ev.length) {
+        found++;
+        for (const e of ev) {
+          expect(e).toMatchObject({ type: 'bonus', player: s.options.dealer, from: 'deal' });
+        }
+        expect(s.captured[s.options.dealer]).toHaveLength(ev.length);
+        expect(s.deck.length).toBe(23 - ev.length);
+      }
+    }
+    expect(found).toBeGreaterThan(0);
+  });
+  it('피 뺏기 우선순위: 일반 피 -> 쌍피 -> B2 -> B3', () => {
+    const run = (c1: Card[]) => {
+      const s = setup({ hand: ['03-P-0'], floor: ['01-P-0'], deck: ['03-P-1'] });
+      s.captured[1] = c1;
+      return applyAction(s, { type: 'play', cardId: '03-P-0' });
+    };
+    const B2: Card = { id: '13-B2-0', month: 13, kind: 'B2' }, B3: Card = { id: '13-B3-0', month: 13, kind: 'B3' };
+    let s = run([B3, B2, byId('12-D-0'), byId('02-P-0')]);
+    expect(ids(s.captured[1])).toEqual(['12-D-0', '13-B2-0', '13-B3-0'].sort());
+    s = run([B3, B2, byId('12-D-0')]);
+    expect(ids(s.captured[1])).toEqual(['13-B2-0', '13-B3-0']);
+    s = run([B3, B2]);
+    expect(ids(s.captured[1])).toEqual(['13-B3-0']);
+    s = run([B3]);
+    expect(ids(s.captured[1])).toEqual([]);
+  });
+  it('보너스 끄면 보너스 이벤트 없음 (48장 그대로)', () => {
+    for (let i = 0; i < 30; i++) {
+      const rng = createRng('nb-' + i);
+      let s = createGame('nb-' + i, { bonus: { two: 0, three: 0 } });
+      while (s.phase !== 'ended') {
+        const a = getLegalActions(s);
+        s = applyAction(s, a[Math.floor(rng() * a.length)]);
+        expect(countCards(s)).toBe(48);
+      }
+      expect(s.events.some((e) => e.type === 'bonus' || e.type === 'draw')).toBe(false);
+    }
+  });
+});
+
 describe('자동 대전 1000판', () => {
   it('예외 없이 끝나고 카드 총합 48이 항상 보존된다', () => {
     const kinds = { win: 0, nagari: 0 };
-    const seen = { shake: 0, bomb: 0, dummy: 0, steal: 0 };
+    const seen = { shake: 0, bomb: 0, dummy: 0, steal: 0, ppeok: 0, ppeokEat: 0, jjok: 0, ttadak: 0, sweep: 0, bonus: 0, draw: 0 };
     for (let i = 0; i < 1000; i++) {
       const rng = createRng('fuzz-' + i);
       let s = createGame('fuzz-' + i);
+      expect(countCards(s)).toBe(51);
       let steps = 0;
       while (s.phase !== 'ended') {
         const acts = getLegalActions(s);
         expect(acts.length).toBeGreaterThan(0);
         s = applyAction(s, acts[Math.floor(rng() * acts.length)] as Action);
-        expect(countCards(s)).toBe(48);
-        expect(new Set([...s.hands[0], ...s.hands[1], ...s.floor, ...s.deck, ...s.captured[0], ...s.captured[1], ...(s.pending ? [s.pending.card] : [])].map((c) => c.id)).size).toBe(48);
+        expect(countCards(s)).toBe(51);
+        expect(new Set([...s.hands[0], ...s.hands[1], ...s.floor, ...s.deck, ...s.captured[0], ...s.captured[1], ...(s.pending ? [s.pending.card] : []), ...(s.pending?.later ? [s.pending.later] : [])].map((c) => c.id)).size).toBe(51);
         if (++steps > 200) throw new Error('무한 루프 의심');
       }
       for (const e of s.events) if (e.type in seen) seen[e.type as keyof typeof seen]++;
@@ -411,5 +746,6 @@ describe('자동 대전 1000판', () => {
     expect(kinds.win + kinds.nagari).toBe(1000);
     expect(seen.shake + seen.bomb).toBeGreaterThan(0); // 새 액션이 실제로 섞여 나왔는지
     expect(seen.dummy).toBeGreaterThan(0);
+    for (const k of ['ppeok', 'ppeokEat', 'jjok', 'ttadak', 'sweep', 'bonus', 'draw', 'steal'] as const) expect(seen[k], k).toBeGreaterThan(0);
   });
 });

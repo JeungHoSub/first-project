@@ -144,7 +144,7 @@ button.card:disabled { cursor: default; }
   border-radius: 20px; color: var(--text); background: linear-gradient(180deg, #1f4537, #11281f); border: 1px solid var(--line); box-shadow: 0 20px 50px rgba(0,0,0,.6);
   animation: rise .28s ease-out; }
 .sheet-kicker { font-size: .72rem; font-weight: 700; letter-spacing: .12em; color: var(--gold); }
-.sheet-title { font-family: var(--font-display); font-size: 1.9rem; line-height: 1.15; text-wrap: balance; }
+.sheet-title { font-family: var(--font-display); font-size: 1.9rem; line-height: 1.15; text-wrap: balance; word-break: keep-all; }
 .sheet-title.small { font-size: 1.1rem; }
 .sheet-sub { margin: 0; color: var(--muted); line-height: 1.55; font-size: .92rem; }
 .gs-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
