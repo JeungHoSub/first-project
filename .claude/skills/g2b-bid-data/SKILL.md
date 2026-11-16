@@ -25,3 +25,11 @@ description: 나라장터(조달청) 입찰공고·낙찰 데이터를 수집·�
 ## 주의
 - 낙찰가 "예측"은 참고용임을 화면에 명시한다.
 - 업체 정보 등 개인정보가 섞일 수 있으니 저장·노출 범위를 spec에 적는다.
+
+## 확인된 사실 (2026-11-16, 공식 참고문서 기준 — 자세한 내용은 projects/g2b-bid-platform/outputs/d0-confirmed.md)
+- 엔드포인트: `apis.data.go.kr/1230000/ad/BidPublicInfoService02/`(입찰공고), `/as/ScsbidInfoService/`(낙찰), `/ao/HrcspSsstndrdInfoService/`(사전규격)
+- 공고 목록 오퍼레이션: `getBidPblancListInfo{Thng,Servc,Cnstwk,Frgcpt}02`. 서버 쪽 조건 조회는 `...PPSSrch02`(공고명·업종·지역·추정가격 범위 등)
+- 조회구분 `inqryDiv`: 1=등록일시, 2=공고번호, 3=변경일시(정정공고 추적용)
+- 조회기간: 입찰공고·낙찰은 최대 7일(2026-11-10 변경). 경계를 확인하기 전까지는 6일 조각으로 나눠 조회
+- 개발계정 트래픽: 서비스 상세기능(오퍼레이션)별 하루 1,000건. 초과하면 에러코드 22
+- 개인정보 필드(저장 금지): `ntceInsttOfclNm/TelNo/EmailAdrs`, `dminsttOfclEmailAdrs`, `exctvNm`, 낙찰의 `bidwinnrCeoNm/TelNo/Adrs/Bizno`
