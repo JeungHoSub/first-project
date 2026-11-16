@@ -220,3 +220,7 @@ button.card:disabled { cursor: default; }
 /* 손패에서 낼 때 눌린 느낌 */
 .hand button.card:not(:disabled):active { transform: translateY(-14px) scale(1.04); }
 .banner { font-size: 3.6rem; }
+
+.res-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.res-badges:empty { display: none; }
+.res-badge { font-family: var(--font-display); font-size: .95rem; color: #fff3d6; background: linear-gradient(180deg, #e0383f, var(--red-deep)); border-radius: 8px; padding: 3px 10px; box-shadow: 0 2px 0 rgba(0,0,0,.4); }

@@ -417,7 +417,10 @@ async function perform(a: Action) {
   if (special) {
     const kind = T(special);
     if (kind === 'ppeok') { banner('뻑!'); sfx.ppeok(); shakeScreen(); sfx.buzz([40, 60, 40]); }
-    else if (kind === 'ppeokEat') { banner((special as { self?: boolean }).self ? '자뻑 먹기!' : '뻑 먹기!'); sfx.bonus(); shakeScreen(); }
+    else if (kind === 'ppeokEat') {
+      const x = special as { self?: boolean; fromPpeok?: boolean };
+      banner(x.fromPpeok === false ? '3장 먹기!' : x.self ? '자뻑! 피 2장' : '뻑 먹기!'); sfx.bonus(); shakeScreen();
+    }
     else { banner(kind === 'jjok' ? '쪽!' : kind === 'ttadak' ? '따닥!' : '싹쓸이!'); sfx.bonus(); shakeScreen(); sfx.buzz(40); }
     await wait(650);
     if (no !== gameNo) return;
@@ -456,43 +459,75 @@ async function perform(a: Action) {
   }
 }
 
+// 나가리면 다음 판 점수에 배수가 붙는다 (×2, 최대 ×4)
+let carry = 1;
+
+type WinExtra = { by: string; bak?: { pi: boolean; gwang: boolean; meong: boolean }; bakMultiplier?: number; carry?: number; nextCarry?: number };
+
 function showResult() {
   const r = s.result!;
   const sc = [score(s.captured[0]), score(s.captured[1])];
+  const x = r as unknown as WinExtra;
+  carry = x.nextCarry ?? 1;
   $('result').hidden = false;
+  const badges = $('res-badges'); badges.innerHTML = '';
+  const badge = (t: string) => { const b = document.createElement('span'); b.className = 'res-badge'; b.textContent = t; badges.append(b); };
   if (r.type === 'nagari') {
     $('res-kicker').textContent = '판 결과';
     $('res-title').textContent = '나가리';
-    $('res-formula').textContent = '아무도 7점을 못 냈습니다';
+    $('res-formula').textContent = `아무도 7점을 못 냈습니다 · 다음 판 점수 ×${carry}`;
   } else {
-    $('res-kicker').textContent = r.by === 'stop' ? '스톱으로 끝' : '패가 다 떨어져 끝';
+    $('res-kicker').textContent = x.by === 'stop' ? '스톱으로 끝' : x.by === 'chongtong' ? '총통' : '패가 다 떨어져 끝';
     $('res-title').textContent = r.winner === ME ? '이겼습니다!' : '졌습니다';
-    const mult = r.multiplier > 1 ? ` × 고${r.multiplier}` : '';
-    const shake = r.shakeMultiplier > 1 ? ` × 흔들${r.shakeMultiplier}` : '';
-    $('res-formula').textContent = `(${r.base}점 + 고 ${r.goBonus}점)${mult}${shake} = ${r.finalScore}점`;
+    const parts = [`(${r.base}점 + 고 ${r.goBonus}점)`];
+    if (r.multiplier > 1) parts.push(`고 ×${r.multiplier}`);
+    if (r.shakeMultiplier > 1) parts.push(`흔들 ×${r.shakeMultiplier}`);
+    if ((x.bakMultiplier ?? 1) > 1) parts.push(`박 ×${x.bakMultiplier}`);
+    if ((x.carry ?? 1) > 1) parts.push(`나가리 ×${x.carry}`);
+    $('res-formula').textContent = `${parts.join(' · ')} = ${r.finalScore}점`;
+    if (x.bak?.pi) badge('피박');
+    if (x.bak?.gwang) badge('광박');
+    if (x.bak?.meong) badge('멍따');
+    if (r.shakeMultiplier > 1) badge('흔들기');
   }
   const grid = $('res-grid'); grid.innerHTML = '';
   ([ME, AI] as PlayerId[]).forEach((p) => {
     const col = document.createElement('div');
     col.className = 'res-col' + (r.type === 'win' && r.winner === p ? ' win' : '');
-    const items = sc[p].details.map((x) => `<li><span>${x.label}</span><span>${x.points}</span></li>`).join('') || '<li><span>점수 없음</span><span></span></li>';
+    const items = sc[p].details.map((d) => `<li><span>${d.label}</span><span>${d.points}</span></li>`).join('') || '<li><span>점수 없음</span><span></span></li>';
     col.innerHTML = `<h3>${p === ME ? '나' : '상대'}</h3><div class="tot">${sc[p].total}점</div><ul>${items}</ul>`;
     grid.append(col);
   });
+  $('btn-new').textContent = carry > 1 ? `새 판 (×${carry})` : '새 판';
 }
 
-function newGame() {
+async function newGame() {
   gameNo++;
+  const no = gameNo;
   busy = false;
   const seed = Math.floor(Math.random() * 1e9).toString(36);
-  s = createGame(seed);
+  s = createGame(seed, { carry } as Parameters<typeof createGame>[1]);
   slotOf.clear();
   for (const c of [...s.hands[0], ...s.hands[1], ...s.floor, ...s.deck, ...s.captured[0], ...s.captured[1]]) allCards.set(c.id, c);
-  $('feed').innerHTML = '새 판 · 내가 선입니다';
+  const redeal = s.events.some((e) => (e.type as string) === 'redeal');
+  $('feed').innerHTML = `새 판 · 내가 선입니다${carry > 1 ? ` · <b>나가리 이월 ×${carry}</b>` : ''}${redeal ? ' · 바닥 같은 월 4장이라 다시 섞음' : ''}`;
   $('result').hidden = true;
   $('special').hidden = true;
   $('choose').hidden = true;
   render(s);
+  // 총통: 분배하자마자 같은 월 4장 → 보여 주고 바로 끝
+  const ct = s.events.find((e) => (e.type as string) === 'chongtong') as (GameEvent & { player: PlayerId; cards: string[] }) | undefined;
+  if (ct) {
+    await wait(500);
+    if (no !== gameNo) return;
+    await reveal(`${ct.player === ME ? '나' : '상대'} 총통!`, ct.cards);
+    if (no !== gameNo) return;
+    banner('총통!'); sfx.bonus();
+    await wait(700);
+    if (no !== gameNo) return;
+    if (s.result?.type === 'win' && s.result.winner === ME) sfx.win(); else sfx.lose();
+    showResult();
+  }
 }
 
 function syncSoundBtn() {
