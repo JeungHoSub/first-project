@@ -10,6 +10,15 @@ npm run sim     # 랜덤 vs 랜덤 한 판 로그. 시드 지정: npm run sim --
 npm run typecheck
 ```
 
+## 미리보기 화면 (사용자 확인용)
+```bash
+npm run dev          # 브라우저 개발 서버 (index.html)
+npm run build:page   # 한 파일로 묶기 -> dist/magic-gostop.html (outputs/stage1-preview.html로 복사해 공유)
+```
+- `src/ui/` 화면(DOM). 엔진 상태를 그리기만 하고 규칙 판단은 엔진에 맡긴다.
+- `src/ai/simple.ts` 임시 AI(먹을 수 있는 좋은 패 우선, 뒤집을 패는 보지 않음). 2단계에서 다듬는다.
+- 엔진 타입 검사는 DOM 없이(`tsconfig.json`), 화면은 `tsconfig.ui.json`으로 따로 검사한다.
+
 ## 공개 API (`src/engine/index.ts`)
 - `createGame(seed, options?)` -> `GameState` (같은 시드 = 같은 판)
 - `getLegalActions(state)` -> `Action[]` (`play` / `choose` / `go` / `stop`)

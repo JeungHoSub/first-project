@@ -3,11 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "매직고스톱 - 1단계: 기본 룰 엔진 (화면 없음)",
+  "description": "매직고스톱 - 1단계: 기본 룰 엔진 + 미리보기 화면",
   "scripts": {
     "test": "vitest run",
     "sim": "tsx scripts/sim.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.ui.json",
+    "dev": "vite",
+    "build:page": "node scripts/build-page.mjs"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

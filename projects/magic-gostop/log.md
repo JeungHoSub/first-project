@@ -54,3 +54,9 @@
 - 결과물: game/ (src/engine, tests, scripts/sim.ts, README.md)
 - 다음 담당: 사용자 확인 → developer (2단계: 화면 + AI)
 - 넘길 메모: npm test 29/29 통과, typecheck 통과, 1000판 랜덤 대전 무오류·카드 48장 보존 (총괄 재실행 확인). 단순화: 손패·뒤집은 패 같은 월은 순서대로 처리, 국진 열끗 고정, 마지막 턴은 스톱만, 바닥 동월 4장 재분배 없음, 나가리 배수 이월 없음. 3단계 손볼 위치는 game/README.md와 이 보고 참고(game.ts play/resolveCard/flip, endTurn, finish). reviewer 검수는 사용자가 직접 플레이하는 2단계 끝에 묶어서 진행 예정
+
+## 2026-11-16 총괄(magic-gostop 세션)
+- 한 일: 사용자 요청("앱으로 만들 건데 1단계를 직접 해 보고 디자인·구성을 보며 단계별로 가고 싶다")에 따라 1단계 엔진 위에 미리보기 화면과 임시 AI를 붙임. 휴대폰 크기 브라우저에서 몇 수 두어 보고 오류·가로 스크롤 없음 확인
+- 결과물: game/src/ui/, game/src/ai/simple.ts, game/scripts/build-page.mjs, outputs/stage1-preview.html (공유 링크로 게시)
+- 다음 담당: 사용자 — 미리보기를 해 보고 디자인·구성 피드백
+- 넘길 메모: 화투 그림 없이 월 색 띠 + 월 번호 + 종류 글자로 표시. 2단계 범위였던 화면·AI가 먼저 일부 들어갔으므로, 2단계는 "피드백 반영 + 화면 다듬기(카드 이동 연출 등) + AI 다듬기"로 조정. 최종 목표는 앱(brief 기록). reviewer 검수는 사용자 피드백 반영 뒤 진행

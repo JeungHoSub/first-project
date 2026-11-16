@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>매직고스톱</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Gowun+Dodum&display=swap">
+<link rel="stylesheet" href="/src/ui/style.css">
+<style>body{margin:0}</style>
+</head>
+<body>
+<!-- 개발용: npm run dev. 본문은 src/ui/body.html과 같게 유지 (main.ts가 시작 시 불러옴) -->
+<div id="mount"></div>
+<script type="module">
+  import body from '/src/ui/body.html?raw';
+  document.getElementById('mount').outerHTML = body;
+  await import('/src/ui/main.ts');
+</script>
+</body>
+</html>

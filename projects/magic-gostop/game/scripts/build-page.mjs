@@ -1,0 +1,20 @@
+// 화면을 한 파일(HTML)로 묶는다: dist/magic-gostop.html
+// 휴대폰에서 링크 하나로 열어 보기 위한 미리보기용. (앱 포장은 이후 단계)
+import { build } from 'esbuild';
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+
+const r = await build({ entryPoints: ['src/ui/main.ts'], bundle: true, format: 'iife', minify: true, write: false, target: 'es2020' });
+const js = r.outputFiles[0].text.replace(/<\/script/gi, '<\\/script');
+const css = readFileSync('src/ui/style.css', 'utf8');
+const body = readFileSync('src/ui/body.html', 'utf8');
+const page = `<title>매직고스톱</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Gowun+Dodum&display=swap">
+<style>${css}</style>
+${body}
+<script>${js}</script>
+`;
+mkdirSync('dist', { recursive: true });
+writeFileSync('dist/magic-gostop.html', page);
+console.log('dist/magic-gostop.html', (page.length / 1024).toFixed(1) + 'KB');
