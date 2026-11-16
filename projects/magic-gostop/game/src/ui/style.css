@@ -405,3 +405,50 @@ button.lv[data-level="hard"] { color: #fff; background: linear-gradient(180deg, 
 #floor .floor-month.g3::before { color: var(--m3); text-shadow: 0 0 6px rgba(255,90,95,.9); }
 .hint.risk { width: 14px; height: 12px; border: 0; border-radius: 0; background: #ffd23a; top: -14px; left: 5px;
   clip-path: polygon(50% 0, 100% 100%, 0 100%); box-shadow: none; filter: drop-shadow(0 0 3px rgba(255,210,58,.9)) drop-shadow(0 1px 1px rgba(0,0,0,.6)); }
+
+/* ===== 먹은 패 잘 보이게 ===== */
+:root { --cw-cap: min(7.4vw, 31px); --cw-floor: min(10.4vw, 46px); }
+@media (min-height: 780px) { :root { --cw-cap: min(8vw, 34px); --cw-floor: min(11.6vw, 52px); } }
+@media (max-height: 620px) { :root { --cw-cap: min(6.4vw, 26px); --cw-floor: min(9.4vw, 40px); } }
+.seat .tray { cursor: pointer; padding: 5px 7px 6px; gap: 7px; grid-template-columns: 0.9fr 1.15fr 1.2fr 1.75fr; }
+.seat .tray:active { filter: brightness(1.15); }
+.cap-label { font-size: .7rem; gap: 3px; white-space: nowrap; }
+.cap-label b { font-size: .92rem; }
+.cap-label .bar { display: none; }
+.cap-label em { margin-left: auto; font-style: normal; font-size: .64rem; font-variant-numeric: tabular-nums; }
+.cap-label .need { color: var(--muted); opacity: .85; }
+.cap-label .pts { color: #241500; background: var(--gold); border-radius: 999px; padding: 0 5px; font-weight: 800; }
+.combos { display: flex; flex-wrap: wrap; gap: 2px; margin: -1px 0 1px; }
+.combo { font-size: .56rem; font-weight: 700; line-height: 1.5; padding: 0 4px; border-radius: 4px; background: rgba(255,255,255,.1); color: var(--text); white-space: nowrap; }
+.combo.cb-hong, .combo.cb-cho { box-shadow: inset 2px 0 0 #ff4d4d; } .combo.cb-cheong { box-shadow: inset 2px 0 0 #4fb4ff; } .combo.cb-godori { box-shadow: inset 2px 0 0 #ffd23a; }
+.combo.done { background: var(--gold); color: #241500; }
+.cap-cards .card { box-shadow: 0 0 0 1px rgba(0,0,0,.6), 1px 2px 3px rgba(0,0,0,.45); }
+.cap-cards .card + .card { margin-left: 0; }
+.mat { min-height: calc(var(--cw-floor) * 4.4); }
+/* 자세히 보기 */
+.cd-grid { display: grid; gap: 12px; }
+.cd-col { background: rgba(0,0,0,.22); border-radius: 14px; padding: 10px; display: grid; gap: 8px; }
+.cd-head { display: flex; justify-content: space-between; align-items: baseline; }
+.cd-head b { font-size: 1rem; } .cd-head span { font-family: var(--font-display); font-size: 1.5rem; color: var(--gold); }
+.cd-caps { display: grid; grid-template-columns: 1fr; gap: 8px; --cw-cap: 40px; }
+.cd-caps .cap-cards { flex-wrap: wrap; gap: 4px; container-type: normal; }
+.cd-caps .cap-cards .card { margin: 0 !important; }
+.cd-caps .cap-label { font-size: .8rem; } .cd-caps .cap-label em { margin-left: 8px; font-size: .74rem; }
+.cd-caps .combo { font-size: .7rem; }
+.cd-list { margin: 0; padding: 0; list-style: none; font-size: .84rem; display: grid; }
+.cd-list li { display: flex; justify-content: space-between; border-bottom: 1px dashed rgba(255,255,255,.1); padding: 2px 0; }
+.cd-list li span:last-child { color: var(--gold); font-variant-numeric: tabular-nums; }
+
+/* 족보 진행은 카드 위에 겹쳐 띄워 높이를 늘리지 않는다 */
+.cap-group { position: relative; }
+.seat .combos { position: absolute; left: 0; right: 0; bottom: -3px; z-index: 2; margin: 0; pointer-events: none; }
+.seat .combo { background: rgba(10,20,16,.88); box-shadow: 0 1px 3px rgba(0,0,0,.6); }
+.seat .combo.done { background: var(--gold); }
+.seat .tray { grid-template-columns: 1fr 1fr 1fr 1.6fr; }
+.cap-label { overflow: hidden; }
+.cap-label .pts { padding: 0 4px; }
+.cd-caps .combos { position: static; }
+.cd-caps .cap-cards.empty { min-height: 0; }
+.cd-caps .cap-cards.empty::after { content: "없음"; font-size: .72rem; color: var(--muted); }
+.cd-caps .cap-label .pts::after { content: "점"; }
+@media (max-height: 700px) { .app > .note { display: none; } }

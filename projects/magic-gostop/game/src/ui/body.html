@@ -20,7 +20,7 @@
       <div class="go-chip" id="opp-go" hidden></div>
       <div class="pscore"><b id="opp-score">0</b><small>점</small></div>
     </div>
-    <div class="tray" id="opp-caps"></div>
+    <div class="tray" id="opp-caps" role="button" tabindex="0" aria-label="상대가 먹은 패 자세히 보기"></div>
   </section>
 
   <section class="table" aria-label="바닥">
@@ -33,7 +33,7 @@
   </section>
 
   <section class="seat me player" aria-label="나">
-    <div class="tray" id="my-caps"></div>
+    <div class="tray" id="my-caps" role="button" tabindex="0" aria-label="내가 먹은 패 자세히 보기"></div>
     <div class="seat-head">
       <div class="avatar mine">나</div>
       <div class="pinfo">
@@ -165,4 +165,12 @@
   <div class="rw-name" id="rw-name"></div>
   <div class="rw-desc" id="rw-desc"></div>
   <button class="big go-btn" id="btn-reward-ok" type="button">확인</button>
+</div>
+
+<div class="sheet" id="caps-detail" hidden>
+  <div class="sheet-card">
+    <div class="sheet-kicker">먹은 패 · 점수 계산</div>
+    <div class="cd-grid" id="cd-grid"></div>
+    <button class="big stop-btn" id="btn-cd-close" type="button">닫기</button>
+  </div>
 </div>

@@ -49,22 +49,59 @@ function cardEl(c: Card, tag: 'div' | 'button' = 'div'): HTMLElement {
   return el;
 }
 
-function renderCaps(target: HTMLElement, cards: Card[], details: string[]) {
+type ScoreRes = ReturnType<typeof score>;
+const COMBOS: { key: string; label: string; tag: string; group: string }[] = [
+  { key: 'godori', label: '고도리', tag: 'godori', group: '열끗' },
+  { key: 'hong', label: '홍단', tag: 'hong', group: '띠' },
+  { key: 'cheong', label: '청단', tag: 'cheong', group: '띠' },
+  { key: 'cho', label: '초단', tag: 'cho', group: '띠' },
+];
+/** 먹은 패 칸: 칸마다 장수 + (점수 났으면 +n점 / 아니면 다음 점수까지 n/목표) + 족보 진행(2장 이상부터) */
+function renderCaps(target: HTMLElement, cards: Card[], sc: ScoreRes) {
   target.innerHTML = '';
-  const groups: [string, Card['kind'][], string[], number][] = [
-    ['광', ['G'], ['gwang'], 3], ['열끗', ['Y'], ['yeol', 'godori'], 5], ['띠', ['T'], ['tti', 'hong', 'cheong', 'cho'], 5], ['피', ['P', 'D', 'B2', 'B3'], ['pi'], 10],
+  const gukjinAsPi = (sc as ScoreRes & { gukjin?: string | null }).gukjin === 'pi';
+  const isGukjin = (c: Card) => c.month === 9 && c.kind === 'Y';
+  const groups: [string, (c: Card) => boolean, string[], number][] = [
+    ['광', (c) => c.kind === 'G', ['gwang'], 3],
+    ['열끗', (c) => c.kind === 'Y' && !(gukjinAsPi && isGukjin(c)), ['yeol', 'godori'], 5],
+    ['띠', (c) => c.kind === 'T', ['tti', 'hong', 'cheong', 'cho'], 5],
+    ['피', (c) => ['P', 'D', 'B2', 'B3'].includes(c.kind) || (gukjinAsPi && isGukjin(c)), ['pi'], 10],
   ];
-  for (const [label, kinds, keys, goal] of groups) {
-    const list = cards.filter((c) => kinds.includes(c.kind));
-    const n = label === '피' ? list.reduce((a, c) => a + (PI_VALUE[c.kind] ?? 1), 0) : list.length;
+  for (const [label, pick, keys, goal] of groups) {
+    const list = cards.filter(pick);
+    const n = label === '피' ? list.reduce((a, c) => a + (isGukjin(c) ? 2 : PI_VALUE[c.kind] ?? 1), 0) : list.length;
+    const pts = sc.details.filter((d) => keys.includes(d.key)).reduce((a, d) => a + d.points, 0);
     const grp = document.createElement('div');
-    grp.className = 'cap-group' + (keys.some((k) => details.includes(k)) ? ' scored' : '');
-    grp.innerHTML = `<div class="cap-label">${label}<b>${n}</b><span class="bar" style="--p:${Math.min(n / goal, 1)}"></span></div><div class="cap-cards"></div>`;
+    grp.className = 'cap-group' + (pts ? ' scored' : '');
+    const status = pts ? `<em class="pts">+${pts}</em>` : `<em class="need">${Math.min(n, goal)}/${goal}</em>`;
+    const combos = COMBOS.filter((cb) => cb.group === label).map((cb) => {
+      const k = cards.filter((c) => c.tag === cb.tag).length;
+      if (k < 2) return '';
+      return `<span class="combo ${k >= 3 ? 'done' : ''} cb-${cb.key}">${cb.label} ${k}/3</span>`;
+    }).join('');
+    grp.innerHTML = `<div class="cap-label">${label}<b>${n}</b>${status}</div>${combos ? `<div class="combos">${combos}</div>` : ''}<div class="cap-cards"></div>`;
     const box = grp.querySelector('.cap-cards') as HTMLElement;
     box.style.setProperty('--n', String(Math.max(list.length, 1)));
     list.forEach((c) => box.append(cardEl(c)));
+    if (!list.length) box.classList.add('empty');
     target.append(grp);
   }
+}
+
+/** 먹은 패 자세히 보기: 두 사람 패를 크게, 점수 내역과 함께 */
+function showCapsDetail() {
+  const view = s;
+  const grid = $('cd-grid'); grid.innerHTML = '';
+  ([AI, ME] as PlayerId[]).forEach((p) => {
+    const sc = score(view.captured[p]);
+    const col = document.createElement('section');
+    col.className = 'cd-col';
+    col.innerHTML = `<div class="cd-head"><b>${p === ME ? '나' : '상대'}</b><span>${sc.total}점</span></div><div class="cd-caps"></div>
+      <ul class="cd-list">${sc.details.map((d) => `<li><span>${d.label}</span><span>${d.points}점</span></li>`).join('') || '<li><span>아직 점수 없음</span><span></span></li>'}</ul>`;
+    renderCaps(col.querySelector('.cd-caps') as HTMLElement, view.captured[p], sc);
+    grid.append(col);
+  });
+  $('caps-detail').hidden = false;
 }
 
 /** 상태 하나를 그린다. view가 진짜 상태이고 내 차례이며 연출 중이 아닐 때만 누를 수 있다. */
@@ -98,8 +135,8 @@ function render(view: GameState) {
   ($('deck') as HTMLElement).style.visibility = view.deck.length ? 'visible' : 'hidden';
   $('seed').textContent = view.seed;
 
-  renderCaps($('opp-caps'), view.captured[AI], sc[AI].details.map((d) => d.key));
-  renderCaps($('my-caps'), view.captured[ME], sc[ME].details.map((d) => d.key));
+  renderCaps($('opp-caps'), view.captured[AI], sc[AI]);
+  renderCaps($('my-caps'), view.captured[ME], sc[ME]);
 
   // 바닥: 가운데 더미 둘레. 같은 월은 한 자리에 겹쳐 놓고, 자리는 판이 끝날 때까지 유지한다.
   // 고르는 중인 패(pending)도 그 월 자리에 같이 보여 준다.
@@ -616,7 +653,7 @@ function setLevel(l: AiLevel) {
 }
 function showHome() {
   gameNo++; busy = false;
-  for (const id of ['result', 'special', 'choose', 'gostop', 'info', 'reward', 'collection']) $(id).hidden = true;
+  for (const id of ['result', 'special', 'choose', 'gostop', 'info', 'reward', 'collection', 'caps-detail']) $(id).hidden = true;
   syncHome();
   $('home').hidden = false;
 }
@@ -706,6 +743,8 @@ $('btn-level').addEventListener('click', () => {
 });
 $('sp-cancel').addEventListener('click', () => { $('special').hidden = true; });
 $('btn-start').addEventListener('click', () => { sfx.unlock(); sfx.click(); sfx.startBgm(); $('home').hidden = true; newGame(); });
+for (const id of ['opp-caps', 'my-caps']) $(id).addEventListener('click', () => { if (s) { sfx.click(); showCapsDetail(); } });
+$('btn-cd-close').addEventListener('click', () => { $('caps-detail').hidden = true; });
 $('btn-res-home').addEventListener('click', () => { sfx.click(); showHome(); });
 $('btn-home').addEventListener('click', () => { sfx.click(); showHome(); });
 $('btn-collection').addEventListener('click', () => { sfx.click(); renderCollection(); $('collection').hidden = false; });
