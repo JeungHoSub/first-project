@@ -2,6 +2,7 @@
   <header class="top">
     <div class="brand"><span class="logo" aria-hidden="true"></span>매직고스톱<span class="stage">1단계</span></div>
     <div class="top-btns">
+      <button class="icon-btn sound-btn" id="btn-sound" type="button" aria-label="소리 끄기">♪</button>
       <button class="icon-btn" id="btn-info" type="button" aria-label="규칙과 구성 보기">?</button>
       <button class="icon-btn" id="btn-restart" type="button" aria-label="새 판 시작">↻</button>
     </div>
@@ -42,6 +43,19 @@
 </div>
 
 <div class="banner" id="banner" aria-hidden="true"></div>
+
+<div class="reveal" id="reveal" hidden aria-live="polite">
+  <div class="rv-title" id="rv-title"></div>
+  <div class="rv-cards" id="rv-cards"></div>
+</div>
+
+<div class="sheet" id="choose" hidden>
+  <div class="sheet-card">
+    <div class="sheet-kicker" id="ch-sub"></div>
+    <div class="sheet-title" id="ch-title"></div>
+    <div class="ch-cards" id="ch-cards"></div>
+  </div>
+</div>
 
 <div class="sheet" id="gostop" hidden>
   <div class="sheet-card">

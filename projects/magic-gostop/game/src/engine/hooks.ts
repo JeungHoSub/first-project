@@ -8,8 +8,8 @@ import type { GameState } from './types';
 export interface EngineHooks {
   afterDeal?(s: GameState): GameState | void;
   onTurnStart?(s: GameState): GameState | void;
-  afterPlay?(s: GameState): GameState | void; // 손패를 내고 정산한 직후
-  afterFlip?(s: GameState): GameState | void; // 더미를 뒤집고 정산한 직후
+  afterPlay?(s: GameState): GameState | void; // 정산(손패+뒤집은 패)이 끝난 직후. 두 훅은 연달아 호출된다
+  afterFlip?(s: GameState): GameState | void; // afterPlay 바로 뒤
   beforeScore?(s: GameState): GameState | void; // 점수 판정 직전
 }
 

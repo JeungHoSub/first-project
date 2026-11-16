@@ -17,7 +17,7 @@ export interface RuleOptions {
   goBonusMode: 'n'; // R02 고 가산 방식 (1단계는 +n만)
   goMultiplierFrom: number; // 이 고 횟수부터 배수 ×2^(n-from+1) (기본 3)
   dealer: PlayerId; // 선 (기본 0)
-  // --- 3단계 이후에 켤 자리 (1단계에서는 전부 꺼져 있고 엔진이 읽지 않음) ---
+  // --- 특수 룰 스위치. ppeok/ttadak/jjok/sweep/shake/bomb만 엔진이 읽는다(끄면 1단계 단순 처리). 나머지는 아직 자리만 ---
   special: {
     ppeok: boolean; ttadak: boolean; jjok: boolean; sweep: boolean;
     shake: boolean; bomb: boolean; chongtong: boolean; bak: boolean; gukjin: 'yeolggeut';
@@ -32,7 +32,7 @@ export const DEFAULT_OPTIONS: RuleOptions = {
   goMultiplierFrom: 3,
   dealer: 0,
   special: {
-    ppeok: false, ttadak: false, jjok: false, sweep: false,
+    ppeok: true, ttadak: true, jjok: true, sweep: true,
     shake: true, bomb: true, chongtong: false, bak: false, gukjin: 'yeolggeut',
   },
   magic: { enabled: false },
@@ -44,6 +44,8 @@ export interface PendingChoice {
   source: 'hand' | 'flip';
   card: Card; // 지금 처리 중인 카드(손/뒤집은 패). 바닥·손에 없는 상태로 여기 보관된다.
   options: string[]; // 고를 수 있는 바닥 카드 id (같은 월 2장)
+  /** source==='hand'일 때, 이미 뒤집었지만 아직 정산하지 않은 더미 패(없으면 null). 이 카드도 바닥·손에 없다. */
+  later: Card | null;
 }
 
 export type GameEvent =
@@ -59,6 +61,11 @@ export type GameEvent =
   | { type: 'choose'; player: PlayerId; card: string }
   | { type: 'go'; player: PlayerId; goCount: number; score: number }
   | { type: 'stop'; player: PlayerId; score: number }
+  | { type: 'ppeok'; player: PlayerId; month: number; cards: string[] } // 바닥에 남은 3장
+  | { type: 'ppeokEat'; player: PlayerId; month: number; self: boolean }
+  | { type: 'jjok'; player: PlayerId; month: number }
+  | { type: 'ttadak'; player: PlayerId; month: number }
+  | { type: 'sweep'; player: PlayerId }
   | { type: 'end'; result: GameResult };
 
 export type GameResult =
@@ -73,6 +80,10 @@ export interface GameState {
   hands: [Card[], Card[]];
   floor: Card[];
   deck: Card[];
+  /** 현재 바닥에 남은 뻑 월 -> 싼 사람. 그 월을 먹으면 지워진다. */
+  ppeok: Record<number, PlayerId>;
+  /** 이번 차례 정산에서 아직 가져오지 못한 상대 피 장수(차례가 끝날 때 한꺼번에 가져온다). 차례 사이엔 항상 0 */
+  stealDue: number;
   captured: [Card[], Card[]];
   pending: PendingChoice | null;
   goCount: [number, number];

@@ -29,6 +29,8 @@ export function createGame(seed: string | number, options: Partial<RuleOptions> 
     hands,
     floor,
     deck, // 나머지 20장
+    ppeok: {},
+    stealDue: 0,
     captured: [[], []],
     pending: null,
     goCount: [0, 0],
@@ -113,8 +115,7 @@ export function applyAction(state: GameState, action: Action, hooks?: EngineHook
         s.events.push({ type: 'shake', player: p, month: card.month, cards: shown.map((c) => c.id) });
       }
       s.events.push({ type: 'play', player: p, card: card.id });
-      resolveCard(s, card, 'hand');
-      if (s.phase !== 'chooseMatch') { call('afterPlay'); flip(ctx); }
+      flipAndSettle(ctx, card);
       break;
     }
     case 'bomb': {
@@ -126,16 +127,14 @@ export function applyAction(state: GameState, action: Action, hooks?: EngineHook
       capture(s, [...three, ...s.floor.filter((c) => c.month === action.month)]);
       steal(s, p);
       s.dummies[p] += 2;
-      call('afterPlay');
-      flip(ctx);
+      flipAndSettle(ctx, null);
       break;
     }
     case 'dummy': {
       const p = s.turn;
       s.dummies[p] -= 1;
       s.events.push({ type: 'dummy', player: p });
-      call('afterPlay');
-      flip(ctx);
+      flipAndSettle(ctx, null);
       break;
     }
     case 'choose': {
@@ -145,8 +144,9 @@ export function applyAction(state: GameState, action: Action, hooks?: EngineHook
       s.pending = null;
       s.phase = 'play';
       capture(s, [pend.card, target]);
-      if (pend.source === 'hand') { call('afterPlay'); flip(ctx); }
-      else { call('afterFlip'); endTurn(ctx); }
+      // 손패 쪽 선택이었다면 이미 뒤집어 둔 더미 패를 이어서 정산한다 (또 고를 일이 생기면 다시 대기)
+      if (pend.later && resolveOne(s, pend.later, 'flip', null)) break;
+      finishTurn(ctx);
       break;
     }
     case 'go': {
@@ -173,11 +173,12 @@ interface Ctx { readonly s: GameState; call(name: keyof EngineHooks): void }
 function capture(s: GameState, cards: Card[]) {
   const ids = new Set(cards.map((c) => c.id));
   s.floor = s.floor.filter((c) => !ids.has(c.id));
+  for (const c of cards) delete s.ppeok[c.month]; // 그 월 바닥이 치워지면 뻑 기록도 사라진다
   s.captured[s.turn].push(...cards);
   s.events.push({ type: 'capture', player: s.turn, cards: cards.map((c) => c.id) });
 }
 
-/** 상대 획득 패에서 피 1장 가져오기 (일반 피 우선, 없으면 쌍피, 없으면 없음) */
+/** 상대 획득 패에서 피 1장 가져오기 (일반 피 우선, 없으면 쌍피, 없으면 없음 - R18) */
 function steal(s: GameState, p: PlayerId) {
   const from = (1 - p) as PlayerId;
   const src = s.captured[from];
@@ -190,31 +191,91 @@ function steal(s: GameState, p: PlayerId) {
 }
 
 /**
- * 손패/뒤집은 패 1장의 매칭 정산 (1단계: 기본 매칭만).
- * 0장 내려놓기 / 1장 먹기 / 2장 선택 대기 / 3장 모두 먹기.
- * 손패와 뒤집은 패가 같은 월이어도 "순서대로 단순 처리"한다. (뻑·따닥·쪽은 3단계)
+ * 카드 1장의 기본 매칭 정산 (3.1표). 0장 놓기 / 1장 먹기 / 2장 선택 대기 / 3장 모두 먹기.
+ * 선택 대기가 되면 true.
  */
-function resolveCard(s: GameState, card: Card, source: 'hand' | 'flip') {
+function resolveOne(s: GameState, card: Card, source: 'hand' | 'flip', later: Card | null): boolean {
   const matches = s.floor.filter((c) => c.month === card.month);
   if (matches.length === 0) {
     s.floor.push(card);
     s.events.push({ type: 'place', player: s.turn, card: card.id });
   } else if (matches.length === 2) {
-    s.pending = { source, card, options: matches.map((c) => c.id) };
+    s.pending = { source, card, options: matches.map((c) => c.id), later };
     s.phase = 'chooseMatch';
+    return true;
   } else {
-    // 1장 또는 3장(이상): 전부 먹는다
-    capture(s, [card, ...matches]);
+    capture(s, [card, ...matches]); // 1장 또는 3장: 전부 먹는다
   }
+  return false;
 }
 
-function flip(ctx: Ctx) {
+/**
+ * 손패(없을 수 있음: 폭탄/빈 패)를 낸 뒤 더미를 뒤집고, 두 장을 함께 보고 정산한다 (rules 3.2/3.3).
+ * 순서: flip -> 효과 이벤트(ppeok/jjok/ttadak/ppeokEat) -> capture/place -> 피 가져오기 -> 싹쓸이.
+ * 고르기는 정산 중 "정확히 2장 중 선택"이 필요할 때만 대기한다 (flip 이후). 따닥이면 고르지 않는다.
+ */
+function flipAndSettle(ctx: Ctx, hand: Card | null) {
   const s = ctx.s;
-  if (s.deck.length === 0) return endTurn(ctx);
-  const card = s.deck.shift()!;
-  s.events.push({ type: 'flip', player: s.turn, card: card.id });
-  resolveCard(s, card, 'flip');
-  if (s.phase !== 'chooseMatch') { ctx.call('afterFlip'); endTurn(ctx); }
+  let flipped: Card | null = null;
+  if (s.deck.length > 0) {
+    flipped = s.deck.shift()!;
+    s.events.push({ type: 'flip', player: s.turn, card: flipped.id });
+  }
+  const p = s.turn;
+  const sp = s.options.special;
+  const onFloor = (m: number) => s.floor.filter((c) => c.month === m);
+
+  // 1) 같은 월 조합 (쪽 / 뻑 / 따닥) - 옵션이 꺼져 있으면 아래 단순 처리로 넘어간다
+  if (hand && flipped && hand.month === flipped.month) {
+    const m = hand.month;
+    const fl = onFloor(m);
+    if (fl.length === 0 && sp.jjok) {
+      s.events.push({ type: 'jjok', player: p, month: m });
+      capture(s, [hand, flipped]);
+      s.stealDue += 1;
+      return finishTurn(ctx);
+    }
+    if (fl.length === 1 && sp.ppeok) {
+      s.floor.push(hand, flipped);
+      s.ppeok[m] = p;
+      s.events.push({ type: 'ppeok', player: p, month: m, cards: [fl[0].id, hand.id, flipped.id] });
+      return finishTurn(ctx);
+    }
+    if (fl.length === 2 && sp.ttadak) {
+      s.events.push({ type: 'ttadak', player: p, month: m });
+      capture(s, [hand, flipped, ...fl]);
+      s.stealDue += 1;
+      return finishTurn(ctx);
+    }
+  }
+
+  // 2) 뻑 먹기 효과 이벤트 (바닥 3장이 뻑 월이면). 먹기보다 먼저 알린다
+  for (const c of [hand, flipped]) {
+    if (c && onFloor(c.month).length === 3 && s.ppeok[c.month] !== undefined) {
+      const self = s.ppeok[c.month] === p;
+      s.events.push({ type: 'ppeokEat', player: p, month: c.month, self });
+      s.stealDue += self ? 2 : 1;
+    }
+  }
+
+  // 3) 기본 정산: 손패 -> 뒤집은 패 순서
+  if (hand && resolveOne(s, hand, 'hand', flipped)) return;
+  if (flipped && resolveOne(s, flipped, 'flip', null)) return;
+  finishTurn(ctx);
+}
+
+/** 정산 마무리: 피 가져오기 -> 싹쓸이 -> (훅) -> 점수 판정 */
+function finishTurn(ctx: Ctx) {
+  const s = ctx.s;
+  const p = s.turn;
+  while (s.stealDue > 0) { s.stealDue -= 1; steal(s, p); }
+  if (s.options.special.sweep && s.floor.length === 0) {
+    s.events.push({ type: 'sweep', player: p });
+    steal(s, p);
+  }
+  ctx.call('afterPlay');
+  ctx.call('afterFlip');
+  endTurn(ctx);
 }
 
 function canGoStop(s: GameState, p: PlayerId): boolean {
@@ -258,5 +319,5 @@ function finish(s: GameState, stopper: PlayerId | null, by: 'stop' | 'exhaust') 
 /** 카드 총합 (손패+바닥+더미+획득+처리 중인 카드). 항상 48이어야 한다. */
 export function countCards(s: GameState): number {
   return s.hands[0].length + s.hands[1].length + s.floor.length + s.deck.length
-    + s.captured[0].length + s.captured[1].length + (s.pending ? 1 : 0);
+    + s.captured[0].length + s.captured[1].length + (s.pending ? 1 : 0) + (s.pending?.later ? 1 : 0);
 }

@@ -2,6 +2,7 @@ import { applyAction, createGame, getLegalActions, score } from '../engine';
 import type { Action, Card, GameEvent, GameState, PlayerId } from '../engine';
 import { chooseAction } from '../ai/simple';
 import { cardArt } from './art';
+import * as sfx from './sound';
 
 // 화면 = 엔진 상태를 그리기만 한다. 규칙 판단은 전부 엔진(getLegalActions/applyAction)에 맡긴다.
 // 엔진은 한 행동을 한 번에 처리하므로, 화면은 이벤트로 중간 장면(낸 패가 바닥에 놓임 → 뒤집은 패가 놓임 → 먹은 패가 들어옴)을
@@ -116,9 +117,8 @@ function render(view: GameState) {
     grp.style.setProperty('--rot', `${(j % 11) - 5}deg`);
     for (const c of floorCards.filter((f) => f.month === m)) {
       if (pickable.has(c.id)) {
-        const b = cardEl(c, 'button'); b.classList.add('pick');
-        b.addEventListener('click', () => perform({ type: 'choose', cardId: c.id }));
-        grp.append(b);
+        const el = cardEl(c); el.classList.add('pick');
+        grp.append(el);
       } else {
         const el = cardEl(c);
         if (view.pending && c.id === view.pending.card.id) el.classList.add('held');
@@ -159,6 +159,28 @@ function render(view: GameState) {
   else if (view.phase === 'play') prompt = '낼 패를 고르세요 · 빛나는 패는 먹을 수 있어요';
   else if (view.phase === 'chooseMatch') prompt = `${cardName(view.pending!.card)}로 먹을 패를 고르세요`;
   $('prompt').textContent = prompt;
+
+  // 바닥 2장 중 고르기: 내가 낸 패는 빼고, 깔려 있던 두 장만 크게 보여 준다
+  const choosing = myTurn && view.phase === 'chooseMatch';
+  $('choose').hidden = !choosing;
+  if (choosing) {
+    const pend = view.pending!;
+    $('ch-title').textContent = `${pend.card.month}월 두 장 중 어느 패를 먹을까요?`;
+    $('ch-sub').textContent = `${pend.source === 'hand' ? '낸 패' : '뒤집은 패'}: ${cardName(pend.card)}`;
+    const box = $('ch-cards'); box.innerHTML = '';
+    for (const id of pend.options) {
+      const c = view.floor.find((f) => f.id === id)!;
+      const b = cardEl(c, 'button');
+      b.classList.add('choice');
+      const tag = c.tag ? TAG_LABEL[c.tag] : KIND_LABEL[c.kind];
+      const wrap = document.createElement('div'); wrap.className = 'choice-wrap';
+      wrap.append(b);
+      const cap = document.createElement('div'); cap.className = 'choice-cap'; cap.textContent = tag;
+      wrap.append(cap);
+      b.addEventListener('click', () => { $('choose').hidden = true; perform({ type: 'choose', cardId: c.id }); });
+      box.append(wrap);
+    }
+  }
 
   const gs = myTurn && view.phase === 'goStop';
   $('gostop').hidden = !gs;
@@ -243,6 +265,47 @@ async function show(view: GameState, from: { deck?: Set<string>; opp?: Set<strin
   await wait(settle);
 }
 
+/** 카드가 바닥에 "탁" 닿는 순간: 눌림 + 퍼지는 고리 + 소리 + 진동 */
+function slamAt(ids: string[], power = 0.7, delay = MOVE * 0.78) {
+  if (reduced) return;
+  setTimeout(() => {
+    for (const id of ids) {
+      const el = document.querySelector<HTMLElement>(`#floor [data-id="${CSS.escape(id)}"]`);
+      if (!el) continue;
+      el.animate([{ transform: 'scale(1.18)', filter: 'brightness(1.25)' }, { transform: 'scale(.94)' }, { transform: 'scale(1)' }], { duration: 220, easing: 'ease-out' });
+      const r = el.getBoundingClientRect();
+      const ring = document.createElement('div');
+      ring.className = 'ring';
+      ring.style.left = `${r.left + r.width / 2}px`; ring.style.top = `${r.top + r.height / 2}px`;
+      document.body.append(ring);
+      setTimeout(() => ring.remove(), 600);
+    }
+    sfx.slap(power);
+    sfx.buzz(power > 0.8 ? 35 : 15);
+  }, delay);
+}
+function shakeScreen(strong = false) {
+  if (reduced) return;
+  $('app').animate(
+    strong
+      ? [{ transform: 'translate(0,0)' }, { transform: 'translate(-9px,5px)' }, { transform: 'translate(8px,-6px)' }, { transform: 'translate(-6px,-3px)' }, { transform: 'translate(5px,4px)' }, { transform: 'translate(-2px,1px)' }, { transform: 'none' }]
+      : [{ transform: 'translate(0,0)' }, { transform: 'translate(-4px,2px)' }, { transform: 'translate(3px,-2px)' }, { transform: 'none' }],
+    { duration: strong ? 520 : 260, easing: 'ease-out' },
+  );
+}
+/** 흔들기: 들고 있는 같은 월 3장을 잠깐 펼쳐 보여 준다 */
+async function reveal(title: string, ids: string[]) {
+  const box = $('reveal');
+  $('rv-title').textContent = title;
+  const cards = $('rv-cards'); cards.innerHTML = '';
+  ids.forEach((id, i) => { const el = cardEl(byId(id)); el.style.setProperty('--i', String(i)); cards.append(el); });
+  box.hidden = false;
+  box.classList.remove('on'); void box.offsetWidth; box.classList.add('on');
+  sfx.shake(); sfx.buzz([20, 40, 20, 40, 20]);
+  await wait(1500);
+  box.hidden = true;
+}
+
 function banner(text: string) {
   if (reduced) return;
   const b = $('banner');
@@ -270,6 +333,11 @@ function describe(events: GameEvent[]): string {
     else if (e.type === 'flip') parts.push(`뒤집기 ${cardName(byId(e.card))}`);
     else if (e.type === 'capture') parts.push(`<b>${e.cards.length}장 먹음</b>`);
     else if (e.type === 'place') parts.push('깔림');
+    else if ((e.type as string) === 'ppeok') parts.push('<b>뻑!</b>');
+    else if ((e.type as string) === 'jjok') parts.push('<b>쪽!</b>');
+    else if ((e.type as string) === 'ttadak') parts.push('<b>따닥!</b>');
+    else if ((e.type as string) === 'ppeokEat') parts.push('<b>뻑 먹기!</b>');
+    else if ((e.type as string) === 'sweep') parts.push('<b>싹쓸이!</b>');
     else if (e.type === 'go') parts.push(`<b>${who(e.player)} ${e.goCount}고</b>`);
     else if (e.type === 'stop') parts.push(`<b>${who(e.player)} 스톱</b>`);
   }
@@ -287,52 +355,83 @@ async function perform(a: Action) {
   const prev = s;
   const next = applyAction(prev, a);
   const evs = next.events.slice(prev.events.length);
+  const T = (e: GameEvent) => e.type as string; // 엔진에 새 이벤트가 붙어도 화면이 안전하게 읽도록
   const who = prev.turn;
   const fromOpp = who === AI ? new Set<string>() : undefined;
   $('feed').innerHTML = describe(evs) || $('feed').innerHTML;
 
+  // 0) 흔들기·폭탄 알림
   const shake = evs.find((e) => e.type === 'shake');
+  if (shake && shake.type === 'shake') { await reveal(`${who === ME ? '나' : '상대'} 흔들기!`, shake.cards); if (no !== gameNo) return; }
   const bomb = evs.find((e) => e.type === 'bomb');
-  if (shake && shake.type === 'shake') { banner('흔들기!'); await wait(700); }
-  if (bomb && bomb.type === 'bomb') banner('폭탄!');
 
-  // 1) 낸 패를 바닥으로
+  // 1) 낸 패(폭탄이면 3장)를 바닥 같은 월 위로 "탁"
   const v1: GameState = structuredClone(prev);
   v1.pending = null;
   const moved: string[] = [];
   for (const e of evs) {
-    if (e.type === 'play' || (e.type === 'choose' && prev.pending)) moved.push(e.type === 'play' ? e.card : prev.pending!.card.id);
-    if (e.type === 'bomb') moved.push(...e.cards);
+    if (e.type === 'play') moved.push(e.card);
+    else if (e.type === 'choose' && prev.pending) moved.push(prev.pending.card.id);
+    else if (e.type === 'bomb') moved.push(...e.cards);
   }
-  if (prev.pending && moved.length) v1.floor.push(prev.pending.card);
+  if (prev.pending && moved.includes(prev.pending.card.id)) v1.floor.push(prev.pending.card);
   moveToFloor(v1, moved.filter((id) => id !== prev.pending?.card.id), who);
-  if (moved.length) {
+  if (moved.length && !(prev.pending && moved.length === 1 && moved[0] === prev.pending.card.id)) {
     moved.forEach((id) => fromOpp?.add(id));
-    await show(v1, { opp: fromOpp });
+    if (bomb) { setTimeout(() => { banner('폭탄!'); sfx.bomb(); shakeScreen(true); sfx.buzz([60, 30, 90]); }, MOVE * 0.75); }
+    else slamAt(moved, 0.75);
+    await show(v1, { opp: fromOpp }, bomb ? MOVE + 650 : MOVE + BEAT);
     if (no !== gameNo) return;
   }
+  if (evs.some((e) => e.type === 'dummy')) { sfx.tick(); await wait(200); }
 
   // 2) 더미에서 뒤집은 패
   const flip = evs.find((e) => e.type === 'flip');
-  let v2 = v1;
   if (flip && flip.type === 'flip') {
-    v2 = structuredClone(v1);
+    const v2: GameState = structuredClone(v1);
     const i = v2.deck.findIndex((c) => c.id === flip.card);
     if (i >= 0) v2.floor.push(v2.deck.splice(i, 1)[0]);
-    await show(v2, { deck: new Set([flip.card]) }, MOVE + BEAT + 120);
+    sfx.flip();
+    slamAt([flip.card], 0.55, MOVE * 0.8);
+    await show(v2, { deck: new Set([flip.card]) }, MOVE + BEAT + 160);
     if (no !== gameNo) return;
   }
 
-  // 3) 최종 상태 (먹은 패가 트레이로, 고르기 대기면 그 상태로)
+  // 3) 뻑·쪽·따닥·뻑 먹기·싹쓸이 알림
+  const special = evs.find((e) => ['ppeok', 'jjok', 'ttadak', 'ppeokEat', 'sweep'].includes(T(e)));
+  if (special) {
+    const kind = T(special);
+    if (kind === 'ppeok') { banner('뻑!'); sfx.ppeok(); shakeScreen(); sfx.buzz([40, 60, 40]); }
+    else if (kind === 'ppeokEat') { banner((special as { self?: boolean }).self ? '자뻑 먹기!' : '뻑 먹기!'); sfx.bonus(); shakeScreen(); }
+    else { banner(kind === 'jjok' ? '쪽!' : kind === 'ttadak' ? '따닥!' : '싹쓸이!'); sfx.bonus(); shakeScreen(); sfx.buzz(40); }
+    await wait(650);
+    if (no !== gameNo) return;
+  }
+
+  // 4) 최종 상태: 먹은 패가 트레이로 들어간다
+  const captured = evs.filter((e) => e.type === 'capture').flatMap((e) => (e.type === 'capture' ? e.cards : []));
+  if (captured.length) {
+    captured.forEach((id) => document.querySelector(`#floor [data-id="${CSS.escape(id)}"]`)?.classList.add('flash'));
+    await wait(reduced ? 0 : 220);
+    sfx.capture(captured.length);
+  }
   s = next;
   busy = false;
-  await show(s, flip && flip.type === 'flip' && v2 === v1 ? { deck: new Set([flip.card]) } : {});
+  await show(s, flip && flip.type === 'flip' && !document.querySelector(`#floor [data-id="${CSS.escape(flip.card)}"]`) ? { deck: new Set([flip.card]) } : {});
   if (no !== gameNo) return;
-  const go = evs.find((e) => e.type === 'go');
-  if (go && go.type === 'go') banner(`${go.goCount}고!`);
-  if (evs.some((e) => e.type === 'stop')) banner('스톱!');
+  if (evs.some((e) => e.type === 'steal')) { sfx.steal(); }
+  const goEv = evs.find((e) => e.type === 'go');
+  if (goEv && goEv.type === 'go') { banner(`${goEv.goCount}고!`); sfx.go(); sfx.buzz(30); }
+  if (evs.some((e) => e.type === 'stop')) { banner('스톱!'); sfx.stop(); }
 
-  if (s.phase === 'ended') { await wait(700); if (no === gameNo) showResult(); return; }
+  if (s.phase === 'ended') {
+    await wait(800);
+    if (no !== gameNo) return;
+    const r = s.result!;
+    if (r.type === 'win' && r.winner === ME) sfx.win(); else sfx.lose();
+    showResult();
+    return;
+  }
   if (s.turn === AI) {
     busy = true; render(s);
     await wait(AI_THINK);
@@ -377,7 +476,14 @@ function newGame() {
   $('feed').innerHTML = '새 판 · 내가 선입니다';
   $('result').hidden = true;
   $('special').hidden = true;
+  $('choose').hidden = true;
   render(s);
+}
+
+function syncSoundBtn() {
+  const b = $('btn-sound');
+  b.classList.toggle('off', sfx.isMuted());
+  b.setAttribute('aria-label', sfx.isMuted() ? '소리 켜기' : '소리 끄기');
 }
 
 $('btn-go').addEventListener('click', () => perform({ type: 'go' }));
@@ -386,5 +492,8 @@ $('btn-new').addEventListener('click', newGame);
 $('btn-restart').addEventListener('click', newGame);
 $('btn-info').addEventListener('click', () => { $('info').hidden = false; });
 $('btn-info-close').addEventListener('click', () => { $('info').hidden = true; });
+$('btn-sound').addEventListener('click', () => { sfx.unlock(); sfx.setMuted(!sfx.isMuted()); syncSoundBtn(); if (!sfx.isMuted()) sfx.slap(0.6); });
+document.addEventListener('pointerdown', () => sfx.unlock(), { capture: true });
+syncSoundBtn();
 $('sp-cancel').addEventListener('click', () => { $('special').hidden = true; });
 newGame();
