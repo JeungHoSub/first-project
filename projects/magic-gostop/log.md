@@ -125,3 +125,9 @@
 - 결과물: game/src/engine/*, game/src/ui/*, outputs/stage1-preview.html (같은 링크 v8)
 - 다음 담당: 사용자 — 플레이 피드백
 - 넘길 메모(developer 판단, 확인 필요): 총통은 10점 고정이라 나가리 이월을 곱하지 않음. 피박은 브리프대로 0장 포함
+
+## 2026-11-16 총괄
+- 한 일: 사용자 확정 — 총통에도 나가리 이월 곱함(10 × 이월), 피박은 패자 피 1~5장만(0장 아님). 엔진·테스트·화면 규칙 안내·brief 반영
+- 확인: 테스트 97/97, 타입 검사 통과
+- 결과물: game/src/engine/(score.ts, game.ts), tests, brief.md, outputs/stage1-preview.html (v9)
+- 다음 담당: 사용자 — 플레이 피드백

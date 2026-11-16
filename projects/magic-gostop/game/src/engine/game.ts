@@ -76,7 +76,7 @@ export function checkChongtong(state: GameState): void {
       state.events.push({ type: 'chongtong', player: p, month: m, cards: state.hands[p].filter((c) => c.month === m).map((c) => c.id) });
       const result: GameResult = {
         type: 'win', winner: p, base: 10, goCount: 0, goBonus: 0, multiplier: 1, shakeMultiplier: 1,
-        bak: { pi: false, gwang: false, meong: false }, bakMultiplier: 1, carry: 1, nextCarry: 1, finalScore: 10, by: 'chongtong',
+        bak: { pi: false, gwang: false, meong: false }, bakMultiplier: 1, carry: opts.carry, nextCarry: 1, finalScore: 10 * opts.carry, by: 'chongtong', // 사용자 확정: 나가리 이월도 곱함
       };
       state.result = result;
       state.phase = 'ended';

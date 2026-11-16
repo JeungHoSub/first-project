@@ -754,9 +754,9 @@ describe('총통', () => {
       expect(countCards(s)).toBe(51);
     }
   });
-  it('carry가 있어도 총통은 10점 고정 (배수 없음)', () => {
+  it('총통에도 나가리 이월이 곱해진다 (10 x carry)', () => {
     const seed = findSeed((h, f) => four(h[0]) && !four(h[1]) && !four(f));
-    expect(createGame(seed, { carry: 4 }).result).toMatchObject({ finalScore: 10 });
+    expect(createGame(seed, { carry: 4 }).result).toMatchObject({ finalScore: 40, carry: 4 });
   });
   it('둘 다 총통이면 선 우선', () => {
     for (const dealer of [0, 1] as const) {
@@ -808,10 +808,11 @@ function stopWith(c0: string[], c1: string[], opts: Partial<import('../src/engin
 }
 
 describe('박 (피박·광박·멍따)', () => {
-  it('피박: 승자 피 점수 + 패자 피 5장 이하(0장 포함) = x2', () => {
-    const r0 = stopWith(P10, []); // 패자 피 0장
-    expect(r0.bak).toEqual({ pi: true, gwang: false, meong: false });
-    expect(r0).toMatchObject({ base: 1, bakMultiplier: 2, finalScore: 2 });
+  it('피박: 승자 피 점수 + 패자 피 1~5장 = x2 (0장은 아님)', () => {
+    const r0 = stopWith(P10, []); // 패자 피 0장 → 피박 아님 (사용자 확정)
+    expect(r0.bak).toEqual({ pi: false, gwang: false, meong: false });
+    expect(r0).toMatchObject({ base: 1, bakMultiplier: 1, finalScore: 1 });
+    expect(stopWith(P10, ['06-P-0']).bak.pi).toBe(true); // 1장
     expect(stopWith(P10, ['06-P-0', '06-P-1', '07-P-0', '07-P-1', '08-P-0']).bak.pi).toBe(true); // 5장
     expect(stopWith(P10, ['11-D-0', '06-P-0', '06-P-1', '07-P-0']).bak.pi).toBe(true); // 쌍피 포함 합 5
     const r6 = stopWith(P10, ['06-P-0', '06-P-1', '07-P-0', '07-P-1', '08-P-0', '08-P-1']); // 6장
@@ -835,10 +836,10 @@ describe('박 (피박·광박·멍따)', () => {
   });
   it('박은 곱셈으로 중첩 (피박·광박·멍따 = x8) + 흔들기/이월과도 곱', () => {
     const all = [...P10, ...Y7, '01-G-0', '03-G-0', '08-G-0']; // 3광 3 + 열끗 3 + 고도리 5 + 피 1 = 12
-    const r = stopWith(all, []);
+    const r = stopWith(all, ['06-P-0']);
     expect(r.bak).toEqual({ pi: true, gwang: true, meong: true });
     expect(r).toMatchObject({ base: 12, bakMultiplier: 8, finalScore: 96 });
-    const r2 = stopWith(all, [], { carry: 2 }, (s) => { s.shakes = [1, 0]; s.goCount = [1, 0]; });
+    const r2 = stopWith(all, ['06-P-0'], { carry: 2 }, (s) => { s.shakes = [1, 0]; s.goCount = [1, 0]; });
     expect(r2).toMatchObject({ goBonus: 1, shakeMultiplier: 2, bakMultiplier: 8, carry: 2, finalScore: 13 * 2 * 8 * 2 });
   });
   it('special.bak=false면 박 없음', () => {
@@ -878,7 +879,7 @@ describe('국진 자동 선택 (R04)', () => {
   it('정산: 열끗으로 세면 멍따가 되는 국진은 열끗으로, 쌍피가 이득이면 쌍피로 (승자에게 유리한 쪽)', () => {
     const r = stopWith(['02-Y-0', '04-Y-0', '05-Y-0', '06-Y-0', '07-Y-0', '08-Y-0', '09-Y-0'], []);
     expect(r).toMatchObject({ base: 8, finalScore: 16, bak: { meong: true } });
-    const r2 = stopWith(['01-P-0', '01-P-1', '02-P-0', '02-P-1', '03-P-0', '03-P-1', '04-P-0', '04-P-1', '09-Y-0'], []);
+    const r2 = stopWith(['01-P-0', '01-P-1', '02-P-0', '02-P-1', '03-P-0', '03-P-1', '04-P-0', '04-P-1', '09-Y-0'], ['06-P-0']);
     expect(r2).toMatchObject({ base: 1, bak: { pi: true }, finalScore: 2 });
   });
   it('패자의 국진은 쌍피(2)로 세어 피박을 피한다', () => {

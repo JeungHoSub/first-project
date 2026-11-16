@@ -88,7 +88,7 @@ export function judgeBak(winnerScore: ScoreResult, winner: readonly Card[], lose
   const gj = winnerScore.gukjin === 'pi';
   const yeolCount = winner.filter((c) => c.kind === 'Y' && !(gj && isGukjin(c))).length;
   const bak: Bak = {
-    pi: !off && winnerScore.details.some((d) => d.key === 'pi') && piSum(loser, true) <= 5,
+    pi: !off && winnerScore.details.some((d) => d.key === 'pi') && piSum(loser, true) >= 1 && piSum(loser, true) <= 5, // 사용자 확정: 1~5장만 (0장은 피박 아님)
     gwang: !off && winnerScore.details.some((d) => d.key === 'gwang') && !loser.some((c) => c.kind === 'G'),
     meong: !off && yeolCount >= 7,
   };
