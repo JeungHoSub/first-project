@@ -130,6 +130,7 @@ function render(view: GameState) {
       } else {
         const el = cardEl(c);
         if (view.pending && (c.id === view.pending.card.id || c.id === view.pending.later?.id)) el.classList.add('held');
+        if (myTurn && view.phase === 'play' && view.hands[ME].some((h) => h.month === c.month)) el.classList.add('target');
         grp.append(el);
       }
     }
@@ -146,6 +147,13 @@ function render(view: GameState) {
     const canPlay = canPlayPhase && legal.some((a) => a.type === 'play' && a.cardId === c.id);
     b.disabled = !canPlay;
     if (canPlay && (onFloor.has(c.month) || c.month === 13)) b.classList.add('match');
+    // 힌트 점: 회색 = 남은 같은 월이 내 손에만 있어 나중에 내도 되는 패, 노랑 = 바닥 1장 + 남은 1장이 아직 안 나와 뻑(쌀) 위험이 있는 패
+    if (canPlay && c.month !== 13) {
+      const h = hintFor(view, c);
+      if (h) { const dot = document.createElement('span'); dot.className = `hint ${h}`; dot.title = h === 'safe' ? '나중에 내도 되는 패' : '쌀 위험이 있는 패'; b.append(dot); }
+    }
+    b.addEventListener('pointerenter', () => markTargets(c.month, true));
+    b.addEventListener('pointerleave', () => markTargets(c.month, false));
     if (canPlay && specialFor(c, legal)) b.classList.add('triple');
     b.addEventListener('click', () => onHandCard(c));
     hand.append(b);
@@ -201,6 +209,24 @@ function render(view: GameState) {
       : '마지막 차례라 스톱만 할 수 있습니다.';
     ($('btn-go') as HTMLButtonElement).hidden = !canGo;
   }
+}
+
+// ---------- 손패 힌트 ----------
+function hintFor(view: GameState, c: Card): 'safe' | 'risk' | null {
+  const m = c.month;
+  const floorN = view.floor.filter((f) => f.month === m).length;
+  const mineN = view.hands[ME].filter((h) => h.month === m).length;
+  const goneN = view.captured[0].filter((x) => x.month === m).length + view.captured[1].filter((x) => x.month === m).length;
+  const unseen = 4 - floorN - mineN - goneN; // 상대 손패나 더미 어딘가에 있는 같은 월 (내가 볼 수 없는 것)
+  if (floorN === 0 && unseen === 0) return 'safe';
+  if (floorN === 1 && unseen >= 1) return 'risk';
+  return null;
+}
+function markTargets(month: number, on: boolean) {
+  document.querySelectorAll<HTMLElement>('#floor .card').forEach((el) => {
+    const c = allCards.get(el.dataset.id ?? '');
+    el.classList.toggle('aim', on && !!c && c.month === month);
+  });
 }
 
 // ---------- 흔들기 / 폭탄 선택 ----------
