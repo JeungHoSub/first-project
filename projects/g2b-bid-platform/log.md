@@ -143,3 +143,17 @@ Q4. [허용 필드] 공고 저장 허용 필드 목록은 언제 확정할까요
   - PPSSrch02는 서버 쪽 조건 조회를 지원한다.
   - 허용 필드 목록을 확정했다.
   - 서비스키는 사용자 PC에만 있으므로, 실제 호출 시험은 사용자 PC에서 한다.
+
+## 2026-11-16 developer (D1 수집기)
+- 한 일: D1 범위의 수집기를 `app/`에 만들었다. SQLite(WAL) 스키마(spec-v4 8장, 계정별 표 포함), 물품·용역·공사 목록 호출 래퍼(재시도·백오프, 에러코드 22, 오퍼레이션별 카운터 700/900, 중단선 990), 등록일시+변경일시 두 갈래 증분 수집(겹침 15분, 6일 조각, totalCount 검사), 백필(하루 조각, 최근 것부터, 오퍼레이션별 하루 예산, from_backfill), 허용 필드만 저장하는 가공과 전화·이메일 가리기, 키·토큰 가리기, 실측 도구 `python -m app.probe`, 진입점 `python -m app.run_cycle`(+ `run_cycle.bat`), 상태·백업 `python -m app.status`, 단위 테스트 38개, Windows용 README.
+- 결과물: app/ (README.md, requirements.txt, .env.example, .gitignore, config.py, api.py, collector.py, fields.py, redact.py, db.py, run_cycle.py, run_cycle.bat, probe.py, status.py, tests/)
+- 테스트: `python -m unittest discover -s app/tests -t .` -> 38개 모두 OK(가짜 응답만 사용, 실제 API 호출 없음). 실제 API·서비스키로는 한 번도 호출하지 않았다.
+- 다음 담당: 사용자(app/README.md의 A~E: probe 실행 후 결과 전달) -> developer(probe 결과로 R·조각 길이·호출량 반영) -> reviewer(H-1·M-1 샘플 점검)
+- 넘길 메모:
+  - 응답 JSON 형식은 문서 기준 추정으로 짰다(response.header.resultCode / body.items·totalCount, 오류는 `...ResponseError.header`). 실제와 다르면 `api.py`의 `parse_response`만 고치면 된다. probe 첫 실행에서 드러난다.
+  - 두 갈래(등록·변경) 수집이라 정규 호출이 spec 6-5 표의 2배가 된다. probe [3]이 하루 호출을 추정해 보여 준다.
+  - 백필은 하루 단위 조각을 최근부터 받는다(spec은 6일 조각 1개). 각 조각·오퍼레이션마다 쪽 위치를 저장해 며칠에 나눠 받는다. 예산은 오퍼레이션별 min(400 - 오늘 백필 호출, 700 - 오늘 전체 호출).
+  - 처음 보는 필드는 이름만 로그에 남기고 저장하지 않는다. 용역·공사의 지역·업종 칸은 허용 필드(jntcontrctDutyRgnNm, cnstrtsiteRgnNm, mainCnsttyNm, pubPrcrmntClsfcNm)에서 채운다.
+  - 위험 단계(900) 이상이면 수집을 55분 안에는 건너뛴다(60분 간격). 텔레그램 경고 발송은 D2에서 붙인다(지금은 로그·결과 alerts에만 남는다).
+  - run_cycle의 step_telegram / step_match / step_send 가 D2 자리다. 매칭은 from_backfill=0 공고만 대상으로 해야 한다.
+  - 7일 경계가 되면 `settings.max_window_days`(config.py 기본 6)만 바꾸면 된다.

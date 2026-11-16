@@ -1,0 +1,2 @@
+# 최소 의존성. 나머지는 파이썬 표준 라이브러리(sqlite3, unittest 등)만 쓴다.
+requests>=2.31
