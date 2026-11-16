@@ -5,6 +5,7 @@
       <button class="icon-btn sound-btn" id="btn-sound" type="button" aria-label="소리 끄기">♪</button>
       <button class="icon-btn" id="btn-info" type="button" aria-label="규칙과 구성 보기">?</button>
       <button class="icon-btn" id="btn-restart" type="button" aria-label="새 판 시작">↻</button>
+      <button class="icon-btn" id="btn-home" type="button" aria-label="처음 화면">⌂</button>
     </div>
   </header>
 
@@ -93,6 +94,7 @@
     <div class="res-badges" id="res-badges"></div>
     <div class="res-grid" id="res-grid"></div>
     <button class="big go-btn" id="btn-new" type="button">새 판</button>
+    <button class="text-btn" id="btn-res-home" type="button">처음 화면으로</button>
   </div>
 </div>
 
@@ -120,4 +122,47 @@
     <p class="seed">판 번호 <span id="seed"></span></p>
     <button class="big stop-btn" id="btn-info-close" type="button">닫기</button>
   </div>
+</div>
+
+<div class="home" id="home">
+  <div class="home-inner">
+    <div class="home-fan" id="home-fan" aria-hidden="true"></div>
+    <h1 class="home-title">매직고스톱</h1>
+    <p class="home-sub">한국 화투로 즐기는 맞고 · 매직 카드 수집</p>
+    <button class="big go-btn home-start" id="btn-start" type="button">게임 시작<small>상대: <span id="home-level">쉬움</span></small></button>
+    <div class="home-row">
+      <span class="home-label">난이도</span>
+      <div class="seg" id="seg-level" role="radiogroup" aria-label="상대 난이도"></div>
+    </div>
+    <div class="home-grid">
+      <button class="home-tile" id="btn-collection" type="button"><b>매직 카드</b><span id="home-coll">0 / 4</span></button>
+      <button class="home-tile" id="btn-home-rules" type="button"><b>규칙</b><span>점수·특수 룰</span></button>
+      <button class="home-tile toggle" id="btn-bgm" type="button"><b>음악</b><span>켜짐</span></button>
+      <button class="home-tile toggle" id="btn-sfx" type="button"><b>효과음</b><span>켜짐</span></button>
+    </div>
+    <p class="home-note">게임 안 점수만 있습니다 · 현금 가치 없음</p>
+  </div>
+</div>
+
+<div class="sheet" id="collection" hidden>
+  <div class="sheet-card">
+    <div class="sheet-kicker">매직 카드 도감 · 테스트</div>
+    <div class="sheet-title">모은 매직 카드 <span id="coll-count"></span></div>
+    <div class="coll-grid" id="coll-grid"></div>
+    <div class="drop-table">
+      <div class="dt-title">획득 확률 (봇전 테스트)</div>
+      <div id="drop-rates"></div>
+      <p class="dt-note">정식 버전에서는 뽑기권·사용자 대전으로 얻습니다. 지금 모은 카드는 이 기기 브라우저에만 저장됩니다.</p>
+    </div>
+    <button class="big stop-btn" id="btn-coll-close" type="button">닫기</button>
+  </div>
+</div>
+
+<div class="reward" id="reward" hidden>
+  <div class="rw-rays" aria-hidden="true"></div>
+  <div class="rw-kicker">매직 카드 획득!</div>
+  <div class="rw-card" id="rw-card"></div>
+  <div class="rw-name" id="rw-name"></div>
+  <div class="rw-desc" id="rw-desc"></div>
+  <button class="big go-btn" id="btn-reward-ok" type="button">확인</button>
 </div>

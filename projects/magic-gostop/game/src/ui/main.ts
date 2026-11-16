@@ -3,6 +3,7 @@ import type { Action, Card, GameEvent, GameState, PlayerId } from '../engine';
 import { chooseAction, AI_LEVELS, type AiLevel } from '../ai/simple';
 import { cardArt } from './art';
 import * as sfx from './sound';
+import { MAGIC, DROP_RATE, RARITY_LABEL, magicArt, owned, ownedKinds, rollDrop, type MagicDef } from './collection';
 
 // 화면 = 엔진 상태를 그리기만 한다. 규칙 판단은 전부 엔진(getLegalActions/applyAction)에 맡긴다.
 // 엔진은 한 행동을 한 번에 처리하므로, 화면은 이벤트로 중간 장면(낸 패가 바닥에 놓임 → 뒤집은 패가 놓임 → 먹은 패가 들어옴)을
@@ -543,6 +544,79 @@ function showResult() {
     grid.append(col);
   });
   $('btn-new').textContent = carry > 1 ? `새 판 (×${carry})` : '새 판';
+  // 매직 카드(수집품) 획득 판정 — 테스트용 봇전 드롭
+  const outcome = r.type === 'nagari' ? 'nagari' : r.winner === ME ? 'win' : 'lose';
+  const drop = rollDrop(outcome, level);
+  if (drop) setTimeout(() => showReward(drop), 900);
+}
+
+function showReward(m: MagicDef) {
+  $('rw-card').innerHTML = magicArt(m);
+  $('rw-name').textContent = `${m.name} · ${RARITY_LABEL[m.rarity]}`;
+  $('rw-name').style.color = m.hue;
+  $('rw-desc').textContent = m.desc;
+  const box = $('reward');
+  box.hidden = false;
+  box.classList.remove('on'); void box.offsetWidth; box.classList.add('on');
+  sfx.magic(); sfx.buzz([30, 50, 30]);
+  syncHome();
+}
+
+function renderCollection() {
+  const have = owned();
+  $('coll-count').textContent = `${ownedKinds()} / ${MAGIC.length}`;
+  const grid = $('coll-grid'); grid.innerHTML = '';
+  const total = MAGIC.reduce((a, m) => a + m.weight, 0);
+  for (const m of MAGIC) {
+    const n = have[m.id] ?? 0;
+    const d = document.createElement('div');
+    d.className = 'coll-item' + (n ? '' : ' locked');
+    d.innerHTML = `<div class="coll-card">${magicArt(m, !n)}</div><div class="coll-name">${n ? m.name : '???'}</div>
+      <div class="coll-meta"><span class="rar r-${m.rarity}">${RARITY_LABEL[m.rarity]}</span> ${n ? `×${n}` : ''}</div>
+      <div class="coll-desc">${n ? m.desc : '아직 못 얻은 카드'}</div><div class="coll-p">카드 중 ${Math.round((m.weight / total) * 100)}%</div>`;
+    grid.append(d);
+  }
+  const rows = (['win', 'lose', 'nagari'] as const).map((o) => {
+    const label = o === 'win' ? '이겼을 때' : o === 'lose' ? '졌을 때' : '나가리';
+    return `<div class="dt-row"><span>${label}</span><span>쉬움 ${DROP_RATE[o].easy}%</span><span>보통 ${DROP_RATE[o].normal}%</span><span>어려움 ${DROP_RATE[o].hard}%</span></div>`;
+  });
+  $('drop-rates').innerHTML = rows.join('');
+}
+
+// ---------- 처음 화면 ----------
+function syncHome() {
+  const label = AI_LEVELS.find((l) => l.id === level)!.label;
+  $('home-level').textContent = label;
+  $('home-coll').textContent = `${ownedKinds()} / ${MAGIC.length}`;
+  const seg = $('seg-level'); seg.innerHTML = '';
+  for (const l of AI_LEVELS) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = l.label; b.setAttribute('role', 'radio');
+    b.setAttribute('aria-checked', String(l.id === level)); b.dataset.level = l.id;
+    b.addEventListener('click', () => { setLevel(l.id as AiLevel); sfx.click(); });
+    seg.append(b);
+  }
+  const bgm = $('btn-bgm'), fx = $('btn-sfx');
+  bgm.classList.toggle('off', !sfx.isBgmOn()); bgm.querySelector('span')!.textContent = sfx.isBgmOn() ? '켜짐' : '꺼짐';
+  fx.classList.toggle('off', sfx.isMuted()); fx.querySelector('span')!.textContent = sfx.isMuted() ? '꺼짐' : '켜짐';
+}
+function setLevel(l: AiLevel) {
+  level = l;
+  try { localStorage.setItem('mg-level', level); } catch { /* 무시 */ }
+  syncLevel(); syncHome();
+}
+function showHome() {
+  gameNo++; busy = false;
+  for (const id of ['result', 'special', 'choose', 'gostop', 'info', 'reward', 'collection']) $(id).hidden = true;
+  syncHome();
+  $('home').hidden = false;
+}
+{
+  const fan = $('home-fan');
+  ['01-G-0', '03-G-0', '08-G-0', '11-G-0', '12-G-0'].forEach((id, i) => {
+    const c = { id, month: Number(id.slice(0, 2)), kind: 'G' } as Card;
+    const el = cardEl(c); el.style.setProperty('--i', String(i - 2)); fan.append(el);
+  });
 }
 
 async function newGame() {
@@ -559,6 +633,8 @@ async function newGame() {
   $('special').hidden = true;
   $('choose').hidden = true;
   render(s);
+  await dealIn(no);
+  if (no !== gameNo) return;
   // 총통: 분배하자마자 같은 월 4장 → 보여 주고 바로 끝
   const ct = s.events.find((e) => (e.type as string) === 'chongtong') as (GameEvent & { player: PlayerId; cards: string[] }) | undefined;
   if (ct) {
@@ -572,6 +648,28 @@ async function newGame() {
     if (s.result?.type === 'win' && s.result.winner === ME) sfx.win(); else sfx.lose();
     showResult();
   }
+}
+
+/** 새 판: 가운데 더미에서 손패·바닥으로 한 장씩 날아가는 연출 */
+async function dealIn(no: number) {
+  if (reduced) return;
+  busy = true; render(s);
+  const deck = $('deck').getBoundingClientRect();
+  // 맞고 순서처럼 상대·나·바닥을 번갈아 한 장씩
+  const groups = ['#opp-fan i', '#hand .card', '#floor .card'].map((q) => [...document.querySelectorAll<HTMLElement>(q)]);
+  const els: HTMLElement[] = [];
+  for (let k = 0; k < Math.max(...groups.map((g) => g.length)); k++) for (const g of groups) if (g[k]) els.push(g[k]);
+  els.forEach((el, i) => {
+    const r = el.getBoundingClientRect();
+    const dx = deck.left + deck.width / 2 - (r.left + r.width / 2);
+    const dy = deck.top + deck.height / 2 - (r.top + r.height / 2);
+    el.animate([{ transform: `translate(${dx}px, ${dy}px) scale(.6) rotate(${(i % 5) * 9 - 18}deg)`, opacity: 0.2 }, { transform: 'none', opacity: 1 }],
+      { duration: 360, delay: i * 38, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' });
+    setTimeout(() => { if (no === gameNo) sfx.deal(); }, i * 38 + 200);
+  });
+  await wait(els.length * 38 + 420);
+  if (no !== gameNo) return;
+  busy = false; render(s);
 }
 
 function syncSoundBtn() {
@@ -594,8 +692,18 @@ $('btn-level').addEventListener('click', () => {
   const i = AI_LEVELS.findIndex((l) => l.id === level);
   level = AI_LEVELS[(i + 1) % AI_LEVELS.length].id as AiLevel;
   try { localStorage.setItem('mg-level', level); } catch { /* 무시 */ }
-  syncLevel();
+  syncLevel(); syncHome();
   banner(`상대: ${AI_LEVELS.find((l) => l.id === level)!.label}`);
 });
 $('sp-cancel').addEventListener('click', () => { $('special').hidden = true; });
-newGame();
+$('btn-start').addEventListener('click', () => { sfx.unlock(); sfx.click(); sfx.startBgm(); $('home').hidden = true; newGame(); });
+$('btn-res-home').addEventListener('click', () => { sfx.click(); showHome(); });
+$('btn-home').addEventListener('click', () => { sfx.click(); showHome(); });
+$('btn-collection').addEventListener('click', () => { sfx.click(); renderCollection(); $('collection').hidden = false; });
+$('btn-coll-close').addEventListener('click', () => { $('collection').hidden = true; });
+$('btn-home-rules').addEventListener('click', () => { sfx.click(); $('info').hidden = false; });
+$('btn-bgm').addEventListener('click', () => { sfx.unlock(); sfx.setBgm(!sfx.isBgmOn()); syncHome(); });
+$('btn-sfx').addEventListener('click', () => { sfx.unlock(); sfx.setMuted(!sfx.isMuted()); syncSoundBtn(); syncHome(); sfx.click(); });
+$('btn-reward-ok').addEventListener('click', () => { $('reward').hidden = true; });
+document.addEventListener('pointerdown', () => { if (!$('home').hidden) return; sfx.startBgm(); }, { capture: true });
+showHome();

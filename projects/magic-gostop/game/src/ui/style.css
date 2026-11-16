@@ -328,3 +328,69 @@ button.card:disabled { cursor: default; }
 button.lv { font: inherit; font-size: .68rem; font-weight: 700; color: var(--text); background: rgba(0,0,0,.3); border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; margin-left: 4px; cursor: pointer; }
 button.lv[data-level="normal"] { color: #ffe08f; border-color: rgba(240,195,90,.6); }
 button.lv[data-level="hard"] { color: #fff; background: linear-gradient(180deg, #e0383f, var(--red-deep)); border-color: #ff8a8a; }
+
+/* ===== 처음 화면 ===== */
+.home { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; overflow-y: auto;
+  padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  background:
+    radial-gradient(60% 40% at 50% 28%, rgba(240,195,90,.22), transparent 70%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .5 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E"),
+    radial-gradient(120% 90% at 50% 30%, #1f5a43 0%, #10281f 55%, #070f0c 100%); }
+.home-inner { width: 100%; max-width: 400px; display: grid; gap: 14px; justify-items: center; text-align: center; }
+.home-fan { position: relative; height: 150px; width: 100%; }
+.home-fan .card { position: absolute; left: 50%; bottom: 0; width: 74px; --cw: 74px; margin-left: -37px; transform-origin: 50% 140%;
+  transform: rotate(calc(var(--i) * 13deg)) translateY(calc(var(--i) * var(--i) * 3px)); box-shadow: 0 10px 22px rgba(0,0,0,.55);
+  animation: fanin .8s cubic-bezier(.2,.9,.3,1.2) backwards; animation-delay: calc((var(--i) + 2) * 70ms); }
+.home-fan .card .mo { display: none; }
+@keyframes fanin { from { transform: rotate(0) translateY(40px); opacity: 0; } }
+.home-title { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 3.1rem; line-height: 1; color: #fff6dc; letter-spacing: .02em;
+  -webkit-text-stroke: 2px #6e0d14; paint-order: stroke fill; text-shadow: 0 4px 0 #6e0d14, 0 0 28px rgba(240,195,90,.55); }
+.home-sub { margin: -6px 0 0; color: var(--muted); font-size: .86rem; }
+.home-start { width: 100%; font-size: 1.7rem; padding: 16px; }
+.home-row { display: flex; align-items: center; gap: 10px; width: 100%; }
+.home-label { font-size: .8rem; color: var(--muted); white-space: nowrap; }
+.seg { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); background: rgba(0,0,0,.35); border: 1px solid var(--line); border-radius: 12px; padding: 3px; gap: 3px; }
+.seg button { border: 0; border-radius: 9px; padding: 8px 0; background: transparent; color: var(--muted); font-weight: 700; font-size: .9rem; }
+.seg button[aria-checked="true"] { background: linear-gradient(180deg, #f6d27a, #c8952f); color: #3a2506; box-shadow: 0 2px 0 rgba(0,0,0,.4); }
+.seg button[aria-checked="true"][data-level="hard"] { background: linear-gradient(180deg, #e3393f, #9d1720); color: #fff3d6; }
+.home-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
+.home-tile { display: grid; gap: 2px; text-align: left; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: rgba(0,0,0,.32); color: var(--text); }
+.home-tile b { font-size: .95rem; }
+.home-tile span { font-size: .75rem; color: var(--gold); }
+.home-tile.toggle.off span { color: var(--muted); }
+.home-note { margin: 0; font-size: .66rem; color: var(--muted); opacity: .8; }
+
+/* ===== 도감 ===== */
+.coll-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.coll-item { display: grid; justify-items: center; gap: 3px; text-align: center; padding: 10px 6px; border-radius: 14px; background: rgba(0,0,0,.22); }
+.coll-card { width: 84px; filter: drop-shadow(0 6px 10px rgba(0,0,0,.5)); }
+.coll-card svg { display: block; width: 100%; height: auto; }
+.coll-name { font-family: var(--font-display); font-size: 1.05rem; }
+.coll-meta { font-size: .75rem; color: var(--muted); }
+.coll-desc { font-size: .74rem; color: var(--muted); line-height: 1.4; }
+.coll-p { font-size: .66rem; color: var(--muted); opacity: .8; }
+.rar { font-weight: 700; padding: 0 6px; border-radius: 999px; font-size: .68rem; }
+.r-common { background: #3d5148; color: #dfe8e3; } .r-rare { background: #5a3b80; color: #ecd9ff; } .r-epic { background: #8a6414; color: #fff1c4; }
+.drop-table { display: grid; gap: 4px; background: rgba(0,0,0,.22); border-radius: 12px; padding: 10px 12px; }
+.dt-title { font-size: .78rem; font-weight: 700; color: var(--gold); }
+.dt-row { display: grid; grid-template-columns: 1.3fr 1fr 1fr 1.1fr; font-size: .74rem; color: var(--text); font-variant-numeric: tabular-nums; }
+.dt-note { margin: 4px 0 0; font-size: .68rem; color: var(--muted); line-height: 1.45; }
+
+/* ===== 매직 카드 획득 ===== */
+.reward { position: fixed; inset: 0; z-index: 35; display: grid; place-content: center; justify-items: center; gap: 10px; text-align: center; padding: 16px;
+  background: radial-gradient(50% 40% at 50% 45%, rgba(30, 24, 70, .85), rgba(3, 4, 10, .92)); }
+.rw-rays { position: absolute; left: 50%; top: 45%; width: 520px; height: 520px; margin: -260px 0 0 -260px; border-radius: 50%; pointer-events: none;
+  background: repeating-conic-gradient(rgba(255, 230, 160, .22) 0 8deg, transparent 8deg 20deg);
+  -webkit-mask: radial-gradient(circle, #000 20%, transparent 68%); mask: radial-gradient(circle, #000 20%, transparent 68%); animation: spin 12s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.rw-kicker { position: relative; font-family: var(--font-display); font-size: 1.6rem; color: #fff6dc; text-shadow: 0 0 18px rgba(240,195,90,.8); }
+.rw-card { position: relative; width: 150px; filter: drop-shadow(0 0 24px rgba(240,195,90,.55)); }
+.rw-card svg { display: block; width: 100%; height: auto; }
+.rw-name { position: relative; font-family: var(--font-display); font-size: 1.4rem; }
+.rw-desc { position: relative; color: var(--muted); font-size: .9rem; max-width: 280px; }
+.reward .big { position: relative; min-width: 180px; margin-top: 6px; }
+.reward.on .rw-card { animation: cardflip .9s cubic-bezier(.2,.9,.3,1.2) backwards; }
+.reward.on .rw-kicker { animation: pop .5s cubic-bezier(.2,.9,.3,1.4) backwards; }
+.reward.on .rw-name, .reward.on .rw-desc { animation: rise .4s ease-out .6s backwards; }
+@keyframes cardflip { 0% { transform: rotateY(180deg) scale(.4); opacity: 0; } 55% { transform: rotateY(0) scale(1.12); opacity: 1; } 100% { transform: none; } }
+#collection, #info { z-index: 40; }
