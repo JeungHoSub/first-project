@@ -5,7 +5,7 @@
 ## 실행
 ```bash
 npm install
-npm test        # vitest (카드/셔플/매칭/점수/고스톱/흔들기·폭탄/특수 룰/보너스/1000판 자동 대전)
+npm test        # vitest (총통·박·국진·이월 포함, 카드/셔플/매칭/점수/고스톱/흔들기·폭탄/특수 룰/보너스/1000판 자동 대전)
 npm run sim     # 랜덤 vs 랜덤 한 판 로그. 시드 지정: npm run sim -- 42
 npm run typecheck
 ```
@@ -50,7 +50,16 @@ npm run build:page   # 한 파일로 묶기 -> dist/magic-gostop.html (outputs/s
 - 처음 분배: 바닥의 보너스는 선이 가져가고 더미에서 채움 -> `bonus`(from 'deal'), `deal` 이벤트 뒤에 나온다.
 - `ALL_CARDS`는 계속 기본 48장. 보너스는 `buildBonusCards`. `countCards`는 덱 전체 장수(48 또는 51).
 
+## 3단계 특수 룰 (총통·박·국진·나가리 이월·재분배)
+- **총통**(R11): 분배 직후 손패 같은 월 4장이면 그 사람 즉시 승리 10점. 둘 다면 선 우선. 흔들기·고·박·이월 배수 없음. `createGame`이 돌려준 state가 이미 `phase:'ended'`, `result.by==='chongtong'`. 이벤트 `deal` -> (`redeal`) -> (`bonus` from deal) -> `chongtong{player,month,cards}` -> `end`. `special.chongtong`(기본 true)로 끔.
+- **재분배**(R15): 분배 직후 바닥 같은 월 4장이면 시드+`#re1`, `#re2`...로 결정적으로 다시 섞는다. 횟수만큼 `{type:'redeal',reason:'floor4'}` 이벤트. `state.seed`는 원래 시드.
+- **박**(R08 곱셈, 패자 기준, `special.bak` 기본 true): 피박 = 승자가 피 점수(피 10장+)를 냈고 패자 피 합(쌍피·보너스 포함) 0~5. 광박 = 승자 광 점수 + 패자 광 0장. 멍따 = 승자 열끗 7장 이상(패자 조건 없음). 각 x2.
+- **국진**(R04, `special.gukjin:'auto'`): `score()`가 열끗/쌍피 중 총점이 높은 쪽(같으면 열끗)을 매번 자동 선택. `ScoreResult.gukjin`('yeol'|'pi'|null)과 details label("국진→쌍피")로 확인. 정산(`settleWin`)은 승자의 최종 점수가 더 큰 쪽을, 패자는 쌍피로 세어 피박 판정(유리하게). 피 가져오기 대상에서는 항상 제외(kind가 Y라서). `score(captured, options, 'yeol'|'pi')`로 고정도 가능.
+- **나가리 이월**(R12): `createGame(seed, { carry })`(기본 1)이 승자 finalScore에 곱해진다. 나가리 결과 `nextCarry = min(carry*2, 4)`, 승리 결과 `nextCarry = 1`. 화면이 다음 판 `createGame`에 넘긴다.
+- **바닥 3장 먹기**: 뻑이든 아니든 바닥 같은 월 3장을 4장째로 먹으면 `ppeokEat{player,month,self,fromPpeok}`. 남이 싼 뻑 1장 / 자뻑 2장 / 뻑이 아닌 3장(`fromPpeok:false`) 1장을 `stealDue`로 가져온다.
+- 결과 타입: `win{ ..., bak:{pi,gwang,meong}, bakMultiplier, carry, nextCarry, finalScore, by:'stop'|'exhaust'|'chongtong' }`, `nagari{ nextCarry }`. finalScore = (기본 + 고가산) x 고배수 x 흔들기·폭탄 x 박 x carry. `settle(base, goCount, options, shakes, bakMultiplier=1, carry=1)`.
+
 ## 아직 없는 것
-총통(손패 4장)·바닥 2장일 때 3장 폭탄 등 변형·박·국진 선택·나가리 이월·바닥 동월 4장 재분배, 매직(4단계), 화면·AI(2단계).
-자리만 있음: `RuleOptions.special/magic`, `EngineHooks`(`hooks.ts`, `magic.enabled=true`일 때만 호출), `state.events` 로그.
+바닥 2장일 때 3장 폭탄 등 변형, 매직(4단계). 화면·AI는 별도(`src/ui`, `src/ai`).
+자리만 있음: `RuleOptions.magic`, `EngineHooks`(`hooks.ts`, `magic.enabled=true`일 때만 호출), `state.events` 로그.
 돈 개념 없음: 점수만 있다.

@@ -1,6 +1,6 @@
 import { ALL_CARDS, buildBonusCards, isBonus } from './cards';
 import { shuffle } from './rng';
-import { score, settle } from './score';
+import { score, settleWin } from './score';
 import type { EngineHooks } from './hooks';
 import {
   DEFAULT_OPTIONS,
@@ -20,9 +20,18 @@ export function createGame(seed: string | number, options: Partial<RuleOptions> 
     bonus: { ...DEFAULT_OPTIONS.bonus, ...options.bonus },
   };
   const full = [...ALL_CARDS, ...buildBonusCards(opts.bonus.two, opts.bonus.three)];
-  const deck = shuffle(full, seed).map((c) => ({ ...c }));
-  const hands: [Card[], Card[]] = [deck.splice(0, HAND), deck.splice(0, HAND)];
-  const floor = deck.splice(0, FLOOR);
+  // 바닥 같은 월 4장이면 같은 시드에서 결정적으로 다시 섞는다 (R15). 시드+"#re1", "#re2"...
+  let deck: Card[] = [];
+  let hands: [Card[], Card[]] = [[], []];
+  let floor: Card[] = [];
+  let redeals = 0;
+  for (;; redeals++) {
+    const sd = redeals === 0 ? seed : `${seed}#re${redeals}`;
+    deck = shuffle(full, sd).map((c) => ({ ...c }));
+    hands = [deck.splice(0, HAND), deck.splice(0, HAND)];
+    floor = deck.splice(0, FLOOR);
+    if (redeals >= 50 || !hasFour(floor)) break;
+  }
   const state: GameState = {
     seed: String(seed),
     options: opts,
@@ -42,6 +51,7 @@ export function createGame(seed: string | number, options: Partial<RuleOptions> 
     events: [{ type: 'deal', seed: String(seed) }],
     result: null,
   };
+  for (let i = 0; i < redeals; i++) state.events.push({ type: 'redeal', reason: 'floor4' });
   // 처음 바닥에 깔린 보너스 패: 선이 가져가고 더미에서 채운다 (또 보너스면 반복)
   for (let i = 0; i < state.floor.length; i++) {
     while (isBonus(state.floor[i])) {
@@ -51,8 +61,36 @@ export function createGame(seed: string | number, options: Partial<RuleOptions> 
       if (i >= state.floor.length) break;
     }
   }
+  checkChongtong(state);
   return state;
 }
+
+/** 총통: 손패 같은 월 4장이면 즉시 승리 10점 (R11). 둘 다면 선 우선. 흔들기·고·박·이월 없음. state를 직접 바꾼다 (테스트용으로 export) */
+export function checkChongtong(state: GameState): void {
+  const opts = state.options;
+  if (opts.special.chongtong) {
+    const order: PlayerId[] = [opts.dealer, (1 - opts.dealer) as PlayerId];
+    for (const p of order) {
+      const m = fourOf(state.hands[p]);
+      if (m === null) continue;
+      state.events.push({ type: 'chongtong', player: p, month: m, cards: state.hands[p].filter((c) => c.month === m).map((c) => c.id) });
+      const result: GameResult = {
+        type: 'win', winner: p, base: 10, goCount: 0, goBonus: 0, multiplier: 1, shakeMultiplier: 1,
+        bak: { pi: false, gwang: false, meong: false }, bakMultiplier: 1, carry: 1, nextCarry: 1, finalScore: 10, by: 'chongtong',
+      };
+      state.result = result;
+      state.phase = 'ended';
+      state.events.push({ type: 'end', result });
+      break;
+    }
+  }
+}
+
+function fourOf(cards: Card[]): number | null {
+  for (let m = 1; m <= 12; m++) if (cards.filter((c) => c.month === m).length === 4) return m;
+  return null;
+}
+const hasFour = (cards: Card[]) => fourOf(cards) !== null;
 
 export function getLegalActions(s: GameState): Action[] {
   switch (s.phase) {
@@ -284,11 +322,12 @@ function flipAndSettle(ctx: Ctx, hand: Card | null) {
     }
   }
 
-  // 2) 뻑 먹기 효과 이벤트 (바닥 3장이 뻑 월이면). 먹기보다 먼저 알린다
+  // 2) 바닥 같은 월 3장 먹기 이벤트. 뻑이면 남 1 / 자뻑 2, 뻑이 아닌 3장이면 1장. 먹기보다 먼저 알린다
   for (const c of [hand, flipped]) {
-    if (c && onFloor(c.month).length === 3 && s.ppeok[c.month] !== undefined) {
-      const self = s.ppeok[c.month] === p;
-      s.events.push({ type: 'ppeokEat', player: p, month: c.month, self });
+    if (c && onFloor(c.month).length === 3) {
+      const fromPpeok = s.ppeok[c.month] !== undefined;
+      const self = fromPpeok && s.ppeok[c.month] === p;
+      s.events.push({ type: 'ppeokEat', player: p, month: c.month, self, fromPpeok });
       s.stealDue += self ? 2 : 1;
     }
   }
@@ -344,8 +383,8 @@ function finish(s: GameState, stopper: PlayerId | null, by: 'stop' | 'exhaust') 
     else if (ok[0] && ok[1] && sc[0] !== sc[1]) winner = sc[0] > sc[1] ? 0 : 1;
   }
   let result: GameResult;
-  if (winner === null) result = { type: 'nagari' }; // 배수 이월 등은 3단계
-  else result = { type: 'win', winner, base: sc[winner], goCount: s.goCount[winner], by, ...settle(sc[winner], s.goCount[winner], s.options, s.shakes[winner]) };
+  if (winner === null) result = { type: 'nagari', nextCarry: Math.min(s.options.carry * 2, 4) }; // R12
+  else result = settleWin(winner, s.captured, s.goCount[winner], s.shakes[winner], s.options, by);
   s.result = result;
   s.phase = 'ended';
   s.events.push({ type: 'end', result });

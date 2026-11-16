@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
-  ALL_CARDS, applyAction, countCards, createGame, createRng, getLegalActions, score, settle, shuffle,
+  ALL_CARDS, applyAction, buildBonusCards, countCards, createGame, createRng, getLegalActions, score, settle, shuffle,
   type Action, type Card, type GameState,
 } from '../src/engine';
+import { checkChongtong } from '../src/engine/game';
 
 const byId = (id: string): Card => {
   const c = ALL_CARDS.find((x) => x.id === id) ?? (id.startsWith('13') ? { id, month: 13, kind: id.includes('B3') ? 'B3' : 'B2' } as Card : undefined);
@@ -191,7 +192,7 @@ describe('고/스톱, 배수, 나가리', () => {
   it('7점 도달 시 goStop 상태, 스톱하면 정산', () => {
     // 광3(3점) + 고도리 2장 보유, 8월 열끗을 먹어 고도리(+5) = 8점
     const base = ['01-G-0', '03-G-0', '08-G-0', '02-Y-0', '04-Y-0'];
-    let s = setup({ hand: ['08-Y-0'], floor: ['08-P-0'], deck: ['05-P-0'], captured: base });
+    let s = setup({ hand: ['08-Y-0'], floor: ['08-P-0'], deck: ['05-P-0'], captured: base, captured1: ['11-G-0'] });
     s = play(s, '08-Y-0');
     expect(s.phase).toBe('goStop'); // 3 + 5 = 8
     expect(getLegalActions(s).map((a) => a.type).sort()).toEqual(['go', 'stop']);
@@ -201,7 +202,7 @@ describe('고/스톱, 배수, 나가리', () => {
   });
   it('고를 외치면 goCount가 오르고 상대 턴으로 넘어간다', () => {
     const base = ['01-G-0', '03-G-0', '08-G-0', '02-Y-0', '04-Y-0'];
-    let s = setup({ hand: ['08-Y-0'], floor: ['08-P-0'], deck: ['10-P-0'], captured: base });
+    let s = setup({ hand: ['08-Y-0'], floor: ['08-P-0'], deck: ['10-P-0'], captured: base, captured1: ['11-G-0'] });
     s = play(s, '08-Y-0'); // 8점
     s = applyAction(s, { type: 'go' });
     expect(s.goCount).toEqual([1, 0]);
@@ -211,7 +212,7 @@ describe('고/스톱, 배수, 나가리', () => {
   });
   it('최종 정산에 고 횟수가 반영된다 (2고 스톱 = 기본 + 2)', () => {
     const base = ['01-G-0', '03-G-0', '08-G-0', '02-Y-0', '04-Y-0'];
-    let s = setup({ hand: ['08-Y-0'], floor: ['08-P-0'], deck: ['05-P-0'], captured: base });
+    let s = setup({ hand: ['08-Y-0'], floor: ['08-P-0'], deck: ['05-P-0'], captured: base, captured1: ['11-G-0'] });
     s.goCount = [2, 0];
     s.lastGoScore = [7, 0];
     s = play(s, '08-Y-0');
@@ -220,7 +221,7 @@ describe('고/스톱, 배수, 나가리', () => {
   });
   it('직전 고 점수와 같으면 고/스톱이 다시 뜨지 않는다', () => {
     const base = ['01-G-0', '03-G-0', '08-G-0', '02-Y-0', '04-Y-0', '08-Y-0']; // 8점
-    let s = setup({ hand: ['09-P-0'], floor: [], deck: ['10-P-0'], captured: base });
+    let s = setup({ hand: ['09-P-0'], floor: [], deck: ['10-P-0'], captured: base, captured1: ['11-G-0'] });
     s.lastGoScore = [8, 0];
     s.goCount = [1, 0];
     s = play(s, '09-P-0');
@@ -235,12 +236,12 @@ describe('고/스톱, 배수, 나가리', () => {
     expect(s.phase).toBe('play');
     s = play(s, '09-P-0');
     expect(s.phase).toBe('ended');
-    expect(s.result).toEqual({ type: 'nagari' });
+    expect(s.result).toEqual({ type: 'nagari', nextCarry: 2 });
     expect(countCards(s)).toBe(48);
   });
   it('패가 떨어졌을 때 7점 이상이 한 명이면 그 사람이 승자 (고 가산 반영)', () => {
     const base = ['01-G-0', '03-G-0', '08-G-0', '02-Y-0', '04-Y-0'];
-    let s = setup({ hand: ['08-Y-0'], floor: ['08-P-0'], deck: ['05-P-0', '06-P-0'], captured: base });
+    let s = setup({ hand: ['08-Y-0'], floor: ['08-P-0'], deck: ['05-P-0', '06-P-0'], captured: base, captured1: ['11-G-0'] });
     s.hands[1] = cards('09-P-0');
     s.goCount = [1, 0];
     s.lastGoScore = [7, 0];
@@ -251,7 +252,7 @@ describe('고/스톱, 배수, 나가리', () => {
   });
   it('마지막 턴에서는 고 없이 스톱만 가능', () => {
     const base = ['01-G-0', '03-G-0', '08-G-0', '02-Y-0', '04-Y-0'];
-    let s = setup({ hand: ['08-Y-0'], floor: ['08-P-0'], deck: ['05-P-0'], captured: base });
+    let s = setup({ hand: ['08-Y-0'], floor: ['08-P-0'], deck: ['05-P-0'], captured: base, captured1: ['11-G-0'] });
     s.hands[1] = [];
     s = play(s, '08-Y-0');
     expect(getLegalActions(s)).toEqual([{ type: 'stop' }]);
@@ -272,7 +273,7 @@ describe('흔들기', () => {
   });
   it('선언하면 shakes+1, shake 이벤트(3장 공개), 이긴 경우 배수 x2', () => {
     const base = ['01-G-0', '03-G-0', '08-G-0', '02-Y-0', '04-Y-0']; // 5장, 8월 열끗을 먹으면 8점
-    let s = setup({ hand: ['08-Y-0', '05-P-0', '05-P-1', '05-T-0'], floor: ['08-P-0'], deck: ['10-P-0'], captured: base });
+    let s = setup({ hand: ['08-Y-0', '05-P-0', '05-P-1', '05-T-0'], floor: ['08-P-0'], deck: ['10-P-0'], captured: base, captured1: ['11-G-0'] });
     s = applyAction(s, { type: 'play', cardId: '05-P-0', shake: true });
     expect(s.shakes).toEqual([1, 0]);
     const ev = s.events.find((e) => e.type === 'shake');
@@ -283,13 +284,13 @@ describe('흔들기', () => {
   });
   it('흔들기 배수는 판 끝 정산에서 이긴 경우만 곱해진다 (누적)', () => {
     const base = ['01-G-0', '03-G-0', '08-G-0', '02-Y-0', '04-Y-0'];
-    let s = setup({ hand: ['08-Y-0'], floor: ['08-P-0'], deck: ['05-P-0'], captured: base });
+    let s = setup({ hand: ['08-Y-0'], floor: ['08-P-0'], deck: ['05-P-0'], captured: base, captured1: ['11-G-0'] });
     s.shakes = [2, 0];
     s = play(s, '08-Y-0');
     s = applyAction(s, { type: 'stop' });
     expect(s.result).toMatchObject({ type: 'win', winner: 0, base: 8, shakeMultiplier: 4, finalScore: 32 });
     // 상대가 흔들었어도 내가 이기면 내 배수만 적용
-    let t = setup({ hand: ['08-Y-0'], floor: ['08-P-0'], deck: ['05-P-0'], captured: base });
+    let t = setup({ hand: ['08-Y-0'], floor: ['08-P-0'], deck: ['05-P-0'], captured: base, captured1: ['11-G-0'] });
     t.shakes = [0, 3];
     t = applyAction(play(t, '08-Y-0'), { type: 'stop' });
     expect(t.result).toMatchObject({ shakeMultiplier: 1, finalScore: 8 });
@@ -387,7 +388,7 @@ describe('폭탄', () => {
   });
   it('폭탄 점수: 이긴 사람의 폭탄 배수가 정산에 곱해진다', () => {
     const base = ['01-G-0', '08-G-0', '02-Y-0', '04-Y-0', '08-Y-0']; // 광2 -> 0, 고도리 2장
-    let s = setup({ hand: [...H3, '05-P-0'], floor: ['03-G-0'], deck: ['09-P-0'], captured: base });
+    let s = setup({ hand: [...H3, '05-P-0'], floor: ['03-G-0'], deck: ['09-P-0'], captured: base, captured1: ['11-G-0'] });
     s = applyAction(s, { type: 'bomb', month: 3 }); // 3광(01,03,08) 3점 + ... 
     expect(s.phase).toBe('goStop');
     s = applyAction(s, { type: 'stop' });
@@ -432,14 +433,14 @@ describe('뻑 / 뻑 먹기', () => {
     expect(s.ppeok).toEqual({});
     const after = s.events.slice(s.events.findIndex((e) => e.type === 'ppeok') + 1).map((e) => e.type);
     expect(after).toEqual(['play', 'flip', 'ppeokEat', 'capture', 'place', 'steal']);
-    expect(s.events.find((e) => e.type === 'ppeokEat')).toEqual({ type: 'ppeokEat', player: 1, month: 5, self: false });
+    expect(s.events.find((e) => e.type === 'ppeokEat')).toEqual({ type: 'ppeokEat', player: 1, month: 5, self: false, fromPpeok: true });
   });
   it('자뻑(자기가 싼 뻑을 자기가 먹음)은 상대 피 2장', () => {
     let s = setup({ hand: ['05-P-0', '05-P-1'], floor: ['05-Y-0', '01-P-0'], deck: ['05-T-0', '09-P-0', '10-P-0'], hand1: ['12-T-0', '06-P-0'], captured1: ['07-P-0', '07-P-1', '08-P-0'] });
     s = play(s, '05-P-0'); // 뻑
     s = play(s, '12-T-0');
     s = play(s, '05-P-1'); // 자뻑
-    expect(s.events.find((e) => e.type === 'ppeokEat')).toEqual({ type: 'ppeokEat', player: 0, month: 5, self: true });
+    expect(s.events.find((e) => e.type === 'ppeokEat')).toEqual({ type: 'ppeokEat', player: 0, month: 5, self: true, fromPpeok: true });
     expect(s.events.filter((e) => e.type === 'steal')).toHaveLength(2);
     expect(s.captured[1]).toHaveLength(1);
     expect(s.captured[0].filter((c) => c.kind === 'P' && c.month !== 5)).toHaveLength(2);
@@ -460,11 +461,16 @@ describe('뻑 / 뻑 먹기', () => {
     expect(s.ppeok).toEqual({ 5: 0, 6: 0, 7: 0 });
     expect(s.result).toBeNull();
   });
-  it('처음부터 바닥에 깔린 3장은 뻑이 아니라서 먹어도 피를 가져오지 않는다', () => {
+  it('뻑이 아닌 바닥 3장(처음 분배 등)을 4장째로 먹으면 상대 피 1장 (fromPpeok=false)', () => {
     const s = play(setup({ hand: ['03-P-0'], floor: ['03-T-0', '03-P-1', '03-G-0', '05-P-0'], deck: ['09-P-0'], captured1: ['02-P-0'] }), '03-P-0');
-    expect(s.captured[0]).toHaveLength(4);
-    expect(s.captured[1]).toHaveLength(1);
-    expect(evTypes(s)).toEqual(['play', 'flip', 'capture', 'place']);
+    expect(s.captured[0]).toHaveLength(5); // 4장 + 가져온 피 1장
+    expect(s.captured[1]).toHaveLength(0);
+    expect(s.events.find((e) => e.type === 'ppeokEat')).toEqual({ type: 'ppeokEat', player: 0, month: 3, self: false, fromPpeok: false });
+    expect(evTypes(s)).toEqual(['play', 'flip', 'ppeokEat', 'capture', 'place', 'steal']);
+  });
+  it('뻑에서 온 3장은 fromPpeok=true, 상대 피가 없으면 못 가져온다', () => {
+    const s = play(setup({ hand: ['03-P-0'], floor: ['03-T-0', '03-P-1', '03-G-0', '05-P-0'], deck: ['09-P-0'] }), '03-P-0');
+    expect(s.events.filter((e) => e.type === 'steal')).toHaveLength(0);
   });
 });
 
@@ -721,9 +727,203 @@ describe('보너스 패 (2피 2장 + 3피 1장)', () => {
   });
 });
 
+
+// ---- 총통 / 재분배 ----
+const FULL = [...ALL_CARDS, ...buildBonusCards(2, 1)];
+function findSeed(pred: (hands: Card[][], floor: Card[]) => boolean): string {
+  for (let i = 0; i < 40000; i++) {
+    const d = shuffle(FULL, 'find-' + i);
+    if (pred([d.slice(0, 10), d.slice(10, 20)], d.slice(20, 28))) return 'find-' + i;
+  }
+  throw new Error('시드를 못 찾음');
+}
+const four = (cs: Card[]) => [...new Set(cs.map((c) => c.month))].some((m) => cs.filter((c) => c.month === m).length === 4);
+
+describe('총통', () => {
+  it('분배 직후 손패 같은 월 4장이면 그 사람 즉시 승리 10점 (ended, 이벤트 순서 deal -> chongtong -> end)', () => {
+    for (const who of [0, 1]) {
+      const seed = findSeed((h, f) => four(h[who]) && !four(h[1 - who]) && !four(f));
+      const s = createGame(seed);
+      expect(s.phase).toBe('ended');
+      expect(s.result).toMatchObject({ type: 'win', winner: who, base: 10, finalScore: 10, by: 'chongtong', bakMultiplier: 1, shakeMultiplier: 1, nextCarry: 1 });
+      const types = s.events.map((e) => e.type);
+      expect(types[0]).toBe('deal');
+      expect(types.indexOf('chongtong')).toBeLessThan(types.indexOf('end'));
+      expect(types[types.length - 1]).toBe('end');
+      expect(s.events.find((e) => e.type === 'chongtong')).toMatchObject({ player: who });
+      expect(countCards(s)).toBe(51);
+    }
+  });
+  it('carry가 있어도 총통은 10점 고정 (배수 없음)', () => {
+    const seed = findSeed((h, f) => four(h[0]) && !four(h[1]) && !four(f));
+    expect(createGame(seed, { carry: 4 }).result).toMatchObject({ finalScore: 10 });
+  });
+  it('둘 다 총통이면 선 우선', () => {
+    for (const dealer of [0, 1] as const) {
+      const s = createGame('fixed', { bonus: { two: 0, three: 0 }, dealer });
+      s.hands = [cards('01-P-0', '01-P-1', '01-G-0', '01-T-0', '02-P-0'), cards('03-P-0', '03-P-1', '03-G-0', '03-T-0', '04-P-0')];
+      s.events = []; s.result = null; s.phase = 'play';
+      checkChongtong(s);
+      expect(s.phase).toBe('ended');
+      expect(s.result).toMatchObject({ winner: dealer, finalScore: 10, by: 'chongtong' });
+      expect(s.events.filter((e) => e.type === 'chongtong')).toHaveLength(1);
+    }
+  });
+  it('special.chongtong=false면 그냥 진행', () => {
+    const seed = findSeed((h, f) => four(h[0]) && !four(f));
+    const s = createGame(seed, { special: { chongtong: false } as never });
+    expect(s.phase).toBe('play');
+    expect(s.result).toBeNull();
+  });
+});
+
+describe('바닥 같은 월 4장 재분배 (R15)', () => {
+  it('같은 시드에서 결정적으로 다시 섞고 redeal 이벤트를 남긴다', () => {
+    const seed = findSeed((h, f) => four(f));
+    const s = createGame(seed);
+    expect(s.events.filter((e) => e.type === 'redeal')).toEqual([{ type: 'redeal', reason: 'floor4' }]);
+    expect(four(s.floor)).toBe(false);
+    expect(s.seed).toBe(seed);
+    expect(createGame(seed)).toEqual(s); // 결정적
+    const d = shuffle(FULL, seed + '#re1'); // 두 번째 분배가 시드+"#re1"
+    if (!four(d.slice(20, 28))) expect(s.floor.length).toBe(8);
+    expect(countCards(s)).toBe(51);
+  });
+  it('재분배가 없는 시드엔 redeal 이벤트가 없다', () => {
+    expect(createGame('fixed').events.some((e) => e.type === 'redeal')).toBe(false);
+  });
+});
+
+// ---- 박 / 국진 / 이월 ----
+const P10 = ['01-P-0', '01-P-1', '02-P-0', '02-P-1', '03-P-0', '03-P-1', '04-P-0', '04-P-1', '05-P-0', '05-P-1']; // 피 10장 = 1점
+const Y7 = ['02-Y-0', '04-Y-0', '05-Y-0', '06-Y-0', '07-Y-0', '08-Y-0', '10-Y-0']; // 열끗 7장 = 3 + 고도리 5 = 8점
+/** captured0이 스톱할 수 있는 상황을 만들어 스톱한다 (점수 하한은 무시: 박 계산 검증용) */
+function stopWith(c0: string[], c1: string[], opts: Partial<import('../src/engine').RuleOptions> = {}, mut?: (s: GameState) => void) {
+  let s = setup({ hand: ['12-T-0'], floor: ['11-P-0'], deck: ['10-P-1'], captured: c0, captured1: c1 });
+  s.options = { ...s.options, ...opts, special: { ...s.options.special, ...opts.special } };
+  s.phase = 'goStop';
+  mut?.(s);
+  s = applyAction(s, { type: 'stop' });
+  return s.result as Extract<NonNullable<GameState['result']>, { type: 'win' }>;
+}
+
+describe('박 (피박·광박·멍따)', () => {
+  it('피박: 승자 피 점수 + 패자 피 5장 이하(0장 포함) = x2', () => {
+    const r0 = stopWith(P10, []); // 패자 피 0장
+    expect(r0.bak).toEqual({ pi: true, gwang: false, meong: false });
+    expect(r0).toMatchObject({ base: 1, bakMultiplier: 2, finalScore: 2 });
+    expect(stopWith(P10, ['06-P-0', '06-P-1', '07-P-0', '07-P-1', '08-P-0']).bak.pi).toBe(true); // 5장
+    expect(stopWith(P10, ['11-D-0', '06-P-0', '06-P-1', '07-P-0']).bak.pi).toBe(true); // 쌍피 포함 합 5
+    const r6 = stopWith(P10, ['06-P-0', '06-P-1', '07-P-0', '07-P-1', '08-P-0', '08-P-1']); // 6장
+    expect(r6).toMatchObject({ bakMultiplier: 1, finalScore: 1 });
+  });
+  it('피박: 승자가 피 점수를 못 냈으면(9장) 패자 피가 0장이어도 미적용, 보너스 피도 합에 포함', () => {
+    expect(stopWith(P10.slice(0, 9), []).bak.pi).toBe(false);
+    const r = stopWith(P10, ['13-B3-0', '06-P-0', '06-P-1']); // 3+1+1 = 5 -> 피박
+    expect(r.bak.pi).toBe(true);
+    expect(stopWith(P10, ['13-B3-0', '13-B2-0', '06-P-0']).bak.pi).toBe(false); // 6
+  });
+  it('광박: 승자 광 점수 + 패자 광 0장 = x2, 광이 1장이라도 있으면 미적용', () => {
+    const G3 = ['01-G-0', '03-G-0', '08-G-0'];
+    expect(stopWith(G3, [])).toMatchObject({ bak: { pi: false, gwang: true, meong: false }, base: 3, finalScore: 6 });
+    expect(stopWith(G3, ['11-G-0'])).toMatchObject({ finalScore: 3 });
+    expect(stopWith(['01-G-0', '03-G-0'], []).bak.gwang).toBe(false); // 광 점수 없음
+  });
+  it('멍따: 승자 열끗 7장 이상 = x2 (패자 조건 없음), 6장은 미적용', () => {
+    expect(stopWith(Y7, ['02-P-0'])).toMatchObject({ bak: { pi: false, gwang: false, meong: true }, base: 8, finalScore: 16 });
+    expect(stopWith(Y7.slice(0, 6), []).bak.meong).toBe(false);
+  });
+  it('박은 곱셈으로 중첩 (피박·광박·멍따 = x8) + 흔들기/이월과도 곱', () => {
+    const all = [...P10, ...Y7, '01-G-0', '03-G-0', '08-G-0']; // 3광 3 + 열끗 3 + 고도리 5 + 피 1 = 12
+    const r = stopWith(all, []);
+    expect(r.bak).toEqual({ pi: true, gwang: true, meong: true });
+    expect(r).toMatchObject({ base: 12, bakMultiplier: 8, finalScore: 96 });
+    const r2 = stopWith(all, [], { carry: 2 }, (s) => { s.shakes = [1, 0]; s.goCount = [1, 0]; });
+    expect(r2).toMatchObject({ goBonus: 1, shakeMultiplier: 2, bakMultiplier: 8, carry: 2, finalScore: 13 * 2 * 8 * 2 });
+  });
+  it('special.bak=false면 박 없음', () => {
+    expect(stopWith(P10, [], { special: { bak: false } as never })).toMatchObject({ bakMultiplier: 1, finalScore: 1 });
+  });
+});
+
+describe('국진 자동 선택 (R04)', () => {
+  const Y4 = ['02-Y-0', '04-Y-0', '05-Y-0', '06-Y-0'];
+  it('열끗 쪽이 유리하면 열끗으로 (label에 국진→열끗)', () => {
+    const r = pts(...Y4, '09-Y-0');
+    expect(r.gukjin).toBe('yeol');
+    expect(r.total).toBe(1);
+    expect(r.details.find((d) => d.key === 'yeol')!.label).toContain('국진→열끗');
+  });
+  it('쌍피 쪽이 유리하면 쌍피로 (피 8장 + 국진 = 피 10장)', () => {
+    const r = pts('01-P-0', '01-P-1', '02-P-0', '02-P-1', '03-P-0', '03-P-1', '04-P-0', '04-P-1', '09-Y-0');
+    expect(r.gukjin).toBe('pi');
+    expect(r.details.find((d) => d.key === 'pi')!.label).toContain('국진→쌍피');
+    expect(r.total).toBe(1);
+  });
+  it('국진 없으면 gukjin=null, 비기면 열끗', () => {
+    expect(pts('01-P-0').gukjin).toBeNull();
+    expect(pts('09-Y-0').gukjin).toBe('yeol');
+  });
+  it('고정 지정(score 3번째 인자)도 가능', () => {
+    expect(score(cards(...Y4, '09-Y-0'), undefined, 'pi').total).toBe(0);
+  });
+  it('점수 판정 중에도 유리한 쪽: 쌍피로 셀 때만 7점이 되면 고/스톱이 뜬다', () => {
+    // 피 8장 + 국진을 쌍피로 = 10장(1점) + 광 3 + 고도리 대신 띠 홍단 3 = 7점
+    const cap = ['01-P-0', '01-P-1', '02-P-0', '02-P-1', '03-P-0', '04-P-0', '04-P-1', '05-P-0', '09-Y-0', '01-G-0', '03-G-0', '08-G-0', '01-T-0', '02-T-0'];
+    let s = setup({ hand: ['03-T-0'], floor: ['03-P-1'], deck: ['10-P-1'], captured: cap });
+    expect(score(s.captured[0]).total).toBe(4); // 국진 쌍피 1 + 광 3
+    s = play(s, '03-T-0'); // 홍단 완성 +3
+    expect(s.phase).toBe('goStop');
+  });
+  it('정산: 열끗으로 세면 멍따가 되는 국진은 열끗으로, 쌍피가 이득이면 쌍피로 (승자에게 유리한 쪽)', () => {
+    const r = stopWith(['02-Y-0', '04-Y-0', '05-Y-0', '06-Y-0', '07-Y-0', '08-Y-0', '09-Y-0'], []);
+    expect(r).toMatchObject({ base: 8, finalScore: 16, bak: { meong: true } });
+    const r2 = stopWith(['01-P-0', '01-P-1', '02-P-0', '02-P-1', '03-P-0', '03-P-1', '04-P-0', '04-P-1', '09-Y-0'], []);
+    expect(r2).toMatchObject({ base: 1, bak: { pi: true }, finalScore: 2 });
+  });
+  it('패자의 국진은 쌍피(2)로 세어 피박을 피한다', () => {
+    expect(stopWith(P10, ['06-P-0', '06-P-1', '07-P-0', '07-P-1', '09-Y-0']).bak.pi).toBe(false); // 4 + 2 = 6
+    expect(stopWith(P10, ['06-P-0', '06-P-1', '07-P-0', '07-P-1']).bak.pi).toBe(true);
+  });
+  it('피 가져오기 대상에서 국진 제외 (쪽으로 가져올 피가 국진뿐이면 못 가져옴)', () => {
+    let s = setup({ hand: ['03-P-0'], floor: ['01-P-0'], deck: ['03-P-1'], captured1: ['09-Y-0'] });
+    s = play(s, '03-P-0');
+    expect(s.events.some((e) => e.type === 'jjok')).toBe(true);
+    expect(s.events.filter((e) => e.type === 'steal')).toHaveLength(0);
+    expect(s.captured[1].map((c) => c.id)).toEqual(['09-Y-0']);
+  });
+});
+
+describe('나가리 이월 (R12)', () => {
+  const nagari = (carry?: number) => {
+    let s = setup({ hand: ['03-P-0'], floor: ['01-P-0'], deck: ['05-P-0', '06-P-0'] });
+    if (carry !== undefined) s.options.carry = carry;
+    s.deck = [...s.deck.slice(0, 2), ...s.hands[1], ...s.deck.slice(2)].filter((c) => c.id !== '09-P-0');
+    s.hands[1] = cards('09-P-0');
+    s = play(s, '03-P-0');
+    return play(s, '09-P-0').result;
+  };
+  it('나가리: nextCarry = min(carry*2, 4)', () => {
+    expect(nagari()).toEqual({ type: 'nagari', nextCarry: 2 });
+    expect(nagari(2)).toEqual({ type: 'nagari', nextCarry: 4 });
+    expect(nagari(4)).toEqual({ type: 'nagari', nextCarry: 4 });
+  });
+  it('승리: 승자 finalScore에 carry가 곱해지고 nextCarry는 1', () => {
+    const r = stopWith(Y7, ['02-P-0'], { carry: 2 });
+    expect(r).toMatchObject({ carry: 2, finalScore: 8 * 2 * 2, nextCarry: 1 }); // 기본 8 x 멍따 2 x 이월 2
+    expect(stopWith(Y7, ['02-P-0'], { carry: 4 }).finalScore).toBe(64);
+    expect(stopWith(Y7, ['02-P-0'])).toMatchObject({ carry: 1, nextCarry: 1 });
+  });
+  it('createGame 옵션 carry 기본 1', () => {
+    expect(createGame('fixed').options.carry).toBe(1);
+    expect(createGame('fixed', { carry: 2 }).options.carry).toBe(2);
+  });
+});
+
 describe('자동 대전 1000판', () => {
   it('예외 없이 끝나고 카드 총합 48이 항상 보존된다', () => {
     const kinds = { win: 0, nagari: 0 };
+    let chongtong = 0;
     const seen = { shake: 0, bomb: 0, dummy: 0, steal: 0, ppeok: 0, ppeokEat: 0, jjok: 0, ttadak: 0, sweep: 0, bonus: 0, draw: 0 };
     for (let i = 0; i < 1000; i++) {
       const rng = createRng('fuzz-' + i);
@@ -742,6 +942,12 @@ describe('자동 대전 1000판', () => {
       expect(s.dummies[0] + s.dummies[1]).toBeGreaterThanOrEqual(0);
       expect(s.result).not.toBeNull();
       kinds[s.result!.type]++;
+      const r = s.result!;
+      if (r.type === 'win') {
+        expect(r.finalScore).toBe((r.base + r.goBonus) * r.multiplier * r.shakeMultiplier * r.bakMultiplier * r.carry);
+        expect(r.nextCarry).toBe(1);
+        if (r.by === 'chongtong') chongtong++;
+      } else expect(r.nextCarry).toBe(2);
     }
     expect(kinds.win + kinds.nagari).toBe(1000);
     expect(seen.shake + seen.bomb).toBeGreaterThan(0); // 새 액션이 실제로 섞여 나왔는지

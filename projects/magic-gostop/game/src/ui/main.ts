@@ -50,15 +50,15 @@ function cardEl(c: Card, tag: 'div' | 'button' = 'div'): HTMLElement {
 
 function renderCaps(target: HTMLElement, cards: Card[], details: string[]) {
   target.innerHTML = '';
-  const groups: [string, Card['kind'][], string[]][] = [
-    ['광', ['G'], ['gwang']], ['열끗', ['Y'], ['yeol', 'godori']], ['띠', ['T'], ['tti', 'hong', 'cheong', 'cho']], ['피', ['P', 'D', 'B2', 'B3'], ['pi']],
+  const groups: [string, Card['kind'][], string[], number][] = [
+    ['광', ['G'], ['gwang'], 3], ['열끗', ['Y'], ['yeol', 'godori'], 5], ['띠', ['T'], ['tti', 'hong', 'cheong', 'cho'], 5], ['피', ['P', 'D', 'B2', 'B3'], ['pi'], 10],
   ];
-  for (const [label, kinds, keys] of groups) {
+  for (const [label, kinds, keys, goal] of groups) {
     const list = cards.filter((c) => kinds.includes(c.kind));
     const n = label === '피' ? list.reduce((a, c) => a + (PI_VALUE[c.kind] ?? 1), 0) : list.length;
     const grp = document.createElement('div');
     grp.className = 'cap-group' + (keys.some((k) => details.includes(k)) ? ' scored' : '');
-    grp.innerHTML = `<div class="cap-label">${label}<b>${n}</b></div><div class="cap-cards"></div>`;
+    grp.innerHTML = `<div class="cap-label">${label}<b>${n}</b><span class="bar" style="--p:${Math.min(n / goal, 1)}"></span></div><div class="cap-cards"></div>`;
     const box = grp.querySelector('.cap-cards') as HTMLElement;
     box.style.setProperty('--n', String(Math.max(list.length, 1)));
     list.forEach((c) => box.append(cardEl(c)));
@@ -77,6 +77,7 @@ function render(view: GameState) {
     const b = $(`${sfx}-score`);
     b.textContent = String(sc[p].total);
     b.parentElement!.classList.toggle('hot', sc[p].total >= view.options.winScore);
+    b.parentElement!.style.setProperty('--pct', String(Math.min(sc[p].total / view.options.winScore, 1)));
     const go = $(`${sfx}-go`);
     const tags = [view.goCount[p] ? `${view.goCount[p]}고` : '', view.shakes[p] ? `흔들 ×${2 ** view.shakes[p]}` : ''].filter(Boolean);
     go.hidden = !tags.length;
@@ -84,7 +85,14 @@ function render(view: GameState) {
   }
   document.querySelector('.player.me')!.classList.toggle('turn', view.turn === ME && view.phase !== 'ended');
   document.querySelector('.player.opp')!.classList.toggle('turn', view.turn === AI && view.phase !== 'ended');
-  $('opp-hand').textContent = String(view.hands[AI].length + view.dummies[AI]);
+  const oppN = view.hands[AI].length + view.dummies[AI];
+  $('opp-hand').textContent = `손패 ${oppN}장`;
+  const fan = $('opp-fan');
+  if (fan.querySelectorAll('i').length !== oppN) {
+    fan.innerHTML = '';
+    for (let i = 0; i < oppN; i++) { const d = document.createElement('i'); d.style.setProperty('--k', String(i - (oppN - 1) / 2)); fan.append(d); }
+    const n = document.createElement('span'); n.textContent = String(oppN); fan.append(n);
+  }
   $('deck-n').textContent = String(view.deck.length);
   ($('deck') as HTMLElement).style.visibility = view.deck.length ? 'visible' : 'hidden';
   $('seed').textContent = view.seed;
@@ -156,7 +164,7 @@ function render(view: GameState) {
   if (view.phase === 'ended') prompt = '판이 끝났습니다';
   else if (view.turn === AI) prompt = '상대 차례';
   else if (!live) prompt = '';
-  else if (view.phase === 'play') prompt = '낼 패를 고르세요 · 빛나는 패는 먹을 수 있어요';
+  else if (view.phase === 'play') prompt = '낼 패를 고르세요';
   else if (view.phase === 'chooseMatch') prompt = `${cardName(view.pending!.card)}로 먹을 패를 고르세요`;
   $('prompt').textContent = prompt;
 

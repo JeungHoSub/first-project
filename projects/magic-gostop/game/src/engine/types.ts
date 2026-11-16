@@ -19,13 +19,15 @@ export interface RuleOptions {
   dealer: PlayerId; // 선 (기본 0)
   /** 보너스 패 장수 (2피짜리 two장, 3피짜리 three장). 둘 다 0이면 기본 48장 */
   bonus: { two: number; three: number };
-  // --- 특수 룰 스위치. ppeok/ttadak/jjok/sweep/shake/bomb만 엔진이 읽는다(끄면 1단계 단순 처리). 나머지는 아직 자리만 ---
+  // --- 특수 룰 스위치. 끄면 그 룰 없이 단순 처리 (chongtong 끄면 4장 손패도 그냥 진행, bak 끄면 박 배수 1) ---
   special: {
     ppeok: boolean; ttadak: boolean; jjok: boolean; sweep: boolean;
-    shake: boolean; bomb: boolean; chongtong: boolean; bak: boolean; gukjin: 'yeolggeut';
+    shake: boolean; bomb: boolean; chongtong: boolean; bak: boolean; gukjin: 'auto'; // gukjin 'auto' = 열끗/쌍피 중 유리한 쪽 (R04)
   };
   // --- 4단계(매직). enabled=false면 훅이 호출되지 않는다 ---
   magic: { enabled: boolean };
+  /** R12 나가리 이월 배수 (기본 1). 이번 판 승자 finalScore에 곱한다. 화면이 직전 결과의 nextCarry를 넘긴다 */
+  carry: number;
 }
 
 export const DEFAULT_OPTIONS: RuleOptions = {
@@ -36,9 +38,10 @@ export const DEFAULT_OPTIONS: RuleOptions = {
   bonus: { two: 2, three: 1 },
   special: {
     ppeok: true, ttadak: true, jjok: true, sweep: true,
-    shake: true, bomb: true, chongtong: false, bak: false, gukjin: 'yeolggeut',
+    shake: true, bomb: true, chongtong: true, bak: true, gukjin: 'auto',
   },
   magic: { enabled: false },
+  carry: 1,
 };
 
 export type Phase = 'play' | 'chooseMatch' | 'goStop' | 'ended';
@@ -53,6 +56,8 @@ export interface PendingChoice {
 
 export type GameEvent =
   | { type: 'deal'; seed: string }
+  | { type: 'redeal'; reason: 'floor4' } // 바닥 같은 월 4장 -> 같은 시드에서 다시 섞음 (R15)
+  | { type: 'chongtong'; player: PlayerId; month: number; cards: string[] } // 손패 같은 월 4장. deal 직후, end 전
   | { type: 'play'; player: PlayerId; card: string }
   | { type: 'shake'; player: PlayerId; month: number; cards: string[] }
   | { type: 'bomb'; player: PlayerId; month: number; cards: string[] }
@@ -65,7 +70,7 @@ export type GameEvent =
   | { type: 'go'; player: PlayerId; goCount: number; score: number }
   | { type: 'stop'; player: PlayerId; score: number }
   | { type: 'ppeok'; player: PlayerId; month: number; cards: string[] } // 바닥에 남은 3장
-  | { type: 'ppeokEat'; player: PlayerId; month: number; self: boolean }
+  | { type: 'ppeokEat'; player: PlayerId; month: number; self: boolean; fromPpeok: boolean } // 바닥 같은 월 3장을 먹음. fromPpeok=false면 뻑이 아닌 3장(분배·누적)
   | { type: 'jjok'; player: PlayerId; month: number }
   | { type: 'ttadak'; player: PlayerId; month: number }
   | { type: 'sweep'; player: PlayerId }
@@ -73,9 +78,15 @@ export type GameEvent =
   | { type: 'draw'; player: PlayerId; card: string } // 보너스를 내고 더미에서 손패로 가져옴
   | { type: 'end'; result: GameResult };
 
+export interface Bak { pi: boolean; gwang: boolean; meong: boolean }
+
 export type GameResult =
-  | { type: 'win'; winner: PlayerId; base: number; goCount: number; goBonus: number; multiplier: number; shakeMultiplier: number; finalScore: number; by: 'stop' | 'exhaust' }
-  | { type: 'nagari' };
+  | {
+      type: 'win'; winner: PlayerId; base: number; goCount: number; goBonus: number; multiplier: number; shakeMultiplier: number;
+      bak: Bak; bakMultiplier: number; carry: number; nextCarry: number; finalScore: number;
+      by: 'stop' | 'exhaust' | 'chongtong';
+    }
+  | { type: 'nagari'; nextCarry: number };
 
 export interface GameState {
   seed: string;
@@ -108,4 +119,5 @@ export type Action =
   | { type: 'stop' };
 
 export interface ScoreDetail { key: string; label: string; points: number }
-export interface ScoreResult { total: number; details: ScoreDetail[] }
+/** gukjin: 이 점수에서 국진(9월 열끗)을 어떻게 셌는지. 국진이 없으면 null */
+export interface ScoreResult { total: number; details: ScoreDetail[]; gukjin: 'yeol' | 'pi' | null }

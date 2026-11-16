@@ -1,6 +1,6 @@
 <div class="app" id="app">
   <header class="top">
-    <div class="brand"><span class="logo" aria-hidden="true"></span>매직고스톱<span class="stage">1단계</span></div>
+    <div class="brand"><span class="logo" aria-hidden="true"></span>매직고스톱</div>
     <div class="top-btns">
       <button class="icon-btn sound-btn" id="btn-sound" type="button" aria-label="소리 끄기">♪</button>
       <button class="icon-btn" id="btn-info" type="button" aria-label="규칙과 구성 보기">?</button>
@@ -8,16 +8,19 @@
     </div>
   </header>
 
-  <section class="player opp" aria-label="상대">
-    <div class="avatar ai" id="opp-avatar">AI</div>
-    <div class="pinfo">
-      <div class="pname">상대 <span class="lv">쉬움</span></div>
-      <div class="pmeta"><span class="mini-back" aria-hidden="true"></span><span id="opp-hand">10</span>장</div>
+  <section class="seat opp player" aria-label="상대">
+    <div class="seat-head">
+      <div class="avatar ai" id="opp-avatar">AI</div>
+      <div class="pinfo">
+        <div class="pname">상대 <span class="lv">쉬움</span><span class="turn-tag">차례</span></div>
+        <div class="opp-fan" id="opp-fan" aria-hidden="true"></div>
+        <span class="sr" id="opp-hand">10</span>
+      </div>
+      <div class="go-chip" id="opp-go" hidden></div>
+      <div class="pscore"><b id="opp-score">0</b><small>점</small></div>
     </div>
-    <div class="go-chip" id="opp-go" hidden></div>
-    <div class="pscore"><b id="opp-score">0</b><small>점</small></div>
+    <div class="tray" id="opp-caps"></div>
   </section>
-  <div class="tray" id="opp-caps"></div>
 
   <section class="table" aria-label="바닥">
     <div class="mat">
@@ -28,17 +31,19 @@
     <div class="feed" id="feed" aria-live="polite"></div>
   </section>
 
-  <div class="tray" id="my-caps"></div>
-  <section class="player me" aria-label="나">
-    <div class="avatar mine">나</div>
-    <div class="pinfo">
-      <div class="pname">나</div>
-      <div class="prompt" id="prompt"></div>
+  <section class="seat me player" aria-label="나">
+    <div class="tray" id="my-caps"></div>
+    <div class="seat-head">
+      <div class="avatar mine">나</div>
+      <div class="pinfo">
+        <div class="pname">나<span class="turn-tag">내 차례</span></div>
+        <div class="prompt" id="prompt"></div>
+      </div>
+      <div class="go-chip" id="my-go" hidden></div>
+      <div class="pscore"><b id="my-score">0</b><small>점</small></div>
     </div>
-    <div class="go-chip" id="my-go" hidden></div>
-    <div class="pscore"><b id="my-score">0</b><small>점</small></div>
   </section>
-  <div class="hand" id="hand"></div>
+  <div class="hand-tray"><div class="hand" id="hand"></div></div>
   <footer class="note">게임 안 점수만 있습니다 · 현금 가치 없음</footer>
 </div>
 
