@@ -1,32 +1,51 @@
 <div class="app" id="app">
   <header class="top">
-    <div class="brand">매직고스톱 <span class="stage">1단계 · 기본 룰</span></div>
-    <button class="ghost" id="btn-info" type="button">구성 보기</button>
+    <div class="brand"><span class="logo" aria-hidden="true"></span>매직고스톱<span class="stage">1단계</span></div>
+    <div class="top-btns">
+      <button class="icon-btn" id="btn-info" type="button" aria-label="규칙과 구성 보기">?</button>
+      <button class="icon-btn" id="btn-restart" type="button" aria-label="새 판 시작">↻</button>
+    </div>
   </header>
 
-  <section class="side opp" aria-label="상대">
-    <div class="who"><span class="name">상대 (AI)</span><span class="score" id="opp-score">0점</span><span class="go" id="opp-go"></span><span class="opp-hand" id="opp-hand"></span></div>
-    <div class="caps" id="opp-caps"></div>
+  <section class="player opp" aria-label="상대">
+    <div class="avatar ai" id="opp-avatar">AI</div>
+    <div class="pinfo">
+      <div class="pname">상대 <span class="lv">쉬움</span></div>
+      <div class="pmeta"><span class="mini-back" aria-hidden="true"></span><span id="opp-hand">10</span>장</div>
+    </div>
+    <div class="go-chip" id="opp-go" hidden></div>
+    <div class="pscore"><b id="opp-score">0</b><small>점</small></div>
   </section>
+  <div class="tray" id="opp-caps"></div>
 
   <section class="table" aria-label="바닥">
-    <div class="feed" id="feed" aria-live="polite"></div>
-    <div class="floor" id="floor">
-      <div class="deck" id="deck"><div class="back"></div><span id="deck-n">20</span></div>
+    <div class="mat">
+      <div class="floor" id="floor">
+        <div class="deck" id="deck"><div class="back"></div><div class="back"></div><div class="back"></div><span class="deck-n" id="deck-n">20</span></div>
+      </div>
     </div>
+    <div class="feed" id="feed" aria-live="polite"></div>
   </section>
 
-  <section class="side me" aria-label="나">
-    <div class="caps" id="my-caps"></div>
-    <div class="who"><span class="name">나</span><span class="score" id="my-score">0점</span><span class="go" id="my-go"></span><span class="prompt" id="prompt"></span></div>
-    <div class="hand" id="hand"></div>
+  <div class="tray" id="my-caps"></div>
+  <section class="player me" aria-label="나">
+    <div class="avatar mine">나</div>
+    <div class="pinfo">
+      <div class="pname">나</div>
+      <div class="prompt" id="prompt"></div>
+    </div>
+    <div class="go-chip" id="my-go" hidden></div>
+    <div class="pscore"><b id="my-score">0</b><small>점</small></div>
   </section>
-
-  <footer class="note">점수는 게임 안에서만 쓰는 점수입니다. 현금 가치가 없습니다.</footer>
+  <div class="hand" id="hand"></div>
+  <footer class="note">게임 안 점수만 있습니다 · 현금 가치 없음</footer>
 </div>
+
+<div class="banner" id="banner" aria-hidden="true"></div>
 
 <div class="sheet" id="gostop" hidden>
   <div class="sheet-card">
+    <div class="sheet-kicker">고 / 스톱</div>
     <div class="sheet-title" id="gs-title">7점 났습니다</div>
     <p class="sheet-sub" id="gs-sub"></p>
     <div class="gs-btns">
@@ -38,8 +57,9 @@
 
 <div class="sheet" id="result" hidden>
   <div class="sheet-card">
+    <div class="sheet-kicker" id="res-kicker">판 결과</div>
     <div class="sheet-title" id="res-title"></div>
-    <p class="sheet-sub" id="res-formula"></p>
+    <div class="formula" id="res-formula"></div>
     <div class="res-grid" id="res-grid"></div>
     <button class="big go-btn" id="btn-new" type="button">새 판</button>
   </div>
@@ -47,20 +67,20 @@
 
 <div class="sheet" id="info" hidden>
   <div class="sheet-card info-card">
+    <div class="sheet-kicker">1단계 · 기본 룰</div>
     <div class="sheet-title">지금 들어간 것</div>
     <ul class="info-list">
-      <li><b>2인 맞고</b>: 손패 10장, 바닥 8장, 더미 20장</li>
-      <li><b>한 차례</b>: 손패 1장 내기, 더미 1장 뒤집기, 같은 월이 있으면 먹기. 바닥에 같은 월이 2장이면 고르고, 3장이면 다 먹습니다.</li>
-      <li><b>점수</b>: 광(3광 3점, 비광 낀 3광 2점, 4광 4점, 5광 15점) · 열끗 5장부터 · 고도리 5점 · 띠 5장부터 · 홍단·청단·초단 3점 · 피 10장부터(쌍피는 2장)</li>
-      <li><b>고/스톱</b>: 7점부터. 고 1번마다 +1점, 3고 ×2, 4고 ×4</li>
-      <li><b>상대</b>: 임시 AI. 먹을 수 있는 좋은 패를 먼저 냅니다.</li>
+      <li><b>2인 맞고</b> · 손패 10장, 바닥 8장, 더미 20장</li>
+      <li><b>한 차례</b> · 손패 1장 내기 → 더미 1장 뒤집기 → 같은 월이면 먹기. 바닥에 같은 월이 2장이면 골라 먹고, 3장이면 다 먹습니다.</li>
+      <li><b>점수</b> · 광(3광 3점, 비광 낀 3광 2점, 4광 4점, 5광 15점) · 열끗 5장부터 · 고도리 5점 · 띠 5장부터 · 홍단·청단·초단 3점 · 피 10장부터(쌍피는 2장)</li>
+      <li><b>고/스톱</b> · 7점부터. 고 1번마다 +1점, 3고 ×2, 4고 ×4</li>
+      <li><b>상대</b> · 임시 AI(쉬움). 먹을 수 있는 좋은 패를 먼저 냅니다.</li>
     </ul>
     <div class="sheet-title small">다음 단계에서 넣을 것</div>
     <ul class="info-list muted">
       <li>뻑, 따닥, 쪽, 싹쓸이, 피 뺏기</li>
       <li>흔들기, 폭탄, 총통, 피박·광박·멍따, 국진 선택</li>
       <li>매직 카드: 엿보기, 패 바꾸기, 방패, 바닥 정리</li>
-      <li>화투 그림 다듬기 (지금 그림은 직접 그린 1차 버전)</li>
     </ul>
     <p class="seed">판 번호 <span id="seed"></span></p>
     <button class="big stop-btn" id="btn-info-close" type="button">닫기</button>
