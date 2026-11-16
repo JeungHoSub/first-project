@@ -394,3 +394,14 @@ button.lv[data-level="hard"] { color: #fff; background: linear-gradient(180deg, 
 .reward.on .rw-name, .reward.on .rw-desc { animation: rise .4s ease-out .6s backwards; }
 @keyframes cardflip { 0% { transform: rotateY(180deg) scale(.4); opacity: 0; } 55% { transform: rotateY(0) scale(1.12); opacity: 1; } 100% { transform: none; } }
 #collection, #info { z-index: 40; }
+
+/* ===== 먹을 패 색 구분 (바닥 같은 월 장수) + 쌀 위험 삼각형 ===== */
+:root { --m2: #4fb4ff; --m3: #ff5a5f; }
+.hand .card.match.m2 { box-shadow: 0 0 0 2.5px var(--m2), 0 0 14px 3px rgba(79,180,255,.65), 0 8px 10px rgba(0,0,0,.45); }
+.hand .card.match.m3 { box-shadow: 0 0 0 2.5px var(--m3), 0 0 14px 3px rgba(255,90,95,.7), 0 8px 10px rgba(0,0,0,.45); }
+#floor .card.target.m2 { box-shadow: 0 0 0 2.5px var(--m2), 0 0 16px 4px rgba(79,180,255,.6), 0 3px 6px rgba(0,0,0,.45); }
+#floor .card.target.m3 { box-shadow: 0 0 0 2.5px var(--m3), 0 0 16px 4px rgba(255,90,95,.65), 0 3px 6px rgba(0,0,0,.45); }
+#floor .floor-month.g2::before { color: var(--m2); text-shadow: 0 0 6px rgba(79,180,255,.9); }
+#floor .floor-month.g3::before { color: var(--m3); text-shadow: 0 0 6px rgba(255,90,95,.9); }
+.hint.risk { width: 14px; height: 12px; border: 0; border-radius: 0; background: #ffd23a; top: -14px; left: 5px;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%); box-shadow: none; filter: drop-shadow(0 0 3px rgba(255,210,58,.9)) drop-shadow(0 1px 1px rgba(0,0,0,.6)); }

@@ -131,7 +131,11 @@ function render(view: GameState) {
       } else {
         const el = cardEl(c);
         if (view.pending && (c.id === view.pending.card.id || c.id === view.pending.later?.id)) el.classList.add('held');
-        if (myTurn && view.phase === 'play' && view.hands[ME].some((h) => h.month === c.month)) el.classList.add('target');
+        if (myTurn && view.phase === 'play' && view.hands[ME].some((h) => h.month === c.month)) {
+          el.classList.add('target');
+          const n = view.floor.filter((f) => f.month === c.month).length;
+          if (n >= 2) { el.classList.add(n >= 3 ? 'm3' : 'm2'); grp.classList.add(n >= 3 ? 'g3' : 'g2'); }
+        }
         grp.append(el);
       }
     }
@@ -147,11 +151,16 @@ function render(view: GameState) {
     const b = cardEl(c, 'button') as HTMLButtonElement;
     const canPlay = canPlayPhase && legal.some((a) => a.type === 'play' && a.cardId === c.id);
     b.disabled = !canPlay;
-    if (canPlay && (onFloor.has(c.month) || c.month === 13)) b.classList.add('match');
+    if (canPlay && (onFloor.has(c.month) || c.month === 13)) {
+      b.classList.add('match');
+      // 바닥 같은 월 장수에 따라 색: 1장 금색 / 2장 파랑(골라 먹기) / 3장 빨강(다 먹고 피 뺏기)
+      const n = view.floor.filter((f) => f.month === c.month).length;
+      if (n >= 2) b.classList.add(n >= 3 ? 'm3' : 'm2');
+    }
     // 힌트 점: 회색 = 남은 같은 월이 내 손에만 있어 나중에 내도 되는 패, 노랑 = 바닥 1장 + 남은 1장이 아직 안 나와 뻑(쌀) 위험이 있는 패
     if (canPlay && c.month !== 13) {
       const h = hintFor(view, c);
-      if (h) { const dot = document.createElement('span'); dot.className = `hint ${h}`; dot.title = h === 'safe' ? '나중에 내도 되는 패' : '쌀 위험이 있는 패'; b.append(dot); }
+      if (h) { const dot = document.createElement('span'); dot.className = `hint ${h}`; dot.title = h === 'safe' ? '나중에 내도 되는 패' : '쌀 위험이 있는 패'; dot.setAttribute('aria-label', dot.title); b.append(dot); }
     }
     b.addEventListener('pointerenter', () => markTargets(c.month, true));
     b.addEventListener('pointerleave', () => markTargets(c.month, false));
