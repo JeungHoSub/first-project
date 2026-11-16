@@ -27,11 +27,12 @@ let gameNo = 0; // 새 판을 누르면 진행 중인 연출을 끊기 위한 �
 
 // 바닥 자리 12곳: 가운데 더미를 둘러싸게 위 4 / 왼쪽 2 / 오른쪽 2 / 아래 4.
 const SLOTS: [number, number][] = [
-  [13, 24], [36, 19], [64, 19], [87, 24],
-  [8, 50], [27, 50], [73, 50], [92, 50],
-  [13, 76], [36, 81], [64, 81], [87, 76],
+  [12, 25], [31, 25], [69, 25], [88, 25], // 0~3 위 줄
+  [12, 75], [31, 75], [69, 75], [88, 75], // 4~7 아래 줄
+  [50, 18], [50, 82], // 8~9 더미 바로 위·아래 (마지막에 사용)
+  [6, 50], [94, 50], // 10~11 양 끝 가운데 (거의 안 씀)
 ];
-const SLOT_ORDER = [1, 2, 9, 10, 5, 6, 0, 11, 3, 8, 4, 7];
+const SLOT_ORDER = [1, 2, 5, 6, 0, 3, 4, 7, 8, 9, 10, 11]; // 더미 둘레 위·아래 두 줄부터 고르게
 const slotOf = new Map<number, number>();
 function hash(t: string) { let h = 7; for (const ch of t) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return h; }
 
@@ -159,7 +160,7 @@ function render(view: GameState) {
     grp.className = 'floor-month';
     if (floorCards.some((f) => f.month === m && pickable.has(f.id))) grp.classList.add('choosing');
     grp.style.left = `${x + ((j % 5) - 2) * 0.5}%`;
-    grp.style.top = `${y + (((j >> 3) % 5) - 2) * 0.8}%`;
+    grp.style.top = `${y + (((j >> 3) % 5) - 2) * 0.6}%`;
     grp.style.setProperty('--rot', `${(j % 11) - 5}deg`);
     for (const c of floorCards.filter((f) => f.month === m)) {
       if (pickable.has(c.id)) {

@@ -177,3 +177,9 @@
 - 확인: 휴대폰 화면에서 회색(4월 3장+내 1장)과 "택1"(2월 2장+내 1장) 동시 표시, 오류 없음
 - 결과물: game/src/ui/(main.ts, style.css, body.html), outputs/stage1-preview.html (v14)
 - 다음 담당: 사용자
+
+## 2026-11-16 총괄
+- 한 일: 사용자 재요청 "먹은 패가 너무 작다" — 바닥을 더미 위·아래 두 줄 배치로 바꿔 판 높이를 줄이고, 그 자리를 먹은 패에 씀. 먹은 패 카드 약 31px → 44px(큰 화면 48px), 상단 바·여백 축소
+- 확인: 테스트 107/107, iPhone SE·13·Pixel 7 한 화면, 오류 없음
+- 결과물: game/src/ui/(main.ts, style.css), outputs/stage1-preview.html (v15)
+- 다음 담당: 사용자
