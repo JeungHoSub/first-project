@@ -317,7 +317,15 @@ export function cardArt(c: Card): string {
   const n = Number(c.id.slice(-1));
   const body = MONTHS[c.month](c, n);
   const defs = `<defs><radialGradient id="moonGlow"><stop offset="60%" stop-color="#fff" stop-opacity="0"/><stop offset="100%" stop-color="#f3d27a" stop-opacity=".55"/></radialGradient></defs>`;
-  const svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" preserveAspectRatio="xMidYMid slice">${defs}<rect width="${W}" height="${H}" fill="${P.white}"/>${body}${c.kind === 'G' ? gwangMark() : ''}${c.kind === 'D' ? doubleMark() : ''}</svg>`;
+  // 한국 화투처럼 빨간 테두리 안에 그림을 넣는다 (그림 영역을 테두리 안쪽으로 줄여서 배치)
+  const inset = 1.9, iw = W - inset * 2, ih = H - inset * 2;
+  const clip = `clip-${c.id}`;
+  const inner = `<rect width="${W}" height="${H}" fill="${P.white}"/>${body}${c.kind === 'G' ? gwangMark() : ''}${c.kind === 'D' ? doubleMark() : ''}`;
+  const svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" preserveAspectRatio="xMidYMid slice">${defs}`
+    + `<clipPath id="${clip}"><rect x="${inset}" y="${inset}" width="${f(iw)}" height="${f(ih)}" rx="1.6"/></clipPath>`
+    + `<rect width="${W}" height="${H}" rx="2.6" fill="${P.red}"/>`
+    + `<g clip-path="url(#${clip})"><g transform="translate(${inset} ${inset}) scale(${f(iw / W)} ${f(ih / H)})">${inner}</g></g>`
+    + `<rect x="${inset}" y="${inset}" width="${f(iw)}" height="${f(ih)}" rx="1.6" fill="none" stroke="${P.deep}" stroke-width="0.35"/></svg>`;
   cache.set(c.id, svg);
   return svg;
 }

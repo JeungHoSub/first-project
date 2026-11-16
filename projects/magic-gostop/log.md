@@ -75,3 +75,11 @@
 - 결과물: game/src/ui/(art.ts, main.ts, style.css, body.html), outputs/stage1-preview.html (같은 링크 v3)
 - 다음 담당: 사용자 — 그림·화면 피드백
 - 넘길 메모: 공개 화투 이미지(위키미디어 등)는 이 환경 네트워크에서 막혀 있고, npm에 있던 이미지 묶음은 출처·라이선스가 불분명해 쓰지 않음. 실제 인쇄 화투 수준의 그림이 필요하면 디자이너 의뢰 또는 라이선스 확인된 이미지(네트워크 허용 필요) 검토
+
+## 2026-11-16 총괄(magic-gostop 세션)
+- 한 일: 사용자가 보낸 화투 사진(위키미디어 "Hwatu overview.svg", Marcus Richert, CC BY-SA 4.0 — 출처 표시 시 상업 이용 가능, 수정본은 같은 라이선스) 적용 시도 → 위키미디어가 이 클라우드 환경 주소를 429로 차단해 원본·썸네일 모두 못 받음. 사용자 선택: "지금 그림 다듬기", 위키미디어 접속 닫기(단, 기본 환경이 이미 무제한 네트워크로 바뀌어 있어 닫을 목록이 없었음 — 사용자 설정으로 보고 그대로 둠)
+  - 그림 v2.1: 48장 모두 한국 화투식 빨간 테두리 안에 그림 배치
+  - 규칙 추가(사용자 요청): 선택지는 클릭형 질문(AskUserQuestion)으로, 추천안 첫 번째 — CLAUDE.md 원칙, style-guide 학습된 선호에 기록
+- 결과물: game/src/ui/art.ts, style.css, outputs/stage1-preview.html (같은 링크 v4), CLAUDE.md, style/style-guide.md
+- 다음 담당: 사용자 — 그림·화면 피드백
+- 넘길 메모: 원본 화투 SVG를 쓰려면 사용자가 파일을 직접 올려주면 됨(assets/). 적용 시 화면에 "Hwatu by Marcus Richert (based on Louie Mantia, Jr.), CC BY-SA 4.0" 표시 필요
