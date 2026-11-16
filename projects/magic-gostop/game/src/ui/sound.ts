@@ -117,14 +117,17 @@ export function shake() {
   for (let i = 0; i < 6; i++) noise(t + i * 0.075, 0.04, 'bandpass', 2600 + (i % 2) * 600, 0.3, 1.5);
   tone(t + 0.45, 0.25, 'triangle', 523, 784, 0.1);
 }
-/** 폭탄: "쾅" */
+/** 폭탄: 묵직한 "쾅" 두 번 + 파편 튀는 소리 */
 export function bomb() {
   if (!ready()) return;
   const t = now();
-  noise(t, 0.9, 'lowpass', 1800, 0.9, 0.8, 60);
-  tone(t, 0.8, 'sine', 120, 32, 0.9, 0.003);
-  tone(t, 0.25, 'square', 80, 40, 0.18, 0.002);
-  noise(t + 0.12, 0.4, 'bandpass', 900, 0.25, 0.6, 200);
+  noise(t, 1.1, 'lowpass', 2400, 1.0, 0.8, 50);
+  tone(t, 0.9, 'sine', 140, 28, 1.0, 0.002);
+  tone(t, 0.3, 'square', 90, 35, 0.22, 0.002);
+  noise(t + 0.02, 0.18, 'highpass', 2500, 0.5, 0.6);
+  tone(t + 0.16, 0.7, 'sine', 90, 30, 0.6, 0.004);
+  noise(t + 0.16, 0.7, 'lowpass', 900, 0.5, 0.7, 80);
+  for (let i = 0; i < 9; i++) noise(t + 0.25 + i * 0.06 + (i % 3) * 0.02, 0.03, 'bandpass', 3000 + (i % 4) * 700, 0.18 - i * 0.012, 2);
 }
 /** 고 */
 export function go() {

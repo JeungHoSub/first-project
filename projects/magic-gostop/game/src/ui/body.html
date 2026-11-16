@@ -128,14 +128,14 @@
   <div class="home-inner">
     <div class="home-fan" id="home-fan" aria-hidden="true"></div>
     <h1 class="home-title">매직고스톱</h1>
-    <p class="home-sub">한국 화투로 즐기는 맞고 · 매직 카드 수집</p>
+    <p class="home-sub">한국 화투로 즐기는 맞고 · 아이템 수집</p>
     <button class="big go-btn home-start" id="btn-start" type="button">게임 시작<small>상대: <span id="home-level">쉬움</span></small></button>
     <div class="home-row">
       <span class="home-label">난이도</span>
       <div class="seg" id="seg-level" role="radiogroup" aria-label="상대 난이도"></div>
     </div>
     <div class="home-grid">
-      <button class="home-tile" id="btn-collection" type="button"><b>매직 카드</b><span id="home-coll">0 / 4</span></button>
+      <button class="home-tile" id="btn-collection" type="button"><b>아이템 도감</b><span id="home-coll">0 / 14</span></button>
       <button class="home-tile" id="btn-home-rules" type="button"><b>규칙</b><span>점수·특수 룰</span></button>
       <button class="home-tile toggle" id="btn-bgm" type="button"><b>음악</b><span>켜짐</span></button>
       <button class="home-tile toggle" id="btn-sfx" type="button"><b>효과음</b><span>켜짐</span></button>
@@ -146,8 +146,8 @@
 
 <div class="sheet" id="collection" hidden>
   <div class="sheet-card">
-    <div class="sheet-kicker">매직 카드 도감 · 테스트</div>
-    <div class="sheet-title">모은 매직 카드 <span id="coll-count"></span></div>
+    <div class="sheet-kicker">아이템 도감 · 테스트</div>
+    <div class="sheet-title">모은 아이템 <span id="coll-count"></span></div>
     <div class="coll-grid" id="coll-grid"></div>
     <div class="drop-table">
       <div class="dt-title">획득 확률 (봇전 테스트)</div>
@@ -160,7 +160,7 @@
 
 <div class="reward" id="reward" hidden>
   <div class="rw-rays" aria-hidden="true"></div>
-  <div class="rw-kicker">매직 카드 획득!</div>
+  <div class="rw-kicker" id="rw-kicker">아이템 획득!</div>
   <div class="rw-card" id="rw-card"></div>
   <div class="rw-name" id="rw-name"></div>
   <div class="rw-desc" id="rw-desc"></div>
@@ -172,5 +172,14 @@
     <div class="sheet-kicker">먹은 패 · 점수 계산</div>
     <div class="cd-grid" id="cd-grid"></div>
     <button class="big stop-btn" id="btn-cd-close" type="button">닫기</button>
+  </div>
+</div>
+
+<div class="sheet" id="item-detail" hidden>
+  <div class="sheet-card">
+    <div class="id-top"><div class="id-card" id="id-card"></div><div><div class="sheet-kicker" id="id-kicker"></div><div class="sheet-title" id="id-title"></div></div></div>
+    <ul class="id-list" id="id-list"></ul>
+    <p class="dt-note">효과는 아직 판에 적용되지 않는 설계안입니다. 등급이 높을수록 강해집니다.</p>
+    <button class="big stop-btn" id="btn-id-close" type="button">닫기</button>
   </div>
 </div>
