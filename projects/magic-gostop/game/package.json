@@ -1,0 +1,19 @@
+{
+  "name": "magic-gostop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "매직고스톱 - 1단계: 기본 룰 엔진 (화면 없음)",
+  "scripts": {
+    "test": "vitest run",
+    "sim": "tsx scripts/sim.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0"
+  }
+}
