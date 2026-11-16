@@ -171,3 +171,18 @@ button.card:disabled { cursor: default; }
 @keyframes banner { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.6); } 18% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); } 30% { transform: translate(-50%, -50%) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -60%) scale(1); } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 @media (min-height: 780px) { :root { --cw-floor: min(12.4vw, 56px); --cw-cap: min(6.8vw, 30px); --cw-hand: min(15.5vw, 66px); } }
+
+/* 고르는 중인 패, 같은 월 3장 표시, 빈 패 */
+.card.held { box-shadow: 0 0 0 2px #fff, 0 0 14px 3px rgba(255,255,255,.55); }
+.card.triple::before { content: "3"; position: absolute; right: 3px; top: 3px; z-index: 2; width: 1.4em; height: 1.4em; border-radius: 50%; display: grid; place-items: center;
+  background: var(--red); color: #fff3d6; font-family: var(--font-display); font-size: calc(var(--cw) * .2); box-shadow: 0 0 0 1.5px var(--gold); }
+.dummy-card { width: var(--cw-hand); flex: none; display: grid; place-content: center; gap: 2px; text-align: center; color: var(--text);
+  background: repeating-linear-gradient(135deg, rgba(255,255,255,.08) 0 6px, transparent 6px 12px), #33473f; border: 2px dashed var(--gold); }
+.dummy-card span { font-family: var(--font-display); font-size: calc(var(--cw-hand) * .24); }
+.dummy-card small { font-size: calc(var(--cw-hand) * .15); color: var(--muted); }
+.hand .dummy-card + .card, .hand .card + .dummy-card { margin-left: min(6px, calc((100cqw - var(--n) * var(--cw-hand)) / max(var(--n) - 1, 1))); }
+.sp-cards { display: flex; justify-content: center; gap: 8px; }
+.sp-cards .card { width: 64px; --cw: 64px; }
+.big small { display: block; font-family: var(--font-body); font-size: .72rem; font-weight: 500; opacity: .85; margin-top: 2px; }
+.text-btn { background: none; border: 0; color: var(--muted); font-size: .85rem; text-decoration: underline; padding: 4px; }
+.floor-month .card, .hand .card { transform-style: preserve-3d; }

@@ -33,6 +33,8 @@ export function createGame(seed: string | number, options: Partial<RuleOptions> 
     pending: null,
     goCount: [0, 0],
     lastGoScore: [0, 0],
+    shakes: [0, 0],
+    dummies: [0, 0],
     events: [{ type: 'deal', seed: String(seed) }],
     result: null,
   };
@@ -41,13 +43,13 @@ export function createGame(seed: string | number, options: Partial<RuleOptions> 
 export function getLegalActions(s: GameState): Action[] {
   switch (s.phase) {
     case 'play':
-      return s.hands[s.turn].map((c) => ({ type: 'play', cardId: c.id }));
+      return playActions(s);
     case 'chooseMatch':
       return (s.pending?.options ?? []).map((id) => ({ type: 'choose', cardId: id }));
     case 'goStop': {
       const acts: Action[] = [{ type: 'stop' }];
       // 양쪽 손패가 모두 비면 고를 계속할 턴이 없으므로 스톱만 가능
-      if (s.hands[0].length + s.hands[1].length > 0) acts.unshift({ type: 'go' });
+      if (handsLeft(s) > 0) acts.unshift({ type: 'go' });
       return acts;
     }
     default:
@@ -55,10 +57,41 @@ export function getLegalActions(s: GameState): Action[] {
   }
 }
 
+/** 손패 + 빈 패 총 장수 (빈 패도 손패로 취급) */
+function handsLeft(s: GameState): number {
+  return s.hands[0].length + s.hands[1].length + s.dummies[0] + s.dummies[1];
+}
+
+function playActions(s: GameState): Action[] {
+  const p = s.turn;
+  const hand = s.hands[p];
+  const acts: Action[] = hand.map((c) => ({ type: 'play', cardId: c.id }));
+  for (let m = 1; m <= 12; m++) {
+    const inHand = hand.filter((c) => c.month === m);
+    if (inHand.length !== 3) continue; // 4장(총통)은 범위 밖
+    const onFloor = s.floor.filter((c) => c.month === m).length;
+    if (onFloor === 0 && s.options.special.shake) {
+      for (const c of inHand) acts.push({ type: 'play', cardId: c.id, shake: true });
+    } else if (onFloor === 1 && s.options.special.bomb) {
+      acts.push({ type: 'bomb', month: m });
+    }
+  }
+  if (s.dummies[p] >= 1) acts.push({ type: 'dummy' });
+  return acts;
+}
+
+function sameAction(a: Action, b: Action): boolean {
+  if (a.type !== b.type) return false;
+  if (a.type === 'play' && b.type === 'play') return a.cardId === b.cardId && !!a.shake === !!b.shake;
+  if (a.type === 'bomb' && b.type === 'bomb') return a.month === b.month;
+  if (a.type === 'choose' && b.type === 'choose') return a.cardId === b.cardId;
+  return true;
+}
+
 /** 불변 업데이트: 입력 state는 바꾸지 않고 새 state를 돌려준다. 불법 행동은 예외. */
 export function applyAction(state: GameState, action: Action, hooks?: EngineHooks): GameState {
   const legal = getLegalActions(state);
-  const ok = legal.some((a) => a.type === action.type && ('cardId' in a ? a.cardId === (action as { cardId?: string }).cardId : true));
+  const ok = legal.some((a) => sameAction(a, action));
   if (!ok) throw new Error(`불법 행동: ${JSON.stringify(action)} (phase=${state.phase})`);
 
   let s: GameState = structuredClone(state);
@@ -74,9 +107,35 @@ export function applyAction(state: GameState, action: Action, hooks?: EngineHook
       const p = s.turn;
       const idx = s.hands[p].findIndex((c) => c.id === action.cardId);
       const [card] = s.hands[p].splice(idx, 1);
+      if (action.shake) {
+        s.shakes[p] += 1;
+        const shown = [card, ...s.hands[p].filter((c) => c.month === card.month)];
+        s.events.push({ type: 'shake', player: p, month: card.month, cards: shown.map((c) => c.id) });
+      }
       s.events.push({ type: 'play', player: p, card: card.id });
       resolveCard(s, card, 'hand');
       if (s.phase !== 'chooseMatch') { call('afterPlay'); flip(ctx); }
+      break;
+    }
+    case 'bomb': {
+      const p = s.turn;
+      const three = s.hands[p].filter((c) => c.month === action.month);
+      s.hands[p] = s.hands[p].filter((c) => c.month !== action.month);
+      s.events.push({ type: 'bomb', player: p, month: action.month, cards: three.map((c) => c.id) });
+      s.shakes[p] += 1;
+      capture(s, [...three, ...s.floor.filter((c) => c.month === action.month)]);
+      steal(s, p);
+      s.dummies[p] += 2;
+      call('afterPlay');
+      flip(ctx);
+      break;
+    }
+    case 'dummy': {
+      const p = s.turn;
+      s.dummies[p] -= 1;
+      s.events.push({ type: 'dummy', player: p });
+      call('afterPlay');
+      flip(ctx);
       break;
     }
     case 'choose': {
@@ -116,6 +175,18 @@ function capture(s: GameState, cards: Card[]) {
   s.floor = s.floor.filter((c) => !ids.has(c.id));
   s.captured[s.turn].push(...cards);
   s.events.push({ type: 'capture', player: s.turn, cards: cards.map((c) => c.id) });
+}
+
+/** 상대 획득 패에서 피 1장 가져오기 (일반 피 우선, 없으면 쌍피, 없으면 없음) */
+function steal(s: GameState, p: PlayerId) {
+  const from = (1 - p) as PlayerId;
+  const src = s.captured[from];
+  let i = src.findIndex((c) => c.kind === 'P');
+  if (i < 0) i = src.findIndex((c) => c.kind === 'D');
+  if (i < 0) return;
+  const [card] = src.splice(i, 1);
+  s.captured[p].push(card);
+  s.events.push({ type: 'steal', player: p, from, card: card.id });
 }
 
 /**
@@ -160,7 +231,7 @@ function endTurn(ctx: Ctx) {
 
 function nextTurn(ctx: Ctx) {
   const s = ctx.s;
-  if (s.hands[0].length === 0 && s.hands[1].length === 0) return finish(s, null, 'exhaust');
+  if (handsLeft(s) === 0) return finish(s, null, 'exhaust');
   s.turn = (1 - s.turn) as PlayerId;
   s.phase = 'play';
   ctx.call('onTurnStart');
@@ -178,7 +249,7 @@ function finish(s: GameState, stopper: PlayerId | null, by: 'stop' | 'exhaust') 
   }
   let result: GameResult;
   if (winner === null) result = { type: 'nagari' }; // 배수 이월 등은 3단계
-  else result = { type: 'win', winner, base: sc[winner], goCount: s.goCount[winner], by, ...settle(sc[winner], s.goCount[winner], s.options) };
+  else result = { type: 'win', winner, base: sc[winner], goCount: s.goCount[winner], by, ...settle(sc[winner], s.goCount[winner], s.options, s.shakes[winner]) };
   s.result = result;
   s.phase = 'ended';
   s.events.push({ type: 'end', result });

@@ -55,6 +55,17 @@
   </div>
 </div>
 
+<div class="sheet" id="special" hidden>
+  <div class="sheet-card">
+    <div class="sheet-kicker">같은 월 3장</div>
+    <div class="sheet-title" id="sp-title"></div>
+    <div class="sp-cards" id="sp-cards"></div>
+    <p class="sheet-sub" id="sp-sub"></p>
+    <div class="gs-btns" id="sp-btns"></div>
+    <button class="text-btn" id="sp-cancel" type="button">다른 패 고르기</button>
+  </div>
+</div>
+
 <div class="sheet" id="result" hidden>
   <div class="sheet-card">
     <div class="sheet-kicker" id="res-kicker">판 결과</div>
@@ -73,16 +84,17 @@
       <li><b>2인 맞고</b> · 손패 10장, 바닥 8장, 더미 20장</li>
       <li><b>한 차례</b> · 손패 1장 내기 → 더미 1장 뒤집기 → 같은 월이면 먹기. 바닥에 같은 월이 2장이면 골라 먹고, 3장이면 다 먹습니다.</li>
       <li><b>점수</b> · 광(3광 3점, 비광 낀 3광 2점, 4광 4점, 5광 15점) · 열끗 5장부터 · 고도리 5점 · 띠 5장부터 · 홍단·청단·초단 3점 · 피 10장부터(쌍피는 2장)</li>
+      <li><b>흔들기·폭탄</b> · 같은 월 3장을 들고 있으면 선택 창이 뜹니다. 흔들기·폭탄은 이기면 ×2, 폭탄은 상대 피 1장을 가져오고 빈 패 2장을 받습니다.</li>
       <li><b>고/스톱</b> · 7점부터. 고 1번마다 +1점, 3고 ×2, 4고 ×4</li>
       <li><b>상대</b> · 임시 AI(쉬움). 먹을 수 있는 좋은 패를 먼저 냅니다.</li>
     </ul>
     <div class="sheet-title small">다음 단계에서 넣을 것</div>
     <ul class="info-list muted">
       <li>뻑, 따닥, 쪽, 싹쓸이, 피 뺏기</li>
-      <li>흔들기, 폭탄, 총통, 피박·광박·멍따, 국진 선택</li>
+      <li>총통, 피박·광박·멍따, 국진 선택</li>
       <li>매직 카드: 엿보기, 패 바꾸기, 방패, 바닥 정리</li>
     </ul>
-    <p class="seed">화투 그림: 위키미디어 「Hwatu overview」(Marcus Richert, Louie Mantia, Jr. 원작 기반, CC BY-SA 4.0)를 참고해 새로 그림. 이 그림도 CC BY-SA 4.0입니다.</p>
+    <p class="seed">화투 그림: 디자인메카 화투 일러스트(사용자 제공)</p>
     <p class="seed">판 번호 <span id="seed"></span></p>
     <button class="big stop-btn" id="btn-info-close" type="button">닫기</button>
   </div>

@@ -21,7 +21,7 @@ npm run build:page   # 한 파일로 묶기 -> dist/magic-gostop.html (outputs/s
 
 ## 공개 API (`src/engine/index.ts`)
 - `createGame(seed, options?)` -> `GameState` (같은 시드 = 같은 판)
-- `getLegalActions(state)` -> `Action[]` (`play` / `choose` / `go` / `stop`)
+- `getLegalActions(state)` -> `Action[]` (`play`(+`shake:true` 변형) / `bomb` / `dummy` / `choose` / `go` / `stop`)
 - `applyAction(state, action, hooks?)` -> 새 `GameState` (불변, 불법 행동은 예외)
 - `score(captured, options?)` -> `{ total, details }`, `settle(base, goCount, options?)`
 - `countCards(state)` 카드 총합(48 보존 검사용), `createRng`, `shuffle`, `ALL_CARDS`
@@ -29,9 +29,11 @@ npm run build:page   # 한 파일로 묶기 -> dist/magic-gostop.html (outputs/s
 페이즈: `play`(손패 내기) -> `chooseMatch`(바닥 같은 월 2장 중 선택) -> `goStop`(7점 이상) -> `ended`(`state.result`).
 
 ## 1단계 범위
-2인 맞고, 분배(10/8/20), 기본 매칭(0/1/2/3장), 기본 점수(광·열끗·고도리·띠·단·피), 고/스톱(+n, 3고 x2, 4고 x4), 나가리.
+2인 맞고, 분배(10/8/20), 기본 매칭(0/1/2/3장), 기본 점수(광·열끗·고도리·띠·단·피), 고/스톱(+n, 3고 x2, 4고 x4), 나가리,
+흔들기(손패 같은 월 3장 + 바닥 0장, 선언 시 x2 누적, `play`+`shake:true`), 폭탄(손패 3장 + 바닥 1장, 4장 획득 + 상대 피 1장 + 빈 패 2장 + x2, `bomb`), 빈 패 내기(`dummy`: 손패 없이 더미만 뒤집기).
+배수는 `state.shakes`(흔들기+폭탄 횟수), 빈 패는 `state.dummies`. 정산 시 이긴 사람 기준 `shakeMultiplier`(2^횟수)가 finalScore에 곱해진다. `special.shake/bomb` 기본 true.
 
 ## 1단계 제외 (3단계 이후)
-뻑·따닥·쪽·싹쓸이·피 뺏기·흔들기·폭탄·총통·박·국진 선택·나가리 이월·바닥 동월 4장 재분배, 매직(4단계), 화면·AI(2단계).
+뻑·따닥·쪽·싹쓸이·피 뺏기(폭탄의 피 1장 제외)·총통(손패 4장)·바닥 2장일 때 3장 폭탄 등 변형·박·국진 선택·나가리 이월·바닥 동월 4장 재분배, 매직(4단계), 화면·AI(2단계).
 자리만 있음: `RuleOptions.special/magic`, `EngineHooks`(`hooks.ts`, `magic.enabled=true`일 때만 호출), `state.events` 로그.
 돈 개념 없음: 점수만 있다.

@@ -33,7 +33,7 @@ export const DEFAULT_OPTIONS: RuleOptions = {
   dealer: 0,
   special: {
     ppeok: false, ttadak: false, jjok: false, sweep: false,
-    shake: false, bomb: false, chongtong: false, bak: false, gukjin: 'yeolggeut',
+    shake: true, bomb: true, chongtong: false, bak: false, gukjin: 'yeolggeut',
   },
   magic: { enabled: false },
 };
@@ -49,6 +49,10 @@ export interface PendingChoice {
 export type GameEvent =
   | { type: 'deal'; seed: string }
   | { type: 'play'; player: PlayerId; card: string }
+  | { type: 'shake'; player: PlayerId; month: number; cards: string[] }
+  | { type: 'bomb'; player: PlayerId; month: number; cards: string[] }
+  | { type: 'steal'; player: PlayerId; from: PlayerId; card: string }
+  | { type: 'dummy'; player: PlayerId }
   | { type: 'flip'; player: PlayerId; card: string }
   | { type: 'place'; player: PlayerId; card: string }
   | { type: 'capture'; player: PlayerId; cards: string[] }
@@ -58,7 +62,7 @@ export type GameEvent =
   | { type: 'end'; result: GameResult };
 
 export type GameResult =
-  | { type: 'win'; winner: PlayerId; base: number; goCount: number; goBonus: number; multiplier: number; finalScore: number; by: 'stop' | 'exhaust' }
+  | { type: 'win'; winner: PlayerId; base: number; goCount: number; goBonus: number; multiplier: number; shakeMultiplier: number; finalScore: number; by: 'stop' | 'exhaust' }
   | { type: 'nagari' };
 
 export interface GameState {
@@ -73,12 +77,16 @@ export interface GameState {
   pending: PendingChoice | null;
   goCount: [number, number];
   lastGoScore: [number, number];
+  shakes: [number, number]; // 흔들기+폭탄 횟수 (배수 2^n)
+  dummies: [number, number]; // 손패에 든 빈 패 장수 (더미 뒤집기 전용)
   events: GameEvent[]; // 추가만 되는 로그 (3·4단계 훅/연출용)
   result: GameResult | null;
 }
 
 export type Action =
-  | { type: 'play'; cardId: string }
+  | { type: 'play'; cardId: string; shake?: true }
+  | { type: 'bomb'; month: number }
+  | { type: 'dummy' }
   | { type: 'choose'; cardId: string }
   | { type: 'go' }
   | { type: 'stop' };

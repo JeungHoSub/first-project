@@ -41,13 +41,15 @@ export function settle(
   base: number,
   goCount: number,
   options: RuleOptions = DEFAULT_OPTIONS,
-): { goBonus: number; multiplier: number; finalScore: number } {
+  shakes = 0, // 흔들기+폭탄 횟수 (각 ×2 누적)
+): { goBonus: number; multiplier: number; shakeMultiplier: number; finalScore: number } {
   const goBonus = goCount;
   const multiplier = goCount >= options.goMultiplierFrom ? 2 ** (goCount - options.goMultiplierFrom + 1) : 1;
-  return { goBonus, multiplier, finalScore: (base + goBonus) * multiplier };
+  const shakeMultiplier = 2 ** shakes;
+  return { goBonus, multiplier, shakeMultiplier, finalScore: (base + goBonus) * multiplier * shakeMultiplier };
 }
 
 export function describeResult(r: GameResult): string {
   if (r.type === 'nagari') return '나가리';
-  return `플레이어 ${r.winner} 승 (기본 ${r.base} + 고 ${r.goBonus}) × ${r.multiplier} = ${r.finalScore}점`;
+  return `플레이어 ${r.winner} 승 (기본 ${r.base} + 고 ${r.goBonus}) × ${r.multiplier}${r.shakeMultiplier > 1 ? ` × 흔들기·폭탄 ${r.shakeMultiplier}` : ''} = ${r.finalScore}점`;
 }

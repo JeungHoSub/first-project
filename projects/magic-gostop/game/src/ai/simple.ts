@@ -28,11 +28,21 @@ export function chooseAction(s: GameState): Action {
     opts.sort((a, b) => cardValue(b) - cardValue(a));
     return { type: 'choose', cardId: opts[0].id };
   }
+  // 폭탄이 되면 무조건 폭탄
+  const bomb = legal.find((a) => a.type === 'bomb');
+  if (bomb) return bomb;
+  // 빈 패: 먹을 수 있는 손패가 없으면 빈 패로 차례를 넘긴다
+  const dummy = legal.find((a) => a.type === 'dummy');
+  const canCapture = s.hands[s.turn].some((c) => s.floor.some((f) => f.month === c.month));
+  if (dummy && (!canCapture || s.hands[s.turn].length === 0)) return dummy;
   let best: { a: Action; v: number } | null = null;
   for (const c of s.hands[s.turn]) {
     const m = s.floor.filter((f) => f.month === c.month);
     const gain = m.length === 0 ? -cardValue(c) : cardValue(c) + Math.max(...m.map(cardValue)) + (m.length === 3 ? 4 : 0);
     if (!best || gain > best.v) best = { a: { type: 'play', cardId: c.id }, v: gain };
   }
-  return best!.a;
+  // 흔들기가 되는 패를 내면 흔들기 선언
+  const a = best!.a;
+  const shake = a.type === 'play' && legal.find((l) => l.type === 'play' && l.cardId === a.cardId && l.shake);
+  return shake || a;
 }
