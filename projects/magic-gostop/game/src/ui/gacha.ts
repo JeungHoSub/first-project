@@ -5,6 +5,8 @@
 //      10회는 카드 10장이 깔린 뒤 한 장씩 뒤집히고, S 이상은 마지막에 따로 크게 뒤집힌다. 화면을 누르면 건너뛴다.
 import { TICKETS, GRADES, GRADE_COLOR, drawWithTicket, priceOf, itemArt, CATEGORY_LABEL, type Ticket, type Drop } from './collection';
 import { copyOf } from './item-copy';
+import { ALL_CARDS, type Card } from '../engine';
+import { cardArt } from './art';
 import * as sfx from './sound';
 import { coins, spend, earn, fmt, onCoins } from './wallet';
 
@@ -22,6 +24,14 @@ const ROMAN = ['Ⅰ', 'Ⅱ', 'Ⅲ', 'Ⅳ', 'Ⅴ'];
 const S_INDEX = 6; // S
 
 let onChange: () => void = () => {};
+// 뽑기 기록 (이 기기에만 저장)
+interface LogRow { t: number; gi: number; id: string }
+let log: LogRow[] = [];
+try { const v = JSON.parse(localStorage.getItem('mg-gacha-log') || '[]'); if (Array.isArray(v)) log = v.slice(-200); } catch { /* 무시 */ }
+function addLog(t: number, ds: Drop[]) {
+  log = [...log, ...ds.map((d) => ({ t, gi: d.gi, id: d.item.id }))].slice(-200);
+  try { localStorage.setItem('mg-gacha-log', JSON.stringify(log)); } catch { /* 무시 */ }
+}
 let sel = 0;
 try { sel = Math.max(0, Math.min(4, +(localStorage.getItem('mg-ticket') ?? 0) || 0)); } catch { /* 무시 */ }
 
@@ -96,7 +106,11 @@ function renderTickets() {
   const hero = $('tx-hero');
   hero.style.setProperty('--tc', t.hue);
   hero.dataset.tier = String(sel);
-  hero.innerHTML = `<div class="tx-hero-card">${ticketArt(t, sel)}<i class="tx-shine" aria-hidden="true"></i></div>`;
+  hero.innerHTML = `<div class="tx-hero-card">${ticketArt(t, sel)}<i class="tx-foil" aria-hidden="true"></i><i class="tx-shine" aria-hidden="true"></i></div>`;
+  const card = hero.firstElementChild as HTMLElement;
+  const tilt = (x: number, y: number) => { card.style.setProperty('--rx', `${(0.5 - y) * 16}deg`); card.style.setProperty('--ry', `${(x - 0.5) * 22}deg`); card.style.setProperty('--mx', `${x * 100}%`); card.style.setProperty('--my', `${y * 100}%`); };
+  hero.onpointermove = (e) => { const r = card.getBoundingClientRect(); tilt((e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height); card.classList.add('tilting'); };
+  hero.onpointerleave = () => { card.classList.remove('tilting'); card.style.removeProperty('--rx'); card.style.removeProperty('--ry'); };
 
   $('tx-tiers').innerHTML = TICKETS.map((x, i) => `<button type="button" class="tx-tier${i === sel ? ' cur' : ''}" data-i="${i}" style="--tc:${x.hue}" aria-label="${x.name}">
       ${ticketArt(x, i, true)}<span>${x.name.replace('권', '')}</span></button>`).join('');
@@ -108,13 +122,29 @@ function renderTickets() {
   const sum = (from: number) => GRADES.reduce((a, g, gi) => a + (gi >= from ? t.rates[g] : 0), 0);
   const r2 = (n: number) => `${Math.round(n * 100) / 100}%`;
   const bar = GRADES.map((g, gi) => (t.rates[g] > 0 ? `<i style="flex:${t.rates[g]};background:${isRainbow(gi) ? 'linear-gradient(90deg,#ff5a5f,#ffd23a,#5bbf6a,#4fb4ff,#b678e8)' : gcol(gi)}" title="${g} ${t.rates[g]}%"></i>` : '')).join('');
-  $('tx-odds').innerHTML = `<div class="tx-bar">${bar}</div>
+  const maxRate = Math.max(...GRADES.map((g) => t.rates[g]));
+  const ladder = [...GRADES].map((g, gi) => ({ g, gi })).reverse().map(({ g, gi }) => {
+    const r = t.rates[g];
+    const w = r > 0 ? Math.max(3, Math.sqrt(r / maxRate) * 100) : 0;
+    const fill = isRainbow(gi) ? 'linear-gradient(90deg,#ff5a5f,#ffd23a,#5bbf6a,#4fb4ff,#b678e8)' : gcol(gi);
+    const guard = t.minGrade && GRADES[gi] === t.minGrade ? '<em>보장선</em>' : '';
+    return `<li class="${r ? '' : 'zero'}${gi >= S_INDEX ? ' hi' : ''}">${badge(gi)}<span class="lt"><i style="width:${w}%;background:${fill}"></i></span><b>${r ? `${r}%` : '나오지 않음'}</b>${guard}</li>`;
+  }).join('');
+  void bar;
+  const mine = log.filter((x) => x.t === sel);
+  const bestRow = mine.reduce<LogRow | null>((a, x) => (!a || x.gi > a.gi ? x : a), null);
+  const recent = log.slice(-14).reverse();
+  $('tx-odds').innerHTML = `<ol class="tx-ladder">${ladder}</ol>
     <div class="tx-stats">
       <div><small>최소 보장</small><b>${t.minGrade ? `${t.minGrade} 이상` : '없음'}</b></div>
       <div><small>S 이상</small><b>${r2(sum(S_INDEX))}</b></div>
       <div><small>SSS 이상</small><b>${r2(sum(8))}</b></div>
     </div>
-    <details class="tx-odds-all"><summary>등급별 확률 전체 보기</summary><table><thead><tr><th></th>${TICKETS.map((x, i) => `<th class="${i === sel ? 'cur' : ''}" style="--tc:${x.hue}">${x.name.replace('권', '')}</th>`).join('')}</tr></thead><tbody>${
+    <div class="tx-rec">
+      <div class="tx-rec-head"><b>뽑기 기록</b><span>${t.name} ${mine.length}회${bestRow ? ` · 최고 ${badge(bestRow.gi)}` : ''}</span></div>
+      <div class="tx-rec-row">${recent.length ? recent.map((x) => `<i title="${GRADES[x.gi]}">${badge(x.gi)}</i>`).join('') : '<small>아직 기록이 없습니다</small>'}</div>
+    </div>
+    <details class="tx-all"><summary>뽑기권 5단계 확률 비교</summary><table><thead><tr><th></th>${TICKETS.map((x, i) => `<th class="${i === sel ? 'cur' : ''}" style="--tc:${x.hue}">${x.name.replace('권', '')}</th>`).join('')}</tr></thead><tbody>${
       GRADES.map((g, gi) => `<tr><td>${badge(gi)}</td>${TICKETS.map((x, i) => `<td class="${i === sel ? 'cur' : ''}">${x.rates[g] ? `${x.rates[g]}%` : '<span class="nil">–</span>'}</td>`).join('')}</tr>`).join('')
     }</tbody></table></details>`;
 
@@ -230,7 +260,51 @@ function hexA(hex: string, a: number) {
 
 // ---------- 뽑기 연출 ----------
 let running = false;
-function closeRun() { $('gacha-run').hidden = true; fxStop(); running = false; }
+function closeRun() {
+  $('gacha-run').hidden = true; fxStop(); running = false;
+  $('gacha-run').querySelectorAll('.gx-fly, .gx-seal').forEach((e) => e.remove());
+}
+
+/** 화투 패가 화면을 사선으로 가로지르며 쏟아진다 (높은 등급이면 광 패가 금빛으로 섞임) */
+function streamCards(stage: HTMLElement, count: number, within: number, gold: boolean) {
+  if (reduced) return;
+  const pool = ALL_CARDS.filter((c) => c.month <= 12);
+  const W = innerWidth, H = innerHeight;
+  for (let i = 0; i < count; i++) {
+    const c = gold && Math.random() < 0.35 ? pool.filter((x) => x.kind === 'G')[Math.floor(Math.random() * 5)] : pool[Math.floor(Math.random() * pool.length)];
+    const el = document.createElement('div');
+    el.className = 'gx-fly' + (c.kind === 'G' && gold ? ' gold' : '');
+    el.innerHTML = cardArt(c);
+    const size = 38 + Math.random() * 40;
+    el.style.width = `${size}px`;
+    stage.append(el);
+    const down = i % 2 === 0; // 왼위→오른아래 / 오른위→왼아래 번갈아
+    const x0 = down ? -120 + Math.random() * W * 0.6 : W * 0.4 + Math.random() * W * 0.6 + 120;
+    const y0 = -140 - Math.random() * 80;
+    const dx = (down ? 1 : -1) * (H * 0.9 + Math.random() * 200);
+    const dy = H + 300;
+    const r0 = Math.random() * 360, spinDeg = (down ? 1 : -1) * (540 + Math.random() * 720);
+    const dur = 1100 + Math.random() * 900;
+    const a = el.animate([
+      { transform: `translate(${x0}px, ${y0}px) rotate3d(1, -1, .3, ${r0}deg)`, opacity: 0 },
+      { opacity: 1, offset: 0.12 },
+      { opacity: 1, offset: 0.85 },
+      { transform: `translate(${x0 + dx}px, ${y0 + dy}px) rotate3d(1, -1, .3, ${r0 + spinDeg}deg)`, opacity: 0 },
+    ], { duration: dur, delay: Math.random() * within, easing: 'cubic-bezier(.35,.1,.6,1)', fill: 'both' });
+    a.onfinish = () => el.remove();
+  }
+}
+
+/** SS 이상: 붉은 낙관(도장)이 찍힌다. SS 대길 · SSS 천운 · SSS+ 신품 */
+function seal(stage: HTMLElement, gi: number) {
+  if (gi < 7) return;
+  const word = gi >= 9 ? '신품' : gi >= 8 ? '천운' : '대길';
+  const el = document.createElement('div');
+  el.className = `gx-seal${gi >= 9 ? ' rb' : ''}`;
+  el.innerHTML = `<span>${word}</span>`;
+  stage.append(el);
+  setTimeout(() => sfx.slap(0.9), 120);
+}
 
 function cardFlip(d: Drop, i: number, big = false) {
   const cp = copyOf(d.item.id);
@@ -245,6 +319,7 @@ async function run(t: Ticket, tier: number, n: number) {
   sfx.unlock();
   running = true; skipping = false;
   const drops: Drop[] = Array.from({ length: n }, () => drawWithTicket(t));
+  addLog(tier, drops);
   const best = drops.reduce((a, d) => (d.gi > a.gi ? d : a), drops[0]);
   const high = best.gi >= S_INDEX;
   const rainbow = isRainbow(best.gi);
@@ -269,30 +344,61 @@ async function run(t: Ticket, tier: number, n: number) {
   spawnOut(40, t.hue, false, center(), 0.5);
   await wait(380);
 
-  // 2) 화투 뒷면이 사선으로 빙글빙글 (잔상 3겹) + 빛이 빨려 듦
-  spin.innerHTML = `<div class="gx-card-wrap">${[3, 2, 1, 0].map((k) => `<div class="gx-card${k ? ' ghost' : ''}" style="--k:${k}"><div class="gx-back"></div></div>`).join('')}<div class="gx-glow"></div></div><div class="gx-ring"></div>`;
+  // 2) 진짜 화투가 사선 축으로 빙글빙글 (앞면·뒷면 번갈아, 잔상 3겹) + 화투 패가 사선으로 쏟아짐 + 빛이 빨려 듦
+  const pool = ALL_CARDS.filter((c) => c.month <= 12);
+  const gwang = pool.filter((c) => c.kind === 'G');
+  const face: Card = high ? gwang[Math.floor(Math.random() * gwang.length)] : pool[Math.floor(Math.random() * pool.length)];
+  spin.innerHTML = `<div class="gx-card-wrap">${[3, 2, 1, 0].map((k) => `<div class="gx-card${k ? ' ghost' : ''}" style="--k:${k}"><div class="gx-back"></div><div class="gx-face">${cardArt(face)}</div></div>`).join('')}<div class="gx-glow"></div></div><div class="gx-ring"></div>`;
   stage.classList.remove('intro', 'tear'); void stage.offsetWidth;
   stage.classList.add('charge');
-  const steps = 12;
+  // 등급 예고: 빛 색이 C → A → S → SS → SSS → 무지개 순으로 한 단계씩 오른다(실제 등급까지만)
+  const ladder = [0, 3, 5, 6, 7, 8, 9].filter((g) => g <= best.gi);
+  let lv = 0;
+  stage.style.setProperty('--gc', gcol(ladder[0]));
+  const steps = 14;
+  const streamEnd = performance.now() + 2600;
+  streamCards(stage, 6 + best.gi * 3, 2400, high);
   for (let i = 0; i < steps && !skipping; i++) {
-    const late = i > steps * 0.55;
-    spawnIn(14 + i * 3, late ? gcol(best.gi) : t.hue, rainbow && late);
-    if (high && late && Math.random() < 0.6) bolt();
+    const want = Math.min(ladder.length - 1, Math.floor(((i + 1) / steps) * ladder.length * 1.15));
+    if (want > lv) {
+      lv = want;
+      const g = ladder[lv];
+      stage.style.setProperty('--gc', gcol(g));
+      stage.dataset.lv = String(g);
+      stage.classList.remove('lvup'); void stage.offsetWidth; stage.classList.add('lvup');
+      spawnOut(30 + g * 6, gcol(g), isRainbow(g), center(), 0.45);
+      sfx.chime(g);
+      if (g >= S_INDEX) sfx.buzz(25);
+    }
+    spawnIn(12 + i * 3, gcol(ladder[lv]), isRainbow(ladder[lv]));
+    if (ladder[lv] >= S_INDEX && Math.random() < 0.5) bolt();
     sfx.tick();
-    await wait(230 - i * 11);
+    await wait(220 - i * 9);
   }
+  // 3) S 이상: 다섯 광이 둘레를 돌다 가운데로 모임 / SS 이상: 화면 흔들림·번개
   if (high && !skipping) {
+    const ring = document.createElement('div'); ring.className = 'gx-five';
+    ring.innerHTML = gwang.slice(0, 5).map((c, i) => `<div class="g5" style="--a:${i * 72}deg">${cardArt(c)}</div>`).join('');
+    spin.append(ring);
+    sfx.bonus();
+    await wait(900);
+    ring.classList.add('in');
     stage.classList.add('shake'); sfx.shake(); sfx.buzz([40, 30, 60]);
-    for (let i = 0; i < 4; i++) bolt();
+    for (let i = 0; i < (best.gi >= 7 ? 7 : 3); i++) bolt();
     await wait(520);
   }
+  void streamEnd;
 
-  // 3) 폭발: 섬광 + 충격파 + 입자
-  stage.classList.remove('shake'); stage.classList.add('burst');
-  spawnOut(high ? 220 : 120, gcol(best.gi), rainbow, center(), high ? 1.3 : 1);
+  // 폭발: 섬광 + 충격파 + 입자 (SSS 이상은 연속 폭죽)
+  stage.style.setProperty('--gc', gcol(best.gi));
+  stage.classList.remove('shake', 'lvup'); stage.classList.add('burst');
+  spawnOut(high ? 240 : 120, gcol(best.gi), rainbow, center(), high ? 1.3 : 1);
   sfx.bomb(); sfx.magic();
   if (high) setTimeout(() => sfx.bonus(), 260);
-  if (rainbow || best.gi >= 8) setTimeout(() => sfx.win(), 520);
+  if (rainbow || best.gi >= 8) {
+    setTimeout(() => sfx.win(), 520);
+    for (let k = 1; k <= 4; k++) setTimeout(() => spawnOut(90, gcol(best.gi), rainbow, { x: fx.w * (0.15 + Math.random() * 0.7), y: fx.h * (0.15 + Math.random() * 0.5) }, 0.8), 250 * k);
+  }
   await wait(560);
 
   // 4) 공개
@@ -309,6 +415,7 @@ async function run(t: Ticket, tier: number, n: number) {
     await wait(500);
     el.classList.add('stamp');
     if (high) spawnFloat(60, gcol(best.gi), rainbow);
+    seal(stage, best.gi);
   } else {
     res.classList.add('ten');
     res.innerHTML = drops.map((d, i) => cardFlip(d, i)).join('');
@@ -335,6 +442,7 @@ async function run(t: Ticket, tier: number, n: number) {
     $('gr-summary').innerHTML = `${hi ? `<b>S 이상 ${hi}장</b> · ` : ''}최고 등급 갱신 ${nw}개`;
     $('gr-summary').hidden = false;
     if (high) spawnFloat(50, gcol(best.gi), rainbow);
+    seal(stage, best.gi);
   }
   $('gr-close').hidden = false;
   running = false;

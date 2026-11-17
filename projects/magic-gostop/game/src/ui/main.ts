@@ -429,9 +429,23 @@ function equipForGame(): string[] {
   }
   s = items.begin(s, shield, patch);
   notes.push(...(run?.notes ?? []));
+  renderOppItems();
   applyCosmetics();
   selectMode = null; prevTurnStart = null; curTurnStart = s;
   return notes;
+}
+
+/** 상대(AI) 장착 아이템 표시: 이름표 옆 작은 카드 줄. 누르면 목록 */
+function renderOppItems() {
+  const box = $('opp-items');
+  const ai = items.current()?.ai;
+  if (!ai || !ai.slots.length) { box.hidden = true; box.innerHTML = ''; return; }
+  box.hidden = false;
+  box.innerHTML = ai.slots.map((x) => `<i class="oi${ai.on[x.id] ? '' : ' off'}" title="${itemOf(x.id).name} ${GRADES[x.g]}${ai.on[x.id] ? '' : ' (불발)'}">${itemArt(itemOf(x.id), x.g)}</i>`).join('');
+  box.onclick = () => {
+    sfx.click();
+    banner(`상대 아이템 · ${ai.slots.map((x) => `${itemOf(x.id).name} ${GRADES[x.g]}${ai.on[x.id] ? '' : '(불발)'}`).join(', ')}`);
+  };
 }
 
 /** 꾸미기: 카드 뒷면·판 테마·먹기 이펙트·이름표 테두리·효과음 팩 (능력치 없음) */
@@ -1001,6 +1015,7 @@ async function perform(a: Action) {
     await wait(AI_THINK);
     if (no !== gameNo) return;
     busy = false;
+    if ((s.phase as string) === 'ended' || !getLegalActions(s).length) return;
     perform(chooseAction(s, level));
   }
 }
@@ -1069,10 +1084,11 @@ function showResult() {
   const firstTime = !paidResults.has(r); paidResults.add(r); // 같은 결과로 두 번 정산하지 않음
   if (!firstTime) { /* 이미 정산함: 표시만 유지 */ }
   else if (r.type === 'win' && r.winner === ME) {
-    const got = r.finalScore * COIN_PER_POINT; earn(got);
-    rc.innerHTML = `<i class="coin-ico" aria-hidden="true"></i> +${fmt(got)} 엽전 <small>보유 ${fmt(coins())}</small>`; rc.hidden = false; rc.classList.remove('minus');
+    const ag = items.lossAfterGuard(r.finalScore, s.goCount[AI], AI); // 상대 해태 부적·고 보험
+    const got = ag.lost * COIN_PER_POINT; earn(got);
+    rc.innerHTML = `<i class="coin-ico" aria-hidden="true"></i> +${fmt(got)} 엽전 <small>${ag.saved ? `${ag.why.join(' · ')} → ${ag.saved}점 덜 받음 · ` : ''}보유 ${fmt(coins())}</small>`; rc.hidden = false; rc.classList.remove('minus');
   } else if (r.type === 'win') {
-    const guard = items.lossAfterGuard(r.finalScore, s.goCount[ME]);
+    const guard = items.lossAfterGuard(r.finalScore, s.goCount[ME], ME);
     const lost = lose(guard.lost * COIN_PER_POINT);
     rc.innerHTML = `<i class="coin-ico" aria-hidden="true"></i> -${fmt(lost)} 엽전 <small>${guard.saved ? `${guard.why.join(' · ')} → ${guard.saved}점 덜 잃음 · ` : ''}보유 ${fmt(coins())}</small>`; rc.hidden = false; rc.classList.add('minus');
   } else rc.hidden = true;
@@ -1196,7 +1212,8 @@ async function newGame() {
   const no = gameNo;
   busy = false;
   const seed = Math.floor(Math.random() * 1e9).toString(36);
-  const itemOpts = items.prepare(picked);
+  const aiSlots = items.aiLoadout(level as 'easy' | 'normal' | 'hard');
+  const itemOpts = items.prepare(picked, aiSlots);
   s = createGame(seed, { carry, ...itemOpts } as Parameters<typeof createGame>[1]);
   for (const c of [...s.hands[0], ...s.hands[1], ...s.floor, ...s.deck]) allCards.set(c.id, c);
   const magicNotes = equipForGame();

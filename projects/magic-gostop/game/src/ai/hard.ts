@@ -55,6 +55,7 @@ export function chooseHard(state: GameState, opts: HardOptions = {}): Action {
   const v = observe(state, state.turn);
   // 보너스 패는 항상 먼저 내는 게 이득이라 시뮬레이션 없이 결정한다
   const ranked = rankActions(v, legal);
+  if (!ranked.length) return legal[0]; // 보는 상태와 실제 상태가 어긋난 드문 경우: 규칙상 가능한 첫 수
   if (ranked[0].v >= 50) return ranked[0].a;
   if (state.phase === 'goStop' && !HARD_TUNE.mcGo) return ranked[0].a;
   const cands = ranked.slice(0, k).map((r) => r.a);
