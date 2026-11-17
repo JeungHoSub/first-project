@@ -224,10 +224,13 @@ function gaya(t: number, f: number, orn: number, dur: number, vol: number) {
   const o = c.createOscillator(); o.type = 'triangle';
   const o2 = c.createOscillator(); o2.type = 'sawtooth';
   const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 0.7;
-  lp.frequency.setValueAtTime(f * 7, t); lp.frequency.exponentialRampToValueAtTime(f * 1.6, t + 0.5);
+  lp.frequency.setValueAtTime(f * 9, t); lp.frequency.exponentialRampToValueAtTime(f * 3, t + 0.6);
   const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, t + Math.max(1.6, dur + 0.8));
-  const g2 = c.createGain(); g2.gain.value = 0.22;
+  const g2 = c.createGain(); g2.gain.value = 0.45;
   for (const x of [o, o2]) x.frequency.setValueAtTime(f, t);
+  // 한 옥타브 위 배음: 작은 스피커에서도 선율이 들리게
+  const o3 = c.createOscillator(); o3.type = 'sine'; o3.frequency.setValueAtTime(f * 2, t);
+  const g3 = c.createGain(); g3.gain.value = 0.3; o3.connect(g3).connect(g); o3.start(t); o3.stop(t + Math.max(1.7, dur + 0.9));
   if (orn === 1) { // 떠는음: 천천히 시작해 깊어지는 떨림
     const lfo = c.createOscillator(); lfo.frequency.value = 5.5;
     const lg = c.createGain(); lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(0, t + 0.18); lg.gain.linearRampToValueAtTime(f * 0.03, t + Math.min(dur, 0.9));
@@ -410,7 +413,7 @@ function scheduler() {
     if (tr.dae && tr.daeFrom >= 0) {
       if (dLeft <= 0) {
         const [n, len] = tr.dae[dIdx % tr.dae.length];
-        if (n >= 0 && loop >= tr.daeFrom) dae(nextT, SC[n] * 2, len * spb, 0.035);
+        if (n >= 0 && loop >= tr.daeFrom) dae(nextT, SC[n] * 2, len * spb, 0.065);
         dLeft = len; dIdx++;
       }
       dLeft--;
@@ -420,8 +423,13 @@ function scheduler() {
 }
 export function startBgm() {
   if (!ctx || !master || !bgmOn || bgmTimer !== null) return;
-  bgmGain = ctx.createGain(); bgmGain.gain.value = 0.0001; bgmGain.connect(ctx.destination); // 효과음 끄기와 따로
-  bgmGain.gain.exponentialRampToValueAtTime(0.5, ctx.currentTime + 2);
+  // 음량: 휴대폰 스피커에서도 들리게 압축 후 키운다 (효과음보다는 작게)
+  const comp = ctx.createDynamicsCompressor();
+  comp.threshold.value = -30; comp.knee.value = 12; comp.ratio.value = 4; comp.attack.value = 0.01; comp.release.value = 0.3;
+  const makeup = ctx.createGain(); makeup.gain.value = 0.85; // 압축기가 자체 보정 이득을 주므로 조금만
+  bgmGain = ctx.createGain(); bgmGain.gain.setValueAtTime(0.0001, ctx.currentTime);
+  bgmGain.connect(comp).connect(makeup).connect(ctx.destination); // 효과음 끄기와 따로
+  bgmGain.gain.exponentialRampToValueAtTime(1, ctx.currentTime + 1.5);
   bgmBus = ctx.createGain();
   const dry = ctx.createGain(); dry.gain.value = 0.75;
   const wet = ctx.createGain(); wet.gain.value = 0.45;
