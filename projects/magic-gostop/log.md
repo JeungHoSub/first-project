@@ -206,3 +206,8 @@
   - 먹을 수 있는 손패를 18px 위로(전 6px) 확실히 튀어나오게
 - 확인: 테스트 109/109, 타입 검사, iPhone SE·13·Pixel 7·iPad Mini·1440×900·1366×680 한 화면, 국진 창 동작, 오류 없음
 - 결과물: game/src/engine/(types.ts, game.ts, score.ts, index.ts), tests/engine.test.ts, game/src/ui/(main.ts, body.html, style.css), outputs/stage1-preview.html (v18)
+
+## 2026-11-17 총괄
+- 한 일: 사용자 요청 — 나만 먹을 수 있는 바닥 패(회색 ▼)와 같은 월의 내 손패에도 회색 ▼ 표시(회색 테두리와 함께)
+- 확인: 타입 검사, 휴대폰 화면에서 10월 바닥 패·손패 동시 회색 ▼ 확인, 오류 없음
+- 결과물: game/src/ui/(main.ts, style.css), outputs/stage1-preview.html (v19)

@@ -204,7 +204,11 @@ function render(view: GameState) {
       b.classList.add('match');
       // 바닥 같은 월 장수에 따라 색: 1장 금색 / 2장 파랑(골라 먹기) / 3장 빨강(다 먹고 피 뺏기)
       const k = monthState(view, c.month);
-      if (k.onlyMe && k.floorN > 0) b.classList.add('mine-only');
+      if (k.onlyMe && k.floorN > 0) {
+        b.classList.add('mine-only');
+        const ar = document.createElement('span'); ar.className = 'only-arrow'; ar.textContent = '▼';
+        ar.setAttribute('aria-label', '나만 먹을 수 있는 패'); b.append(ar);
+      }
       else if (k.floorN >= 2) b.classList.add(k.floorN >= 3 ? 'm3' : 'm2');
     }
     // 힌트 점: 회색 = 남은 같은 월이 내 손에만 있어 나중에 내도 되는 패, 노랑 = 바닥 1장 + 남은 1장이 아직 안 나와 뻑(쌀) 위험이 있는 패
