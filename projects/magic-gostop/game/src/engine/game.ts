@@ -245,6 +245,12 @@ function capture(s: GameState, cards: Card[]) {
 /** 상대 획득 패에서 피 1장 가져오기 (일반 피 우선, 없으면 쌍피, 없으면 없음 - R18) */
 function steal(s: GameState, p: PlayerId) {
   const from = (1 - p) as PlayerId;
+  // 매직 카드 "방패": 빼앗기는 쪽의 방패가 남아 있으면 한 번 막는다
+  if (s.magic && s.magic.shield[from] > 0) {
+    s.magic.shield[from] -= 1;
+    s.events.push({ type: 'shieldBlock', player: from });
+    return;
+  }
   const src = s.captured[from];
   let i = -1;
   for (const k of ['P', 'D', 'B2', 'B3']) { // 가능한 한 작은 피부터
@@ -313,6 +319,14 @@ function flipAndSettle(ctx: Ctx, hand: Card | null) {
       s.floor.push(hand, flipped);
       s.ppeok[m] = p;
       s.events.push({ type: 'ppeok', player: p, month: m, cards: [fl[0].id, hand.id, flipped.id] });
+      // 첫뻑: 이 사람의 첫 차례(첫 손패 내기)에 뻑 → 보너스 점수
+      const plays = s.events.filter((e) => (e.type === 'play' || e.type === 'bomb') && e.player === p).length;
+      if (plays === 1 && s.options.firstPpeokBonus > 0) {
+        const pts = s.options.firstPpeokBonus;
+        s.extra = s.extra ?? [[], []];
+        s.extra[p].push({ key: 'firstPpeok', label: '첫뻑', points: pts });
+        s.events.push({ type: 'firstPpeok', player: p, points: pts });
+      }
       return finishTurn(ctx);
     }
     if (fl.length === 2 && sp.ttadak) {
@@ -353,10 +367,50 @@ function finishTurn(ctx: Ctx) {
   endTurn(ctx);
 }
 
+// ---------- 매직 카드 (사람이 자기 차례에 쓰는 효과). 모두 새 state를 돌려준다 ----------
+/** 판 시작 때 지속 효과(방패·박 막기·점수 2배)를 정한다 */
+export function setMagicState(state: GameState, p: PlayerId, patch: { shield?: number; noPibak?: boolean; noGwangbak?: boolean; double?: boolean }): GameState {
+  const s: GameState = structuredClone(state);
+  const m = s.magic ?? { shield: [0, 0], noPibak: [false, false], noGwangbak: [false, false], double: [false, false] };
+  if (patch.shield !== undefined) m.shield[p] = patch.shield;
+  if (patch.noPibak !== undefined) m.noPibak[p] = patch.noPibak;
+  if (patch.noGwangbak !== undefined) m.noGwangbak[p] = patch.noGwangbak;
+  if (patch.double !== undefined) m.double[p] = patch.double;
+  s.magic = m;
+  return s;
+}
+/** 패 바꾸기: 내 손패 1장과 더미 맨 위 패를 바꾼다 (내 차례, 패 내기 단계에서만) */
+export function magicSwap(state: GameState, p: PlayerId, handCardId: string): GameState {
+  if (state.phase !== 'play' || state.turn !== p || !state.deck.length) throw new Error('패 바꾸기를 쓸 수 없는 때');
+  const s: GameState = structuredClone(state);
+  const i = s.hands[p].findIndex((c) => c.id === handCardId);
+  if (i < 0) throw new Error('손에 없는 패');
+  const top = s.deck[0];
+  s.deck[0] = s.hands[p][i];
+  s.hands[p][i] = top;
+  s.events.push({ type: 'magic', player: p, magic: 'swap', cards: [handCardId, top.id] });
+  return s;
+}
+/** 바닥 정리: 바닥 패를 더미 맨 아래로 보낸다 (내 차례, 패 내기 단계에서만) */
+export function magicSweep(state: GameState, p: PlayerId, floorCardIds: string[]): GameState {
+  if (state.phase !== 'play' || state.turn !== p) throw new Error('바닥 정리를 쓸 수 없는 때');
+  const s: GameState = structuredClone(state);
+  for (const id of floorCardIds) {
+    const i = s.floor.findIndex((c) => c.id === id);
+    if (i < 0) throw new Error('바닥에 없는 패');
+    s.deck.push(s.floor.splice(i, 1)[0]);
+  }
+  s.events.push({ type: 'magic', player: p, magic: 'sweep', cards: floorCardIds });
+  return s;
+}
+
 /** 국진 선택을 반영한 점수 */
 export function scoreOf(s: GameState, p: PlayerId) {
   const m = s.gukjinAs?.[p] ?? 'auto';
-  return score(s.captured[p], s.options, m === 'auto' ? undefined : m);
+  const r = score(s.captured[p], s.options, m === 'auto' ? undefined : m);
+  const extra = s.extra?.[p] ?? [];
+  if (!extra.length) return r;
+  return { ...r, total: r.total + extra.reduce((a, x) => a + x.points, 0), details: [...r.details, ...extra.map(({ key, label, points }) => ({ key, label, points }))] };
 }
 
 /**
@@ -406,7 +460,12 @@ function finish(s: GameState, stopper: PlayerId | null, by: 'stop' | 'exhaust') 
   }
   let result: GameResult;
   if (winner === null) result = { type: 'nagari', nextCarry: Math.min(s.options.carry * 2, 4) }; // R12
-  else result = settleWin(winner, s.captured, s.goCount[winner], s.shakes[winner], s.options, by, s.gukjinAs?.[winner], s.gukjinAs?.[(1 - winner) as PlayerId]);
+  else {
+    const loser = (1 - winner) as PlayerId;
+    result = settleWin(winner, s.captured, s.goCount[winner], s.shakes[winner], s.options, by, s.gukjinAs?.[winner], s.gukjinAs?.[loser],
+      s.magic ? { double: s.magic.double[winner], noPibak: s.magic.noPibak[loser], noGwangbak: s.magic.noGwangbak[loser] } : undefined,
+      (s.extra?.[winner] ?? []).reduce((a, x) => a + x.points, 0));
+  }
   s.result = result;
   s.phase = 'ended';
   s.events.push({ type: 'end', result });

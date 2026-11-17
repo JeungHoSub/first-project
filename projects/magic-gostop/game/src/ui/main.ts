@@ -1,9 +1,9 @@
-import { applyAction, createGame, getLegalActions, score, scoreOf, setGukjin, PI_VALUE } from '../engine';
+import { applyAction, createGame, getLegalActions, score, scoreOf, setGukjin, setMagicState, magicSwap, magicSweep, PI_VALUE } from '../engine';
 import type { Action, Card, GameEvent, GameState, PlayerId } from '../engine';
 import { chooseAction, AI_LEVELS, type AiLevel } from '../ai/simple';
 import { cardArt } from './art';
 import * as sfx from './sound';
-import { ITEMS, GRADES, GRADE_RATE, CATEGORY_LABEL, DROP_RATE, itemArt, gradeFill, ownedOf, bestGrade, ownedKinds, rollDrop, type Drop, type ItemDef, type Category } from './collection';
+import { ITEMS, GRADES, GRADE_RATE, CATEGORY_LABEL, DROP_RATE, itemArt, gradeFill, ownedOf, bestGrade, ownedKinds, rollDrop, type Drop, type ItemDef, type Category, MAGIC_IDS, magicParams, grantTestMagic, type MagicId } from './collection';
 
 // 화면 = 엔진 상태를 그리기만 한다. 규칙 판단은 전부 엔진(getLegalActions/applyAction)에 맡긴다.
 // 엔진은 한 행동을 한 번에 처리하므로, 화면은 이벤트로 중간 장면(낸 패가 바닥에 놓임 → 뒤집은 패가 놓임 → 먹은 패가 들어옴)을
@@ -172,7 +172,9 @@ function render(view: GameState) {
         if (myTurn && view.phase === 'play' && view.hands[ME].some((h) => h.month === c.month)) {
           el.classList.add('target');
           const k = monthState(view, c.month);
-          if (k.onlyMe) { el.classList.add('mine-only'); grp.classList.add('gonly'); }
+          // 폭탄이 되는 월: 빨간 ▼로 강조 (회색보다 우선)
+          if (legal.some((a) => a.type === 'bomb' && a.month === c.month)) { el.classList.add('bomb-target'); grp.classList.add('gbomb'); }
+          else if (k.onlyMe) { el.classList.add('mine-only'); grp.classList.add('gonly'); }
           else if (k.floorN >= 2) { el.classList.add(k.floorN >= 3 ? 'm3' : 'm2'); grp.classList.add(k.floorN >= 3 ? 'g3' : 'g2'); }
         }
         grp.append(el);
@@ -204,7 +206,13 @@ function render(view: GameState) {
       b.classList.add('match');
       // 바닥 같은 월 장수에 따라 색: 1장 금색 / 2장 파랑(골라 먹기) / 3장 빨강(다 먹고 피 뺏기)
       const k = monthState(view, c.month);
-      if (k.onlyMe && k.floorN > 0) {
+      if (legal.some((a) => a.type === 'bomb' && a.month === c.month)) {
+        // 폭탄 가능: 빨간 ▼ + 가장 높이 튀어나오게
+        b.classList.add('bomb-ready');
+        const ar = document.createElement('span'); ar.className = 'only-arrow bomb-arrow'; ar.textContent = '▼';
+        ar.setAttribute('aria-label', '폭탄 가능'); b.append(ar);
+      }
+      else if (k.onlyMe && k.floorN > 0) {
         b.classList.add('mine-only');
         const ar = document.createElement('span'); ar.className = 'only-arrow'; ar.textContent = '▼';
         ar.setAttribute('aria-label', '나만 먹을 수 있는 패'); b.append(ar);
@@ -241,7 +249,7 @@ function render(view: GameState) {
   $('prompt').textContent = prompt;
 
   // 바닥 2장 중 고르기: 내가 낸 패는 빼고, 깔려 있던 두 장만 크게 보여 준다
-  const choosing = myTurn && view.phase === 'chooseMatch';
+  const choosing = myTurn && view.phase === 'chooseMatch' && !sameChoice(view);
   $('choose').hidden = !choosing;
   if (choosing) {
     const pend = view.pending!;
@@ -262,6 +270,7 @@ function render(view: GameState) {
     }
   }
 
+  renderMagicBar(view);
   const gs = myTurn && view.phase === 'goStop' && $('gukjin').hidden;
   $('gostop').hidden = !gs;
   if (gs) {
@@ -273,6 +282,220 @@ function render(view: GameState) {
       : '마지막 차례라 스톱만 할 수 있습니다.';
     ($('btn-go') as HTMLButtonElement).hidden = !canGo;
   }
+}
+
+// ---------- 매직 카드 (실제 판 적용) ----------
+interface Equipped { id: MagicId; g: number; uses: number }
+let picked: MagicId[] = []; // 다음 판에 가져갈 매직 카드 (최대 2)
+let equipped: Equipped[] = [];
+let selectMode: null | { kind: 'swap' | 'sweep'; slot: Equipped; need: number; chosen: string[] } = null;
+let prevTurnStart: GameState | null = null; // 되돌리기: 내 직전 차례가 시작될 때 상태
+let curTurnStart: GameState | null = null;
+const itemOf = (id: string) => ITEMS.find((x) => x.id === id)!;
+try { const v = JSON.parse(localStorage.getItem('mg-picked') || '[]'); if (Array.isArray(v)) picked = v.filter((x) => (MAGIC_IDS as readonly string[]).includes(x)); } catch { /* 무시 */ }
+
+function ownedMagic() { return MAGIC_IDS.filter((id) => bestGrade(id) >= 0); }
+
+function openMagicPick() {
+  picked = picked.filter((id) => bestGrade(id) >= 0).slice(0, 2);
+  const box = $('mp-grid'); box.innerHTML = '';
+  const own = ownedMagic();
+  $('mp-empty').hidden = own.length > 0;
+  for (const id of own) {
+    const it = itemOf(id); const g = bestGrade(id);
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'mp-item' + (picked.includes(id) ? ' on' : '');
+    b.innerHTML = `<div class="mp-card">${itemArt(it, g)}</div><div class="mp-name">${it.name} ${gradeBadge(g)}</div><div class="mp-desc">${it.effect(g)}</div>`;
+    b.addEventListener('click', () => {
+      sfx.click();
+      if (picked.includes(id)) picked = picked.filter((x) => x !== id);
+      else if (picked.length < 2) picked = [...picked, id];
+      else { banner('최대 2장'); return; }
+      openMagicPick();
+    });
+    box.append(b);
+  }
+  $('mp-count').textContent = `${picked.length} / 2`;
+  $('magic-pick').hidden = false;
+}
+
+/** 판 시작: 고른 매직 카드를 장착하고, 방패·점수 2배 같은 지속 효과는 발동 확률을 굴린다 */
+function equipForGame(): string[] {
+  const notes: string[] = [];
+  equipped = picked.filter((id) => bestGrade(id) >= 0).map((id) => {
+    const g = bestGrade(id);
+    return { id, g, uses: magicParams(id, g).uses };
+  });
+  for (const e of equipped) {
+    const p = magicParams(e.id, e.g) as { chancePct: number; shield?: number; noPibak?: boolean; noGwangbak?: boolean };
+    const ok = Math.random() * 100 < p.chancePct;
+    if (e.id === 'shield') {
+      if (ok) { s = setMagicState(s, ME, { shield: p.shield, noPibak: p.noPibak, noGwangbak: p.noGwangbak }); notes.push(`방패 ${p.shield}회${p.noPibak ? '·피박' : ''}${p.noGwangbak ? '·광박' : ''}`); }
+      else notes.push('방패 불발');
+    }
+    if (e.id === 'double') {
+      if (ok) { s = setMagicState(s, ME, { double: true }); notes.push('점수 2배 대기'); } else notes.push('점수 2배 불발');
+    }
+  }
+  selectMode = null; prevTurnStart = null; curTurnStart = s;
+  return notes;
+}
+
+function renderMagicBar(view: GameState) {
+  const bar = $('magic-bar'); bar.innerHTML = '';
+  const live = view === s && !busy && view.turn === ME && view.phase === 'play';
+  for (const e of equipped) {
+    const it = itemOf(e.id);
+    const passive = e.id === 'shield' || e.id === 'double';
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'mbar-btn' + (passive ? ' passive' : '') + (selectMode?.slot === e ? ' active' : '');
+    let label = '';
+    if (e.id === 'shield') label = `${view.magic?.shield[ME] ?? 0}`;
+    else if (e.id === 'double') label = view.magic?.double[ME] ? 'ON' : 'OFF';
+    else label = `${e.uses}`;
+    b.innerHTML = `<span class="mbar-card">${itemArt(it, e.g)}</span><span class="mbar-n">${label}</span>`;
+    b.title = `${it.name} ${GRADES[e.g]} · ${it.effect(e.g)}`;
+    b.setAttribute('aria-label', b.title);
+    b.disabled = passive || e.uses <= 0 || !live || (e.id === 'undo' && !canUndo(e));
+    b.addEventListener('click', () => useMagic(e));
+    bar.append(b);
+  }
+  bar.hidden = !equipped.length;
+  // 고르는 중이면 대상 표시
+  document.body.classList.toggle('selecting', !!selectMode);
+  if (selectMode) {
+    $('prompt').textContent = selectMode.kind === 'swap' ? '바꿀 손패를 고르세요' : `더미 밑으로 보낼 바닥 패 ${selectMode.need - selectMode.chosen.length}장을 고르세요`;
+    if (selectMode.kind === 'sweep') {
+      const p = magicParams('sweep', selectMode.slot.g) as { anyCard: boolean };
+      document.querySelectorAll<HTMLElement>('#floor .card').forEach((el) => {
+        const c = allCards.get(el.dataset.id ?? '');
+        if (!c) return;
+        const ok = p.anyCard || ['P', 'D', 'B2', 'B3'].includes(c.kind);
+        el.classList.toggle('selectable', ok);
+        if (ok) el.closest('.floor-month')?.classList.add('choosing'); // 겹친 패를 벌려서 누르기 쉽게
+        el.classList.toggle('chosen', selectMode!.chosen.includes(c.id));
+        if (ok) el.onclick = () => pickSweep(c.id);
+      });
+    } else {
+      document.querySelectorAll<HTMLElement>('#hand .card').forEach((el) => el.classList.add('selectable'));
+    }
+  }
+  $('magic-cancel').hidden = !selectMode;
+}
+
+function canUndo(e: Equipped) {
+  if (!prevTurnStart) return false;
+  if (!(magicParams('undo', e.g) as { undoPpeok: boolean }).undoPpeok) {
+    const evs = s.events.slice(prevTurnStart.events.length);
+    if (evs.some((x) => (x.type as string) === 'ppeok' && (x as { player: PlayerId }).player === ME)) return false;
+  }
+  return true;
+}
+
+/** 발동 확률 굴림 (실패해도 사용 횟수는 줄어듦) */
+function rollMagic(e: Equipped): boolean {
+  const p = magicParams(e.id, e.g) as { chancePct: number };
+  e.uses -= 1;
+  if (Math.random() * 100 < p.chancePct) return true;
+  banner(`${itemOf(e.id).name} 불발`); sfx.lose();
+  render(s);
+  return false;
+}
+
+async function useMagic(e: Equipped) {
+  if (busy || s.turn !== ME || s.phase !== 'play' || e.uses <= 0) return;
+  sfx.unlock(); sfx.click();
+  const it = itemOf(e.id);
+  if (e.id === 'peek') {
+    e.uses -= 1;
+    const p = magicParams('peek', e.g) as { count: number; seconds: number };
+    const pool = [...s.hands[AI]].sort(() => Math.random() - 0.5).slice(0, p.count);
+    sfx.magic();
+    busy = true; render(s);
+    await peekShow(`엿보기 · 상대 손패 ${pool.length}장`, pool.map((c) => c.id), p.seconds);
+    busy = false; render(s);
+    return;
+  }
+  if (e.id === 'undo') {
+    if (!canUndo(e) || !rollMagic(e)) return;
+    s = structuredClone(prevTurnStart!);
+    curTurnStart = s; prevTurnStart = null;
+    $('feed').innerHTML = '<b>되돌리기</b> · 내 직전 차례로 돌아갔습니다';
+    banner('되돌리기!'); sfx.magic();
+    await show(s, {}, MOVE + BEAT);
+    return;
+  }
+  if (e.id === 'swap') {
+    if (!s.deck.length) { banner('더미가 비었습니다'); return; }
+    if (!rollMagic(e)) return;
+    const p = magicParams('swap', e.g) as { preview: boolean };
+    selectMode = { kind: 'swap', slot: e, need: 1, chosen: [] };
+    if (p.preview) await peekShow('패 바꾸기 · 더미 맨 위 패', [s.deck[0].id], 2);
+    render(s);
+    return;
+  }
+  if (e.id === 'sweep') {
+    const p = magicParams('sweep', e.g) as { count: number; anyCard: boolean };
+    const can = s.floor.filter((c) => p.anyCard || ['P', 'D', 'B2', 'B3'].includes(c.kind)).length;
+    if (!can) { banner(p.anyCard ? '바닥이 비었습니다' : '바닥에 피가 없습니다'); return; }
+    if (!rollMagic(e)) return;
+    selectMode = { kind: 'sweep', slot: e, need: Math.min(p.count, can), chosen: [] };
+    render(s);
+    return;
+  }
+  void it;
+}
+
+async function pickSwap(id: string) {
+  if (!selectMode || selectMode.kind !== 'swap') return;
+  const top = s.deck[0].id;
+  selectMode = null;
+  s = magicSwap(s, ME, id);
+  $('feed').innerHTML = `<b>패 바꾸기</b> · ${cardName(byId(id))} ↔ ${cardName(byId(top))}`;
+  banner('패 바꾸기!'); sfx.magic();
+  busy = true;
+  await show(s, { deck: new Set([top]) }, MOVE + BEAT);
+  busy = false; render(s);
+}
+
+async function pickSweep(id: string) {
+  if (!selectMode || selectMode.kind !== 'sweep') return;
+  if (!selectMode.chosen.includes(id)) selectMode.chosen.push(id);
+  if (selectMode.chosen.length < selectMode.need) { sfx.click(); render(s); return; }
+  const ids = selectMode.chosen;
+  selectMode = null;
+  const before = snapshot();
+  s = magicSweep(s, ME, ids);
+  $('feed').innerHTML = `<b>바닥 정리</b> · ${ids.map((x) => cardName(byId(x))).join(', ')} → 더미 밑`;
+  banner('바닥 정리!'); sfx.magic();
+  // 바닥에서 더미로 날아가는 연출
+  const deck = $('deck').getBoundingClientRect();
+  for (const x of ids) {
+    const r = before.get(x); if (!r) continue;
+    const ghost = cardEl(byId(x)); ghost.classList.add('ghost');
+    Object.assign(ghost.style, { left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px` });
+    document.body.append(ghost);
+    ghost.animate([{ transform: 'none', opacity: 1 }, { transform: `translate(${deck.left - r.left}px, ${deck.top - r.top}px) scale(.8) rotate(25deg)`, opacity: 0.2 }], { duration: 520, easing: 'ease-in' }).onfinish = () => ghost.remove();
+  }
+  render(s);
+}
+
+/** 엿보기 등: 카드를 가운데 펼쳐 잠깐 보여 준다 */
+async function peekShow(title: string, ids: string[], seconds: number) {
+  const box = $('reveal');
+  $('rv-title').textContent = title;
+  const cards = $('rv-cards'); cards.innerHTML = '';
+  ids.forEach((id, i) => { const el = cardEl(byId(id)); el.style.setProperty('--i', String(i)); cards.append(el); });
+  box.classList.add('peek');
+  box.hidden = false;
+  box.classList.remove('on'); void box.offsetWidth; box.classList.add('on');
+  await wait(seconds * 1000);
+  box.hidden = true; box.classList.remove('peek');
+}
+
+/** 내 차례가 시작될 때마다 되돌리기 기준점을 기록 */
+function markMyTurnStart() {
+  if (s.turn === ME && s.phase === 'play' && curTurnStart !== s) { prevTurnStart = curTurnStart; curTurnStart = s; }
 }
 
 // ---------- 국진 선택 ----------
@@ -297,6 +520,13 @@ function askGukjin(): Promise<void> {
     ($('btn-gk-yeol') as HTMLButtonElement).onclick = () => pick('yeol');
     ($('btn-gk-pi') as HTMLButtonElement).onclick = () => pick('pi');
   });
+}
+
+/** 고를 바닥 패 2장이 사실상 같은 패(종류·띠·피 값이 같음)면 true */
+function sameChoice(view: GameState) {
+  if (!view.pending) return false;
+  const [a, b] = view.pending.options.map((id) => view.floor.find((f) => f.id === id));
+  return !!a && !!b && a.kind === b.kind && a.tag === b.tag;
 }
 
 // ---------- 손패 힌트 ----------
@@ -333,6 +563,8 @@ function specialFor(c: Card, legal: Action[]) {
 }
 
 function onHandCard(c: Card) {
+  if (selectMode?.kind === 'swap') { pickSwap(c.id); return; }
+  if (selectMode) return;
   if (busy) return;
   const sp = specialFor(c, getLegalActions(s));
   if (!sp) { perform({ type: 'play', cardId: c.id }); return; }
@@ -493,6 +725,7 @@ function describe(events: GameEvent[]): string {
     else if ((e.type as string) === 'jjok') parts.push('<b>쪽!</b>');
     else if ((e.type as string) === 'ttadak') parts.push('<b>따닥!</b>');
     else if ((e.type as string) === 'ppeokEat') parts.push('<b>뻑 먹기!</b>');
+    else if ((e.type as string) === 'firstPpeok') parts.push('<b>첫뻑 +3</b>');
     else if ((e.type as string) === 'sweep') parts.push('<b>싹쓸이!</b>');
     else if (e.type === 'go') parts.push(`<b>${who(e.player)} ${e.goCount}고</b>`);
     else if (e.type === 'stop') parts.push(`<b>${who(e.player)} 스톱</b>`);
@@ -580,6 +813,12 @@ async function perform(a: Action) {
     await wait(650);
     if (no !== gameNo) return;
   }
+  const fp = evs.find((e) => (e.type as string) === 'firstPpeok') as (GameEvent & { player: PlayerId; points: number }) | undefined;
+  if (fp) {
+    banner(`${fp.player === ME ? '' : '상대 '}첫뻑! +${fp.points}점`); sfx.bonus(); sfx.buzz([30, 40, 30]);
+    await wait(750);
+    if (no !== gameNo) return;
+  }
 
   // 4) 최종 상태: 먹은 패가 트레이로 들어간다
   const captured = evs.filter((e) => e.type === 'capture').flatMap((e) => (e.type === 'capture' ? e.cards : []));
@@ -611,6 +850,15 @@ async function perform(a: Action) {
     showResult();
     return;
   }
+  if (evs.some((e) => (e.type as string) === 'shieldBlock' && (e as { player: PlayerId }).player === ME)) { banner('방패! 피 지킴'); sfx.magic(); }
+  // 같은 패 2장 중 고르기는 창 없이 바로
+  if (s.turn === ME && s.phase === 'chooseMatch' && sameChoice(s)) {
+    await wait(220);
+    if (no !== gameNo) return;
+    perform({ type: 'choose', cardId: s.pending!.options[0] });
+    return;
+  }
+  markMyTurnStart();
   if (s.turn === AI) {
     busy = true; render(s);
     await wait(AI_THINK);
@@ -655,10 +903,14 @@ function showResult() {
     if (r.shakeMultiplier > 1) parts.push(`흔들 ×${r.shakeMultiplier}`);
     if ((x.bakMultiplier ?? 1) > 1) parts.push(`박 ×${x.bakMultiplier}`);
     if ((x.carry ?? 1) > 1) parts.push(`나가리 ×${x.carry}`);
+    if ((r as unknown as { magicDouble?: boolean }).magicDouble) parts.push('매직 ×2');
     $('res-formula').textContent = `${parts.join(' · ')} = ${r.finalScore}점`;
     if (x.bak?.pi) badge('피박');
     if (x.bak?.gwang) badge('광박');
     if (x.bak?.meong) badge('멍따');
+    const mx = r as unknown as { magicDouble?: boolean; magicBlocked?: string[] };
+    if (mx.magicDouble) badge('매직 점수 2배');
+    for (const b of mx.magicBlocked ?? []) badge(b === 'pi' ? '방패: 피박 막음' : '방패: 광박 막음');
     if (r.shakeMultiplier > 1) badge('흔들기');
   }
   const grid = $('res-grid'); grid.innerHTML = '';
@@ -761,7 +1013,7 @@ function setLevel(l: AiLevel) {
 }
 function showHome() {
   gameNo++; busy = false;
-  for (const id of ['result', 'special', 'choose', 'gostop', 'info', 'reward', 'collection', 'caps-detail', 'item-detail', 'gukjin']) $(id).hidden = true;
+  for (const id of ['result', 'special', 'choose', 'gostop', 'info', 'reward', 'collection', 'caps-detail', 'item-detail', 'gukjin', 'magic-pick']) $(id).hidden = true;
   syncHome();
   $('home').hidden = false;
 }
@@ -779,6 +1031,7 @@ async function newGame() {
   busy = false;
   const seed = Math.floor(Math.random() * 1e9).toString(36);
   s = createGame(seed, { carry } as Parameters<typeof createGame>[1]);
+  const magicNotes = equipForGame();
   slotOf.clear();
   for (const c of [...s.hands[0], ...s.hands[1], ...s.floor, ...s.deck, ...s.captured[0], ...s.captured[1]]) allCards.set(c.id, c);
   const redeal = s.events.some((e) => (e.type as string) === 'redeal');
@@ -790,6 +1043,7 @@ async function newGame() {
   render(s);
   await dealIn(no);
   if (no !== gameNo) return;
+  if (magicNotes.length) { $('feed').innerHTML = `<b>매직</b> · ${magicNotes.join(' · ')}`; sfx.magic(); }
   // 총통: 분배하자마자 같은 월 4장 → 보여 주고 바로 끝
   const ct = s.events.find((e) => (e.type as string) === 'chongtong') as (GameEvent & { player: PlayerId; cards: string[] }) | undefined;
   if (ct) {
@@ -851,7 +1105,11 @@ $('btn-level').addEventListener('click', () => {
   banner(`상대: ${AI_LEVELS.find((l) => l.id === level)!.label}`);
 });
 $('sp-cancel').addEventListener('click', () => { $('special').hidden = true; });
-$('btn-start').addEventListener('click', () => { sfx.unlock(); sfx.click(); sfx.startBgm(); $('home').hidden = true; newGame(); });
+$('btn-start').addEventListener('click', () => { sfx.unlock(); sfx.click(); sfx.startBgm(); openMagicPick(); });
+$('btn-mp-go').addEventListener('click', () => { try { localStorage.setItem('mg-picked', JSON.stringify(picked)); } catch { /* 무시 */ } $('magic-pick').hidden = true; $('home').hidden = true; newGame(); });
+$('btn-mp-none').addEventListener('click', () => { picked = []; $('magic-pick').hidden = true; $('home').hidden = true; newGame(); });
+$('btn-mp-test').addEventListener('click', () => { grantTestMagic(); sfx.magic(); openMagicPick(); syncHome(); });
+$('magic-cancel').addEventListener('click', () => { selectMode = null; render(s); });
 for (const id of ['opp-caps', 'my-caps']) $(id).addEventListener('click', () => { if (s) { sfx.click(); showCapsDetail(); } });
 $('btn-cd-close').addEventListener('click', () => { $('caps-detail').hidden = true; });
 $('btn-res-home').addEventListener('click', () => { sfx.click(); showHome(); });

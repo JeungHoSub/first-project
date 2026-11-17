@@ -28,6 +28,8 @@ export interface RuleOptions {
   magic: { enabled: boolean };
   /** R12 나가리 이월 배수 (기본 1). 이번 판 승자 finalScore에 곱한다. 화면이 직전 결과의 nextCarry를 넘긴다 */
   carry: number;
+  /** 첫뻑(자기 첫 차례에 뻑) 보너스 점수. 나중에 돈 지급으로 바꿀 자리 (기본 3, 0이면 없음) */
+  firstPpeokBonus: number;
 }
 
 export const DEFAULT_OPTIONS: RuleOptions = {
@@ -42,6 +44,7 @@ export const DEFAULT_OPTIONS: RuleOptions = {
   },
   magic: { enabled: false },
   carry: 1,
+  firstPpeokBonus: 3,
 };
 
 export type Phase = 'play' | 'chooseMatch' | 'goStop' | 'ended';
@@ -62,6 +65,9 @@ export type GameEvent =
   | { type: 'shake'; player: PlayerId; month: number; cards: string[] }
   | { type: 'bomb'; player: PlayerId; month: number; cards: string[] }
   | { type: 'steal'; player: PlayerId; from: PlayerId; card: string }
+  | { type: 'firstPpeok'; player: PlayerId; points: number }
+  | { type: 'shieldBlock'; player: PlayerId } // 방패가 피 뺏김을 막음 (player = 막은 사람)
+  | { type: 'magic'; player: PlayerId; magic: 'swap' | 'sweep'; cards: string[] }
   | { type: 'dummy'; player: PlayerId }
   | { type: 'flip'; player: PlayerId; card: string }
   | { type: 'place'; player: PlayerId; card: string }
@@ -85,6 +91,8 @@ export type GameResult =
       type: 'win'; winner: PlayerId; base: number; goCount: number; goBonus: number; multiplier: number; shakeMultiplier: number;
       bak: Bak; bakMultiplier: number; carry: number; nextCarry: number; finalScore: number;
       by: 'stop' | 'exhaust' | 'chongtong';
+      magicDouble?: boolean; // 매직 카드 "점수 2배"가 발동함
+      magicBlocked?: ('pi' | 'gwang')[]; // 방패가 막은 박
     }
   | { type: 'nagari'; nextCarry: number };
 
@@ -102,6 +110,10 @@ export interface GameState {
   stealDue: number;
   /** 국진(9월 열끗)을 어떻게 셀지: 'auto'(유리한 쪽) / 'yeol' / 'pi'. 사람이 고르면 고정된다 */
   gukjinAs?: [GukjinMode, GukjinMode];
+  /** 매직 카드 지속 효과(판 시작 때 화면이 정함). 없으면 효과 없음 */
+  magic?: MagicState;
+  /** 카드 외 추가 점수(첫뻑 등). 점수 계산에 더해진다 */
+  extra?: [ExtraPoint[], ExtraPoint[]];
   captured: [Card[], Card[]];
   pending: PendingChoice | null;
   goCount: [number, number];
@@ -110,6 +122,15 @@ export interface GameState {
   dummies: [number, number]; // 손패에 든 빈 패 장수 (더미 뒤집기 전용)
   events: GameEvent[]; // 추가만 되는 로그 (3·4단계 훅/연출용)
   result: GameResult | null;
+}
+
+export interface ExtraPoint { key: string; label: string; points: number }
+
+export interface MagicState {
+  shield: [number, number]; // 피 뺏김을 막는 남은 횟수
+  noPibak: [boolean, boolean]; // 진 쪽일 때 피박 1번 막기
+  noGwangbak: [boolean, boolean]; // 진 쪽일 때 광박 1번 막기
+  double: [boolean, boolean]; // 이기면 최종 점수 ×2 (발동 확률은 판 시작 때 이미 굴림)
 }
 
 export type GukjinMode = 'auto' | 'yeol' | 'pi';

@@ -100,6 +100,8 @@ export function settleWin(
   winner: PlayerId, captured: readonly [readonly Card[], readonly Card[]], goCount: number, shakes: number,
   options: RuleOptions, by: 'stop' | 'exhaust',
   winnerGukjin: 'auto' | 'yeol' | 'pi' = 'auto', loserGukjin: 'auto' | 'yeol' | 'pi' = 'auto',
+  magic?: { double?: boolean; noPibak?: boolean; noGwangbak?: boolean },
+  extraPoints = 0, // 첫뻑 등 카드 외 추가 점수
 ): Extract<GameResult, { type: 'win' }> {
   const w = captured[winner];
   const l = captured[1 - winner];
@@ -108,11 +110,17 @@ export function settleWin(
   const modes = winnerGukjin === 'auto' ? (['yeol', 'pi'] as const) : ([winnerGukjin] as const);
   for (const gj of modes) {
     const sc = scoreWith(w, gj);
-    const { bak, bakMultiplier } = judgeBak(sc, w, l, options, loserGukjin === 'yeol' ? false : true);
+    let { bak, bakMultiplier } = judgeBak(sc, w, l, options, loserGukjin === 'yeol' ? false : true);
+    // 매직 카드 "방패"(높은 등급): 진 쪽의 피박·광박을 한 번 막는다
+    const blocked: ('pi' | 'gwang')[] = [];
+    if (magic?.noPibak && bak.pi) { bak = { ...bak, pi: false }; bakMultiplier /= 2; blocked.push('pi'); }
+    if (magic?.noGwangbak && bak.gwang) { bak = { ...bak, gwang: false }; bakMultiplier /= 2; blocked.push('gwang'); }
     const r: Extract<GameResult, { type: 'win' }> = {
-      type: 'win', winner, base: sc.total, goCount, by, bak, nextCarry: 1,
-      ...settle(sc.total, goCount, options, shakes, bakMultiplier, carry),
+      type: 'win', winner, base: sc.total + extraPoints, goCount, by, bak, nextCarry: 1,
+      ...settle(sc.total + extraPoints, goCount, options, shakes, bakMultiplier, carry),
     };
+    if (blocked.length) r.magicBlocked = blocked;
+    if (magic?.double) { r.finalScore *= 2; r.magicDouble = true; } // 매직 카드 "점수 2배"
     if (!best || r.finalScore > best.finalScore) best = r;
     if (!w.some(isGukjin)) break;
   }

@@ -145,3 +145,29 @@ export function itemArt(it: ItemDef, gi: number, locked = false): string {
     ${grade ? `<g transform="translate(20 56.2)"><rect x="-8" y="-3.4" width="16" height="6.8" rx="3.4" fill="url(#${id}-g)" stroke="#0b0a1c" stroke-width=".5"/><text y="1.9" text-anchor="middle" font-size="4.6" font-weight="900" fill="#0b0a1c" font-family="'Black Han Sans',sans-serif">${grade}</text></g>` : ''}
   </svg>`;
 }
+
+// ---------- 매직 카드 실제 효과 값 (등급 순번 g = 0(F) … 9(SSS+)) ----------
+export const MAGIC_IDS = ['peek', 'swap', 'sweep', 'undo', 'shield', 'double'] as const;
+export type MagicId = (typeof MAGIC_IDS)[number];
+export function magicParams(id: MagicId, g: number) {
+  const chancePct = pct(g, 40, 100);
+  switch (id) {
+    case 'peek': return { uses: 1, chancePct: 100, count: g === 9 ? 99 : pick([1, 1, 1, 2, 2, 2, 3, 3, 4, 10], g), seconds: pick([2, 3, 4, 3, 4, 5, 4, 5, 8, 8], g) };
+    case 'swap': return { uses: g >= 8 ? 2 : 1, chancePct, preview: g >= 5 };
+    case 'sweep': return { uses: 1, chancePct, count: g >= 7 ? 2 : 1, anyCard: g >= 4 };
+    case 'undo': return { uses: g >= 9 ? 2 : 1, chancePct, undoPpeok: g >= 6 };
+    case 'shield': return { uses: 0, chancePct, shield: pick([1, 1, 2, 2, 2, 3, 3, 4, 4, 5], g), noPibak: g >= 5, noGwangbak: g >= 8 };
+    case 'double': return { uses: 0, chancePct: pct(g, 10, 100) };
+  }
+}
+
+/** 테스트용: 매직 카드 6종을 무작위 등급으로 1장씩 지급 */
+export function grantTestMagic(rng = Math.random) {
+  for (const id of MAGIC_IDS) {
+    let g = rng() * 100; let gi = 0;
+    for (; gi < GRADES.length - 1; gi++) { g -= GRADE_RATE[GRADES[gi]]; if (g < 0) break; }
+    const grade = GRADES[gi];
+    mem = { ...mem, [id]: { ...ownedOf(id), [grade]: (ownedOf(id)[grade] ?? 0) + 1 } };
+  }
+  save(mem);
+}

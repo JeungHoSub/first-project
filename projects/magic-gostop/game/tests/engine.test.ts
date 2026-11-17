@@ -411,7 +411,7 @@ describe('뻑 / 뻑 먹기', () => {
     expect(s.ppeok).toEqual({ 5: 0 });
     expect(s.turn).toBe(1);
     expect(countCards(s)).toBe(48);
-    expect(evTypes(s)).toEqual(['play', 'flip', 'ppeok']);
+    expect(evTypes(s)).toEqual(['play', 'flip', 'ppeok', 'firstPpeok']); // 첫 차례 뻑이라 첫뻑 보너스
     const e = s.events.find((x) => x.type === 'ppeok') as { cards: string[] };
     expect(e).toMatchObject({ player: 0, month: 5 });
     expect(e.cards.slice().sort()).toEqual(['05-P-0', '05-T-0', '05-Y-0']);
@@ -431,7 +431,7 @@ describe('뻑 / 뻑 먹기', () => {
     expect(s.captured[1].filter((c) => c.kind === 'P' && c.month === 7)).toHaveLength(1); // 0의 7월 피 1장 이동
     expect(s.captured[0]).toHaveLength(1);
     expect(s.ppeok).toEqual({});
-    const after = s.events.slice(s.events.findIndex((e) => e.type === 'ppeok') + 1).map((e) => e.type);
+    const after = s.events.slice(s.events.findIndex((e) => e.type === 'ppeok') + 1).map((e) => e.type).filter((t) => t !== 'firstPpeok');
     expect(after).toEqual(['play', 'flip', 'ppeokEat', 'capture', 'place', 'steal']);
     expect(s.events.find((e) => e.type === 'ppeokEat')).toEqual({ type: 'ppeokEat', player: 1, month: 5, self: false, fromPpeok: true });
   });
@@ -984,5 +984,78 @@ describe('국진 선택 (사람이 고정)', () => {
     const r3 = setGukjin(s, 0, 'pi'); // 열끗 7장 3점 + 피 2 → 3점 < 4 → 다음 차례
     expect(r3.phase).toBe('play');
     expect(r3.turn).toBe(1);
+  });
+});
+
+describe('매직 카드 엔진 효과', () => {
+  const mk = (id: string) => ({ id, month: Number(id.slice(0, 2)), kind: id.split('-')[1] }) as never;
+  it('패 바꾸기: 손패 1장 ↔ 더미 맨 위, 카드 수 보존', async () => {
+    const { createGame, magicSwap, countCards } = await import('../src/engine');
+    const s = createGame('mg1', { bonus: { two: 0, three: 0 } });
+    const h = s.hands[0][0].id, top = s.deck[0].id;
+    const r = magicSwap(s, 0, h);
+    expect(r.deck[0].id).toBe(h);
+    expect(r.hands[0].some((c) => c.id === top)).toBe(true);
+    expect(countCards(r)).toBe(countCards(s));
+    expect(s.deck[0].id).toBe(top); // 원본 불변
+  });
+  it('바닥 정리: 바닥 패가 더미 맨 아래로', async () => {
+    const { createGame, magicSweep } = await import('../src/engine');
+    const s = createGame('mg2', { bonus: { two: 0, three: 0 } });
+    const f = s.floor[0].id;
+    const r = magicSweep(s, 0, [f]);
+    expect(r.floor.some((c) => c.id === f)).toBe(false);
+    expect(r.deck[r.deck.length - 1].id).toBe(f);
+  });
+  it('방패: 피 뺏김을 막고 shieldBlock 이벤트', async () => {
+    const { createGame, setMagicState, applyAction } = await import('../src/engine');
+    // 쪽 상황: 내 손패 3월 피, 바닥에 3월 없음, 더미 맨 위 3월 피 → 쪽으로 상대 피 1장
+    let s = createGame('mg3', { bonus: { two: 0, three: 0 } });
+    s.hands[0] = [mk('03-P-0')]; s.hands[1] = [mk('05-P-0')];
+    s.floor = [mk('01-P-0')]; s.deck = [mk('03-P-1'), mk('06-P-0')];
+    s.captured[1] = [mk('07-P-0')]; s.captured[0] = [];
+    s = setMagicState(s, 1, { shield: 1 });
+    const r = applyAction(s, { type: 'play', cardId: '03-P-0' });
+    expect(r.events.some((e) => e.type === 'jjok')).toBe(true);
+    expect(r.events.some((e) => e.type === 'shieldBlock' && e.player === 1)).toBe(true);
+    expect(r.captured[1].map((c) => c.id)).toContain('07-P-0');
+    expect(r.magic!.shield[1]).toBe(0);
+  });
+  it('점수 2배·박 막기: 정산에 반영', async () => {
+    const { settleWin } = await import('../src/engine/score');
+    const { DEFAULT_OPTIONS } = await import('../src/engine');
+    const P10 = ['01-P-0', '01-P-1', '02-P-0', '02-P-1', '03-P-0', '03-P-1', '04-P-0', '04-P-1', '05-P-0', '05-P-1'].map(mk);
+    const base = settleWin(0, [P10, [mk('06-P-0')]], 0, 0, DEFAULT_OPTIONS, 'stop');
+    expect(base.bak.pi).toBe(true);
+    const r = settleWin(0, [P10, [mk('06-P-0')]], 0, 0, DEFAULT_OPTIONS, 'stop', 'auto', 'auto', { double: true, noPibak: true });
+    expect(r.bak.pi).toBe(false);
+    expect(r.magicBlocked).toEqual(['pi']);
+    expect(r.magicDouble).toBe(true);
+    expect(r.finalScore).toBe((base.finalScore / 2) * 2);
+  });
+});
+
+describe('첫뻑 보너스', () => {
+  const mk = (id: string) => ({ id, month: Number(id.slice(0, 2)), kind: id.split('-')[1] }) as never;
+  it('첫 차례 뻑이면 +3점(점수·이벤트), 두 번째 차례 뻑은 없음', async () => {
+    const { createGame, applyAction, scoreOf } = await import('../src/engine');
+    const s = createGame('fp', { bonus: { two: 0, three: 0 } });
+    s.hands[0] = [mk('03-P-0'), mk('05-P-0')]; s.hands[1] = [mk('06-P-0'), mk('07-P-0')];
+    s.floor = [mk('03-T-0')]; s.deck = [mk('03-P-1'), mk('08-P-0'), mk('09-P-0'), mk('10-P-0')];
+    s.captured = [[], []];
+    const r = applyAction(s, { type: 'play', cardId: '03-P-0' });
+    expect(r.events.some((e) => e.type === 'ppeok')).toBe(true);
+    expect(r.events.some((e) => e.type === 'firstPpeok' && e.player === 0)).toBe(true);
+    expect(scoreOf(r, 0).total).toBe(3);
+    expect(scoreOf(r, 0).details.some((d) => d.key === 'firstPpeok')).toBe(true);
+  });
+  it('firstPpeokBonus=0이면 없음', async () => {
+    const { createGame, applyAction } = await import('../src/engine');
+    const s = createGame('fp2', { bonus: { two: 0, three: 0 }, firstPpeokBonus: 0 });
+    s.hands[0] = [mk('03-P-0')]; s.hands[1] = [mk('06-P-0')];
+    s.floor = [mk('03-T-0')]; s.deck = [mk('03-P-1'), mk('08-P-0')];
+    s.captured = [[], []];
+    const r = applyAction(s, { type: 'play', cardId: '03-P-0' });
+    expect(r.events.some((e) => e.type === 'firstPpeok')).toBe(false);
   });
 });

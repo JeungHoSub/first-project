@@ -39,6 +39,8 @@
       <div class="pinfo">
         <div class="pname">나<span class="turn-tag">내 차례</span></div>
         <div class="prompt" id="prompt"></div>
+        <div class="magic-bar" id="magic-bar" hidden></div>
+        <button class="text-btn magic-cancel" id="magic-cancel" type="button" hidden>취소</button>
       </div>
       <div class="go-chip" id="my-go" hidden></div>
       <div class="pscore"><b id="my-score">0</b><small>점</small></div>
@@ -107,8 +109,9 @@
       <li><b>한 차례</b> · 손패 1장 내기 → 더미 1장 뒤집기 → 같은 월이면 먹기. 바닥에 같은 월이 2장이면 골라 먹고, 3장이면 다 먹습니다.</li>
       <li><b>점수</b> · 광(3광 3점, 비광 낀 3광 2점, 4광 4점, 5광 15점) · 열끗 5장부터 · 고도리 5점 · 띠 5장부터 · 홍단·청단·초단 3점 · 피 10장부터(쌍피는 2장)</li>
       <li><b>흔들기·폭탄</b> · 같은 월 3장을 들고 있으면 선택 창이 뜹니다. 흔들기·폭탄은 이기면 ×2, 폭탄은 상대 피 1장을 가져오고 빈 패 2장을 받습니다.</li>
-      <li><b>뻑·쪽·따닥·싹쓸이</b> · 뻑은 3장이 바닥에 남고, 그 3장을 먹으면 상대 피 1장(자기가 싼 뻑이면 2장). 쪽·따닥·싹쓸이는 피 1장. 보너스 패(2피·3피)는 바로 내 피가 됩니다.</li>
+      <li><b>뻑·쪽·따닥·싹쓸이</b> · 자기 첫 차례에 뻑이면 첫뻑 보너스 +3점(나중에 돈으로 바뀔 자리). 뻑은 3장이 바닥에 남고, 그 3장을 먹으면 상대 피 1장(자기가 싼 뻑이면 2장). 쪽·따닥·싹쓸이는 피 1장. 보너스 패(2피·3피)는 바로 내 피가 됩니다.</li>
       <li><b>표시</b> · 바닥에서 빛나는 패(▼)는 지금 먹을 수 있는 패. 테두리 색은 바닥 같은 월 장수: <span style="color:#f0c35a">금색 1장</span>, <span style="color:#4fb4ff">파랑 2장(골라 먹기)</span>, <span style="color:#ff5a5f">빨강 3장(다 먹고 피 뺏기)</span>. <span style="color:#b9c2be">회색 ▼</span>는 남은 같은 월이 모두 내 손에 있어 나만 먹을 수 있는 패(급하지 않음). 겹친 바닥 패에는 장수 배지가 붙고, 바닥 2장에 내가 1장이면 "택1". 손패 위 <span style="color:#a9b0ad">●회색</span>은 같은 월이 내 손에만 남아 나중에 내도 되는 패, <span style="color:#ffd23a">▲노랑</span>은 바닥 1장에 남은 1장이 아직 안 나와 쌀(뻑) 위험이 있는 패</li>
+      <li><b>매직 카드</b> · 판 시작 때 최대 2장을 고르면 내 이름 옆 막대에 나옵니다. 엿보기·패 바꾸기·바닥 정리·되돌리기는 내 차례에 눌러 쓰고, 방패·점수 2배는 판 시작 때 발동 확률대로 자동 적용됩니다. 등급이 높을수록 강합니다.</li>
       <li><b>박</b> · 피박(진 쪽 피 1~5장)·광박(진 쪽 광 0장)·멍따(이긴 쪽 열끗 7장 이상) 각각 ×2</li>
       <li><b>총통·국진·나가리</b> · 처음에 같은 월 4장이면 총통 10점(나가리 이월도 곱함). 9월 열끗(국진)을 먹으면 열끗으로 쓸지 쌍피로 쓸지 고릅니다(상대는 자동으로 유리한 쪽). 나가리면 다음 판 ×2 (최대 ×4)</li>
       <li><b>고/스톱</b> · 7점부터. 고 1번마다 +1점, 3고 ×2, 4고 ×4</li>
@@ -116,7 +119,7 @@
     </ul>
     <div class="sheet-title small">다음 단계에서 넣을 것</div>
     <ul class="info-list muted">
-      <li>매직 카드: 엿보기, 패 바꾸기, 방패, 바닥 정리</li>
+      <li>캐릭터·판 이벤트권 효과, 상대 AI의 매직 사용</li>
     </ul>
     <p class="seed">화투 그림: 디자인메카 화투 일러스트(사용자 제공)</p>
     <p class="seed">판 번호 <span id="seed"></span></p>
@@ -192,6 +195,20 @@
     <div class="gs-btns">
       <button class="big stop-btn" id="btn-gk-yeol" type="button">열끗<small id="gk-yeol-pts"></small></button>
       <button class="big go-btn" id="btn-gk-pi" type="button">쌍피<small id="gk-pi-pts"></small></button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet" id="magic-pick" hidden>
+  <div class="sheet-card">
+    <div class="sheet-kicker">판 시작 · 매직 카드</div>
+    <div class="sheet-title">가져갈 매직 카드 <span id="mp-count"></span></div>
+    <p class="sheet-sub" id="mp-empty">아직 매직 카드가 없습니다. 봇전에서 얻거나, 테스트용으로 바로 받아 보세요.</p>
+    <div class="mp-grid" id="mp-grid"></div>
+    <button class="text-btn" id="btn-mp-test" type="button">테스트: 매직 카드 6종 받기(무작위 등급)</button>
+    <div class="gs-btns">
+      <button class="big stop-btn" id="btn-mp-none" type="button">매직 없이</button>
+      <button class="big go-btn" id="btn-mp-go" type="button">시작</button>
     </div>
   </div>
 </div>
