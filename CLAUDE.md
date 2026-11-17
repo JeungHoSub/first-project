@@ -26,10 +26,12 @@
 | 쇼츠 편집·자동업로드 | `shorts-auto` | media-producer → content-writer → developer | youtube-upload, copyright-check |
 | 음악·동영상 업로드 | `music-video-upload` | researcher → media-producer → developer | copyright-check, youtube-upload |
 | 입찰 플랫폼 | `g2b-bid-platform` | researcher → planner → developer | g2b-bid-data |
+| 수익화 아이디어 | `money-ideas` | idea-planner → (추천 에이전트) → developer | idea-briefing, idea-scoring |
 
 공통: 모든 프로젝트의 마지막은 `reviewer` → 사용자 검토. 스킬이 없으면 `skill-scout`.
 업로드 모듈처럼 여러 프로젝트가 같이 쓰는 코드는 `projects/shared/`에 둔다.
 세션 운영 방법은 `SESSIONS.md`, 할 일은 `TODO.md`.
+**수익화 판단 기준은 `VISION.md`** — 새 일을 시작하거나 우선순위를 정할 때 먼저 읽는다.
 
 ## 메인 세션(= 총괄 매니저)의 규칙
 
