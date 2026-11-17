@@ -1490,3 +1490,33 @@ body[data-frame=""] .seat.me .pname, body[data-cb=""] .back { }
 .yt-bet.on { border-color: var(--ivory); background: rgba(243,234,216,.12); }
 #yt-throw { display: inline-flex; justify-content: center; align-items: center; gap: 6px; font-size: 1.2rem; }
 .yt-pick small { flex-wrap: wrap; justify-content: center; text-align: center; }
+
+/* ===== 뽑기 의식: 낙관 → 금가루 → 나전칠기 함 ===== */
+.gx-ticket { overflow: visible; }
+.gx-ticket .tx-svg { width: 100%; height: 100%; display: block; }
+.gx-stamp { position: absolute; right: 9%; top: 50%; width: 64px; height: 64px; margin-top: -32px; display: grid; place-items: center; border-radius: 8px; opacity: 0;
+  background: #8c2f28; box-shadow: inset 0 0 0 3px rgba(247,241,227,.85), inset 0 0 0 6px #8c2f28; transform: rotate(-8deg) scale(2.6); }
+.gx-stamp span { font-family: var(--font-myeongjo); font-weight: 800; font-size: 34px; color: #f7f1e3; }
+.gx-run.stamp .gx-stamp { animation: stampin .32s cubic-bezier(.3,1.6,.5,1) forwards; }
+@keyframes stampin { to { opacity: 1; transform: rotate(-8deg) scale(1); } }
+.gx-run.stamp .gx-ticket { animation: tkin .65s both, tkthump .32s ease-out; }
+@keyframes tkthump { 40% { transform: scale(.97); } }
+.gx-run.dissolve .gx-ticket { transition: opacity .45s, filter .45s, transform .45s; opacity: 0; filter: blur(6px) brightness(1.6); transform: scale(1.06); }
+/* 함 */
+.gx-box { position: absolute; left: -110px; top: 30px; width: 220px; height: 121px; opacity: 0; transform: translateY(60px); }
+.gx-box-body { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: auto; filter: drop-shadow(0 14px 18px rgba(0,0,0,.6)); }
+.gx-lid { position: absolute; left: -2%; width: 104%; top: -6px; height: auto; transform-origin: 50% 100%; transition: transform .6s cubic-bezier(.3,1.2,.4,1); filter: drop-shadow(0 6px 8px rgba(0,0,0,.5)); }
+.gx-run.box .gx-box { animation: boxin .7s cubic-bezier(.2,.9,.3,1) forwards; }
+@keyframes boxin { to { opacity: 1; transform: none; } }
+.gx-run.open .gx-lid { transform: translateY(-40px) rotateX(70deg) rotate(-8deg); }
+.gx-boxlight { position: absolute; left: -90px; top: -260px; width: 180px; height: 300px; opacity: 0; pointer-events: none;
+  background: linear-gradient(0deg, color-mix(in srgb, var(--gc) 75%, #fff), color-mix(in srgb, var(--gc) 25%, transparent) 60%, transparent);
+  clip-path: polygon(12% 100%, 88% 100%, 100% 0, 0 0); filter: blur(6px); mix-blend-mode: screen; transition: opacity .5s, background .4s; }
+.gx-run.open .gx-boxlight { opacity: .65; }
+.gx-run.burst .gx-box, .gx-run.burst .gx-boxlight { transition: opacity .4s; opacity: 0; }
+/* 카드는 함 속에서 솟아오른다 */
+.gx-run .gx-card-wrap { transition: transform .8s cubic-bezier(.2,1.1,.3,1), opacity .4s; }
+.gx-run.box:not(.open) .gx-card-wrap { transform: translateY(120px) scale(.5); opacity: 0; }
+.gx-run.open .gx-card-wrap { transform: translateY(-40px); opacity: 1; }
+.gx-run.charge .gx-card-wrap { transform: translateY(-60px); }
+.gx-run.box:not(.open) .gx-ring { opacity: 0; }

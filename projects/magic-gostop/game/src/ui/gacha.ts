@@ -327,6 +327,24 @@ function closeRun() {
   $('gacha-run').querySelectorAll('.gx-fly, .gx-seal').forEach((e) => e.remove());
 }
 
+/** 나전칠기 함: 옻칠 바탕에 자개(무지갯빛 조개) 구름·학 무늬, 금속 장식 */
+function boxArt() {
+  const nacre = `<linearGradient id="gx-nacre" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6d8e8"/><stop offset=".3" stop-color="#d8f0ea"/><stop offset=".6" stop-color="#d6def8"/><stop offset="1" stop-color="#f4ecd0"/></linearGradient>`;
+  const lac = `<linearGradient id="gx-lac" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a1a14"/><stop offset="1" stop-color="#0b0706"/></linearGradient>`;
+  const au = `<linearGradient id="gx-au" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8a6a2a"/><stop offset=".45" stop-color="#f6dc8c"/><stop offset="1" stop-color="#a87c2e"/></linearGradient>`;
+  const cloud = (x: number, y: number, k: number) => `<path transform="translate(${x} ${y}) scale(${k})" d="M0 8 c4 -8 12 -8 15 -2 c3 -6 12 -5 13 2 c7 -1 9 6 3 8 c-10 3 -24 3 -31 0 c-4 -2 -3 -7 0 -8 z" fill="url(#gx-nacre)" opacity=".75"/>`;
+  return `<div class="gx-box"><svg class="gx-box-body" viewBox="0 0 200 110" aria-hidden="true"><defs>${nacre}${lac}${au}</defs>
+      <rect x="4" y="6" width="192" height="100" rx="6" fill="url(#gx-lac)" stroke="url(#gx-au)" stroke-width="2"/>
+      <rect x="12" y="14" width="176" height="84" rx="3" fill="none" stroke="url(#gx-nacre)" stroke-opacity=".5" stroke-width="1"/>
+      ${cloud(24, 40, 1.1)}${cloud(140, 56, 0.9)}${cloud(60, 74, 0.7)}
+      <path d="M120 34 c10 -8 26 -6 30 2 c-8 -2 -14 0 -18 4 c8 2 12 8 10 14 c-6 -6 -14 -8 -22 -6 z" fill="url(#gx-nacre)" opacity=".85"/>
+      <circle cx="100" cy="30" r="11" fill="url(#gx-au)"/><rect x="96" y="27" width="8" height="10" rx="1.5" fill="#2a1a14"/>
+      ${[[4, 6], [184, 6], [4, 94], [184, 94]].map(([x, y]) => `<rect x="${x}" y="${y}" width="12" height="12" rx="2" fill="url(#gx-au)"/>`).join('')}
+    </svg>
+    <svg class="gx-lid" viewBox="0 0 200 40" aria-hidden="true"><rect x="0" y="4" width="200" height="34" rx="7" fill="url(#gx-lac)" stroke="url(#gx-au)" stroke-width="2"/>
+      ${cloud(30, 12, 0.8)}${cloud(120, 14, 0.7)}<rect x="88" y="30" width="24" height="10" rx="2" fill="url(#gx-au)"/></svg></div>`;
+}
+
 /** 화투 패가 화면을 사선으로 가로지르며 쏟아진다 (높은 등급이면 광 패가 금빛으로 섞임) */
 function streamCards(stage: HTMLElement, count: number, within: number, gold: boolean) {
   if (reduced) return;
@@ -398,22 +416,29 @@ async function run(t: Ticket, tier: number, n: number) {
   stage.hidden = false;
   fxStart();
 
-  // 1) 뽑기권이 날아와 빛나다 찢어짐
+  // 1) 뽑기권이 놓이고 붉은 낙관이 "쿵" 찍힌 뒤 금가루로 흩어짐
   const spin = $('gr-spin');
-  spin.innerHTML = `<div class="gx-ticket"><div class="half l">${ticketArt(t, tier)}</div><div class="half r">${ticketArt(t, tier)}</div></div>`;
+  spin.innerHTML = `<div class="gx-ticket">${ticketArt(t, tier)}<div class="gx-stamp"><span>인</span></div></div>`;
   stage.classList.add('intro');
   sfx.deal();
-  await wait(650);
-  stage.classList.add('tear'); sfx.slap(0.5);
-  spawnOut(40, t.hue, false, center(), 0.5);
-  await wait(380);
+  await wait(620);
+  stage.classList.add('stamp'); sfx.slap(1); sfx.buzz(20);
+  await wait(520);
+  stage.classList.add('dissolve');
+  spawnOut(70, '#e9cf8a', false, center(), 0.35);
+  await wait(480);
 
-  // 2) 진짜 화투가 사선 축으로 빙글빙글 (앞면·뒷면 번갈아, 잔상 3겹) + 화투 패가 사선으로 쏟아짐 + 빛이 빨려 듦
+  // 2) 나전칠기 함이 떠오르고 뚜껑이 열리며 빛이 새어 나옴 → 진짜 화투가 함에서 솟아 사선으로 회전
   const pool = ALL_CARDS.filter((c) => c.month <= 12);
   const gwang = pool.filter((c) => c.kind === 'G');
   const face: Card = high ? gwang[Math.floor(Math.random() * gwang.length)] : pool[Math.floor(Math.random() * pool.length)];
-  spin.innerHTML = `<div class="gx-card-wrap">${[3, 2, 1, 0].map((k) => `<div class="gx-card${k ? ' ghost' : ''}" style="--k:${k}"><div class="gx-back"></div><div class="gx-face">${cardArt(face)}</div></div>`).join('')}<div class="gx-glow"></div></div><div class="gx-ring"></div>`;
-  stage.classList.remove('intro', 'tear'); void stage.offsetWidth;
+  spin.innerHTML = `<div class="gx-boxlight"></div>${boxArt()}<div class="gx-card-wrap">${[3, 2, 1, 0].map((k) => `<div class="gx-card${k ? ' ghost' : ''}" style="--k:${k}"><div class="gx-back"></div><div class="gx-face">${cardArt(face)}</div></div>`).join('')}<div class="gx-glow"></div></div><div class="gx-ring"></div>`;
+  stage.classList.remove('intro', 'stamp', 'dissolve'); void stage.offsetWidth;
+  stage.classList.add('box');
+  sfx.chime(2);
+  await wait(700);
+  stage.classList.add('open'); sfx.flip(); sfx.chime(4);
+  await wait(650);
   stage.classList.add('charge');
   // 등급 예고: 빛 색이 C → A → S → SS → SSS → 무지개 순으로 한 단계씩 오른다(실제 등급까지만)
   const ladder = [0, 3, 5, 6, 7, 8, 9].filter((g) => g <= best.gi);
@@ -421,7 +446,7 @@ async function run(t: Ticket, tier: number, n: number) {
   stage.style.setProperty('--gc', gcol(ladder[0]));
   const steps = 14;
   const streamEnd = performance.now() + 2600;
-  streamCards(stage, 6 + best.gi * 3, 2400, high);
+  streamCards(stage, 4 + best.gi * 2, 2400, high);
   for (let i = 0; i < steps && !skipping; i++) {
     const want = Math.min(ladder.length - 1, Math.floor(((i + 1) / steps) * ladder.length * 1.15));
     if (want > lv) {
