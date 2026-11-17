@@ -10,7 +10,8 @@
     "ai-match": "tsx scripts/ai-match.ts",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.ui.json",
     "dev": "vite",
-    "build:page": "node scripts/build-page.mjs"
+    "build:page": "node scripts/build-page.mjs",
+    "build:app": "node scripts/build-app.mjs"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

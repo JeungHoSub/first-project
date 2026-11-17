@@ -1,0 +1,17 @@
+{
+  "name": "magic-gostop-app",
+  "private": true,
+  "version": "0.1.0",
+  "description": "매직고스톱 앱 포장 (Capacitor). 웹 결과물은 www/ (game에서 npm run build:app)",
+  "scripts": {
+    "sync": "cap sync",
+    "android": "cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.6.2",
+    "@capacitor/core": "^8.6.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.6.2"
+  }
+}

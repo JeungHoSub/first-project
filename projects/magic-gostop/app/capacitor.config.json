@@ -1,0 +1,7 @@
+{
+  "appId": "kr.magicgostop.app",
+  "appName": "매직고스톱",
+  "webDir": "www",
+  "backgroundColor": "#0c1714",
+  "android": { "allowMixedContent": false }
+}
