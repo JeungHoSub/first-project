@@ -1565,3 +1565,48 @@ body[data-frame=""] .seat.me .pname, body[data-cb=""] .back { }
 /* 앞면 위를 사선으로 반복해 스치는 빛 */
 .gf.ss-hl .gf-front::after { animation-duration: 1.6s !important; mix-blend-mode: screen !important; opacity: .7; }
 @media (prefers-reduced-motion: reduce) { .gf.ss-hl::before, .gf.ss-hl .gf-in::before { animation: none; } }
+
+/* ===== 캐릭터 ===== */
+#chars { z-index: 42; }
+.home-char { display: grid; grid-template-columns: 52px 1fr auto; align-items: center; gap: 12px; width: 100%; padding: 8px 14px 8px 8px; text-align: left;
+  border-radius: 16px; border: 1px solid rgba(214,186,128,.32); background: rgba(14,17,22,.78); backdrop-filter: blur(3px); color: var(--text); }
+.home-char .hc-art svg { display: block; width: 52px; height: 65px; }
+.home-char .hc-txt { display: grid; gap: 2px; }
+.home-char .hc-txt b { font-family: var(--font-myeongjo); font-weight: 800; font-size: 1rem; }
+.home-char .hc-txt b small { font-family: inherit; font-size: .72rem; color: var(--gold); margin-left: 4px; }
+.home-char .hc-txt > span { font-size: .74rem; color: #cfc6b4; }
+.home-char em { font-style: normal; font-size: .72rem; color: var(--gold); border: 1px solid rgba(214,186,128,.4); padding: 4px 10px; border-radius: 999px; }
+.ch-card { max-width: 600px; }
+.ch-hero { display: grid; grid-template-columns: 140px 1fr; gap: 16px; align-items: center; padding: 14px; border-radius: 16px;
+  background: radial-gradient(120% 120% at 0% 0%, rgba(214,186,128,.12), transparent 60%), rgba(0,0,0,.28); border: 1px solid rgba(214,186,128,.22); }
+.ch-portrait svg { display: block; width: 140px; height: 175px; filter: drop-shadow(0 8px 18px rgba(0,0,0,.55)); }
+.ch-portrait.locked svg, .ch-cell.locked svg { filter: grayscale(.85) brightness(.55); }
+.ch-portrait.lvup { animation: chlv .7s cubic-bezier(.2,1.4,.4,1); }
+@keyframes chlv { 0% { transform: scale(1); filter: brightness(1); } 40% { transform: scale(1.08); filter: brightness(1.6) drop-shadow(0 0 18px #f3d27a); } 100% { transform: scale(1); filter: none; } }
+.ch-info { display: grid; gap: 8px; min-width: 0; }
+.ch-title { font-size: .74rem; color: var(--gold); letter-spacing: .08em; }
+.ch-name { font-family: var(--font-myeongjo); font-weight: 800; font-size: 1.5rem; color: #f4ecdc; }
+.ch-name small { font-size: .85rem; color: var(--gold); margin-left: 6px; }
+.ch-pips { display: flex; gap: 4px; }
+.ch-pips i { width: 14px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.14); }
+.ch-pips i.on { background: linear-gradient(90deg, #b8913f, #f3d27a); box-shadow: 0 0 6px rgba(243,210,122,.5); }
+.ch-abil { display: grid; gap: 4px; }
+.ch-abil span { font-size: .72rem; color: var(--gold); }
+.ch-abil p { margin: 0; font-size: .88rem; line-height: 1.45; color: #ebe4d6; }
+.ch-abil .ch-next { font-size: .76rem; color: #a9a291; }
+.ch-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.ch-btn { padding: 9px 14px; border-radius: 10px; border: 1px solid rgba(214,186,128,.45); background: rgba(214,186,128,.08); color: #f4ecdc; font-weight: 700; font-size: .84rem; display: inline-flex; align-items: center; gap: 4px; }
+.ch-btn.up, .ch-btn.buy { background: linear-gradient(180deg, #d9b765, #a9822f); color: #1b140a; border-color: #f3d27a; }
+.ch-btn.on { opacity: .75; }
+.ch-btn:disabled { opacity: .45; }
+.ch-list { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+.ch-cell { display: grid; justify-items: center; gap: 2px; padding: 8px 4px; border-radius: 12px; border: 1px solid rgba(214,186,128,.18); background: rgba(0,0,0,.25); color: var(--text); }
+.ch-cell svg { width: 100%; max-width: 64px; height: auto; display: block; }
+.ch-cell b { font-family: var(--font-myeongjo); font-size: .8rem; }
+.ch-cell small { font-size: .64rem; color: var(--gold); display: inline-flex; align-items: center; gap: 2px; }
+.ch-cell.cur { border-color: #f3d27a; box-shadow: 0 0 0 1px #f3d27a inset, 0 0 14px rgba(243,210,122,.25); }
+@media (max-width: 520px) {
+  .ch-hero { grid-template-columns: 104px 1fr; gap: 12px; }
+  .ch-portrait svg { width: 104px; height: 130px; }
+  .ch-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}

@@ -504,6 +504,19 @@ export function magicTake(state: GameState, p: PlayerId, from: 'floor' | 'opp', 
   if (taken.length) s.events.push({ type: 'magic', player: p, magic: 'take', cards: taken });
   return { state: s, taken };
 }
+/** 캐릭터 능력(한량): 더미에 남은 보너스 패를 n장까지 p의 획득 패로 가져온다 */
+export function magicTakeBonus(state: GameState, p: PlayerId, n: number): { state: GameState; taken: string[] } {
+  const s: GameState = structuredClone(state);
+  const taken: string[] = [];
+  for (let k = 0; k < n; k++) {
+    const i = s.deck.findIndex((c) => c.month === 13);
+    if (i < 0) break;
+    const [c] = s.deck.splice(i, 1);
+    s.captured[p].push(c); taken.push(c.id);
+  }
+  if (taken.length) s.events.push({ type: 'magic', player: p, magic: 'take', cards: taken });
+  return { state: s, taken };
+}
 /** 쌍둥이 그림자: 내 차례(패 내기 전)에 더미를 한 장 더 뒤집는다. 맞는 바닥 패가 있으면 먹고, 없으면 바닥에 둔다.
  *  2장이 맞으면 높은 패(광>열끗>띠>쌍피>피)를 고르고, 3장이면 모두 먹는다. 뻑·쪽 같은 특수 판정은 하지 않는다. */
 export function magicExtraFlip(state: GameState, p: PlayerId): GameState {

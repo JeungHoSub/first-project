@@ -181,6 +181,7 @@
     <p class="home-sub">한국 화투로 즐기는 맞고 · 아이템 수집</p>
     <button class="big go-btn home-start" id="btn-start" type="button">게임 시작<small>상대: <span id="home-level">쉬움</span></small></button>
     <button class="big gacha-btn" id="btn-gacha" type="button">뽑기<small>금화로 뽑기권 구매</small></button>
+    <button class="home-char" id="btn-chars" type="button" aria-label="캐릭터"></button>
     <div class="home-trio">
       <button class="home-tile" id="btn-missions" type="button"><b>오늘의 미션</b><span id="home-ms">은화 받기</span></button>
       <button class="home-tile" id="btn-yut" type="button"><b>윷놀이 내기</b><span>엽전 걸기</span></button>
@@ -321,6 +322,17 @@
   <button class="big go-btn gx-close" id="gr-close" type="button" hidden>확인</button>
   <div class="gx-skip" aria-hidden="true">화면을 누르면 건너뜁니다</div>
   <div class="gx-tip" id="gx-tip" role="tooltip" hidden></div>
+</div>
+
+<div class="sheet" id="chars" hidden>
+  <div class="sheet-card inv-card ch-card">
+    <div class="inv-head"><div><div class="sheet-kicker">함께할 동료</div><div class="sheet-title">캐릭터</div></div><button class="x-btn" data-close type="button" aria-label="닫기">✕</button></div>
+    <div class="cur-line"><i class="cur-ico eun"></i> 은화 <b data-cur="eun">0</b> · <i class="cur-ico geum"></i> 금화 <b data-cur="geum">0</b></div>
+    <div class="ch-hero" id="ch-hero"></div>
+    <div class="ch-list" id="ch-list"></div>
+    <p class="dt-note">한 판에 캐릭터 한 명만 데리고 나갑니다. 레벨은 은화로 올리고(최고 10), 능력은 아이템과 따로 적용됩니다. 금화 캐릭터는 확률 없이 정해진 값으로 영입합니다.</p>
+    <button class="tk-close" data-close type="button">닫기</button>
+  </div>
 </div>
 
 <div class="sheet" id="missions" hidden>

@@ -7,6 +7,7 @@ import { cardArt } from './art';
 import * as sfx from './sound';
 import { initGacha, openGacha } from './gacha';
 import { initEconomy, record as missionRecord, missionReady, syncCurrencies } from './economy';
+import * as chars from './characters';
 import { earn, lose, coins, fmt, COIN_PER_POINT, FIRST_PPEOK_COINS } from './wallet';
 import { ITEMS, GRADES, GRADE_RATE, CATEGORY_LABEL, EQUIP_LIMITS, DROP_RATE, itemArt, gradeFill, ownedOf, bestGrade, ownedKinds, rollDrop, type Drop, type ItemDef, type Category, MAGIC_IDS, magicParams, grantTestMagic, type MagicId } from './collection';
 
@@ -1085,6 +1086,7 @@ function showResult() {
   const firstTime = !paidResults.has(r); paidResults.add(r); // 같은 결과로 두 번 정산하지 않음
   if (firstTime) {
     missionRecord('play');
+    for (const nm of chars.recordGame(r.type === 'win' && r.winner === ME)) setTimeout(() => banner(`새 캐릭터 해금 · ${nm}`), 1600);
     if (r.type === 'win' && r.winner === ME) { missionRecord('win'); if ((r as unknown as WinExtra).bak?.pi) missionRecord('pibak'); }
     missionRecord('go', s.events.filter((e) => e.type === 'go' && e.player === ME).length);
     missionRecord('special', s.events.filter((e) => (e.type === 'ppeokEat' || e.type === 'jjok' || e.type === 'ttadak' || e.type === 'sweep') && e.player === ME).length);
@@ -1092,12 +1094,14 @@ function showResult() {
   if (!firstTime) { /* 이미 정산함: 표시만 유지 */ }
   else if (r.type === 'win' && r.winner === ME) {
     const ag = items.lossAfterGuard(r.finalScore, s.goCount[AI], AI); // 상대 해태 부적·고 보험
-    const got = ag.lost * COIN_PER_POINT; earn(got);
-    rc.innerHTML = `<i class="coin-ico" aria-hidden="true"></i> +${fmt(got)} 엽전 <small>${ag.saved ? `${ag.why.join(' · ')} → ${ag.saved}점 덜 받음 · ` : ''}보유 ${fmt(coins())}</small>`; rc.hidden = false; rc.classList.remove('minus');
+    const boost = chars.ability('coinBoost');
+    const got = Math.round(ag.lost * COIN_PER_POINT * (1 + boost / 100)); earn(got);
+    rc.innerHTML = `<i class="coin-ico" aria-hidden="true"></i> +${fmt(got)} 엽전 <small>${boost ? `${chars.current().def.name} +${boost}% · ` : ''}${ag.saved ? `${ag.why.join(' · ')} → ${ag.saved}점 덜 받음 · ` : ''}보유 ${fmt(coins())}</small>`; rc.hidden = false; rc.classList.remove('minus');
   } else if (r.type === 'win') {
     const guard = items.lossAfterGuard(r.finalScore, s.goCount[ME], ME);
-    const lost = lose(guard.lost * COIN_PER_POINT);
-    rc.innerHTML = `<i class="coin-ico" aria-hidden="true"></i> -${fmt(lost)} 엽전 <small>${guard.saved ? `${guard.why.join(' · ')} → ${guard.saved}점 덜 잃음 · ` : ''}보유 ${fmt(coins())}</small>`; rc.hidden = false; rc.classList.add('minus');
+    const cg = chars.ability('coinGuard');
+    const lost = lose(Math.round(guard.lost * COIN_PER_POINT * (1 - cg / 100)));
+    rc.innerHTML = `<i class="coin-ico" aria-hidden="true"></i> -${fmt(lost)} 엽전 <small>${cg ? `${chars.current().def.name} -${cg}% · ` : ''}${guard.saved ? `${guard.why.join(' · ')} → ${guard.saved}점 덜 잃음 · ` : ''}보유 ${fmt(coins())}</small>`; rc.hidden = false; rc.classList.add('minus');
   } else rc.hidden = true;
   // 매직 카드(수집품) 획득 판정 — 테스트용 봇전 드롭
   const outcome = r.type === 'nagari' ? 'nagari' : r.winner === ME ? 'win' : 'lose';
@@ -1333,6 +1337,7 @@ $('btn-mp-go').addEventListener('click', () => { items.saveLoadout(picked); $('m
 $('btn-mp-none').addEventListener('click', () => { picked = []; $('magic-pick').hidden = true; $('home').hidden = true; newGame(); });
 initGacha(() => syncHome());
 initEconomy(() => syncHome(), (msg) => banner(msg));
+chars.initChars(() => syncCurrencies());
 $('btn-gacha').addEventListener('click', () => { sfx.unlock(); sfx.click(); sfx.startBgm(); openGacha(); });
 $('btn-mp-test').addEventListener('click', () => { grantTestMagic(); sfx.magic(); openMagicPick(); syncHome(); });
 $('magic-cancel').addEventListener('click', () => { selectMode = null; render(s); });

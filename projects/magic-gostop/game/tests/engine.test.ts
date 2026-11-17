@@ -1059,3 +1059,26 @@ describe('첫뻑 보너스', () => {
     expect(r.events.some((e) => e.type === 'firstPpeok')).toBe(false);
   });
 });
+
+import { magicTakeBonus } from '../src/engine/game';
+describe('캐릭터: 보너스 패 가져오기', () => {
+  it('더미의 보너스 패를 획득 패로 옮기고 전체 장수는 그대로', () => {
+    let found = false;
+    for (let seed = 1; seed < 40 && !found; seed++) {
+      const s = createGame(seed);
+      const inDeck = s.deck.filter((c) => c.month === 13).length;
+      if (!inDeck) continue;
+      found = true;
+      const r = magicTakeBonus(s, 0, 2);
+      expect(r.taken.length).toBe(Math.min(2, inDeck));
+      expect(r.state.deck.filter((c) => c.month === 13).length).toBe(inDeck - r.taken.length);
+      expect(r.state.captured[0].filter((c) => c.month === 13).length).toBe(s.captured[0].filter((c) => c.month === 13).length + r.taken.length);
+    }
+    expect(found).toBe(true);
+  });
+  it('보너스 패가 없으면 아무 일도 없음', () => {
+    const s = createGame('fixed', { bonus: { two: 0, three: 0 } });
+    const r = magicTakeBonus(s, 0, 1);
+    expect(r.taken).toEqual([]); expect(r.state.events.length).toBe(s.events.length);
+  });
+});

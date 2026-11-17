@@ -6,7 +6,8 @@
 //  - 피 뺏김 막기(금강 방패 + 현무 거북)는 합쳐 6회까지
 //  - 패배 감면(해태 부적 + 고 보험 우산)은 합쳐 50%까지, 최소 1점은 잃음
 import type { Card, ExtraPoint, GameState, PlayerId, RuleOptions } from '../engine';
-import { scoreOf, setItemPoints, magicTake, setMagicState, setGukjin } from '../engine';
+import * as chars from './characters';
+import { scoreOf, setItemPoints, magicTake, magicTakeBonus, setMagicState, setGukjin } from '../engine';
 import { ITEMS, bestGrade, CATEGORY_LABEL, EQUIP_LIMITS, type Category } from './collection';
 
 export const ME: PlayerId = 0;
@@ -83,6 +84,8 @@ export interface RunState {
   extraFlippedThisTurn: boolean;
   /** 이미 처리한 이벤트 수 (거울 반사·구미호 중복 방지) */
   seen: number;
+  /** 캐릭터(장군): 고 할 때 피 뺏기 남은 횟수 */
+  charGoLeft: number;
 }
 let run: RunState | null = null;
 export const current = () => run;
@@ -124,8 +127,9 @@ export function aiLoadout(level: 'easy' | 'normal' | 'hard', rng = Math.random):
 export function prepare(ids: string[], aiSlots: Slot[] = []): Partial<RuleOptions> {
   const slots: Slot[] = sanitize(ids).map((id) => ({ id, g: bestGrade(id) }));
   const g: Record<string, number> = {}; slots.forEach((x) => { g[x.id] = x.g; });
-  run = { ai: { slots: aiSlots, on: {}, g: {} }, aiGumihoLeft: 0, aiMirrorLeft: 0, slots, on: {}, g, notes: [], fogHidden: new Set(), fogPeeked: new Set(), seerCards: [], gumihoLeft: 0, mirrorLeft: 0, twoflipLeft: 0, myTurns: 0, extraFlippedThisTurn: false, seen: 0 };
-  const gourd = has('gourd') ? B.gourd[gOf('gourd')] : 0;
+  run = { ai: { slots: aiSlots, on: {}, g: {} }, aiGumihoLeft: 0, aiMirrorLeft: 0, slots, on: {}, g, notes: [], fogHidden: new Set(), fogPeeked: new Set(), seerCards: [], gumihoLeft: 0, mirrorLeft: 0, twoflipLeft: 0, myTurns: 0, extraFlippedThisTurn: false, seen: 0, charGoLeft: 0 };
+  const gourd = (has('gourd') ? B.gourd[gOf('gourd')] : 0) + chars.ability('spell');
+  { const c = chars.current(); if (c.def.ability === 'goSteal') run.charGoLeft = chars.goStealCap(c.lv); }
   const opts: Partial<RuleOptions> = {};
   for (const sl of slots) {
     const it = ITEMS.find((x) => x.id === sl.id)!;
@@ -199,6 +203,16 @@ export function begin(state: GameState, magicShield: number, magicPatch: { noPib
     if (isOn(id)) notes.push(`${nameOf(id)} 발동`);
   }
   for (const id of ['gwangday', 'fullmoon', 'goday']) if (!isOn(id) && onP(AI, id)) notes.push(`상대 이벤트권 ${nameOf(id)}`);
+  // 캐릭터 능력 (판 시작)
+  {
+    const c = chars.current();
+    const pct = c.def.val(c.lv);
+    if (c.def.ability === 'bonus') {
+      if (Math.random() * 100 < pct) { const r = magicTakeBonus(s, ME, c.lv >= 10 ? 2 : 1); if (r.taken.length) { s = r.state; notes.push(`${c.def.name} · 보너스 패 ${r.taken.length}장`); } else notes.push(`${c.def.name} · 더미에 보너스 패가 없음`); }
+    } else if (c.def.ability === 'floorPi') {
+      if (Math.random() * 100 < pct) { const r = magicTake(s, ME, 'floor', 1); if (r.taken.length) { s = r.state; notes.push(`${c.def.name} · 바닥 피 1장`); } }
+    }
+  }
   run.seen = s.events.length;
   return recompute(s);
 }
@@ -274,6 +288,10 @@ export function after(prev: GameState, next: GameState): { state: GameState; not
   if (prev.turn === ME && prev.phase === 'play' && s.turn !== ME) { run.myTurns++; run.extraFlippedThisTurn = false; }
   // 구미호: 내가 고를 부를 때마다 상대 피 1장
   for (const e of evs) {
+    if (e.type === 'go' && e.player === ME && run.charGoLeft > 0 && Math.random() * 100 < chars.ability('goSteal')) {
+      const r = magicTake(s, ME, 'opp', 1);
+      if (r.taken.length) { s = r.state; run.charGoLeft--; notes.push({ text: `${chars.current().def.name} · 상대 피를 빼앗았습니다`, cards: r.taken }); }
+    }
     if (e.type === 'go' && e.player === ME && run.gumihoLeft > 0) {
       const r = magicTake(s, ME, 'opp', 1);
       if (r.taken.length) { s = r.state; run.gumihoLeft--; notes.push({ text: '구미호가 피를 홀려 왔습니다', cards: r.taken }); }
@@ -333,7 +351,7 @@ export function lossAfterGuard(lostScore: number, loserGoCount: number, loser: P
 /** 복주머니: 봇전 아이템 획득 확률 보정(%p) */
 export const dropBonus = () => (has('pouch') ? T.pouch[gOf('pouch')] : 0);
 /** 호리병: 주문 발동 확률 보정(%p) */
-export const spellBonus = () => (has('gourd') ? B.gourd[gOf('gourd')] : 0);
+export const spellBonus = () => (has('gourd') ? B.gourd[gOf('gourd')] : 0) + chars.ability('spell');
 /** 호리병 SS 이상: 사용 횟수 1회인 주문 1장 +1 */
 export const gourdExtraUse = () => has('gourd') && gOf('gourd') >= B.gourdExtraUse;
 export const shieldBaseFor = (g: number) => T.shield[g];
