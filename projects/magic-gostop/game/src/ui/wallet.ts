@@ -4,6 +4,8 @@ const KEY = 'mg-coins-v1';
 export const START_COINS = 10000;
 export const COIN_PER_POINT = 100; // 이긴 판 점수 1점당 엽전
 export const COIN = '엽전';
+/** 첫뻑 보상(점수 +3과 함께 지급) */
+export const FIRST_PPEOK_COINS = 300;
 
 let cache: number | null = null;
 const listeners = new Set<(n: number) => void>();
@@ -22,5 +24,7 @@ function set(n: number) {
 export function earn(n: number) { if (n > 0) set(coins() + n); }
 /** 잔액이 모자라면 false (차감 안 함) */
 export function spend(n: number): boolean { if (coins() < n) return false; set(coins() - n); return true; }
+/** 진 판: 잃은 만큼 차감(0 밑으로는 안 내려감). 실제로 잃은 액수를 돌려준다 */
+export function lose(n: number): number { const v = Math.min(coins(), Math.max(0, n)); set(coins() - v); return v; }
 export function onCoins(f: (n: number) => void) { listeners.add(f); }
 export const fmt = (n: number) => n.toLocaleString('ko-KR');

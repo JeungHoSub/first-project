@@ -4,7 +4,7 @@ import { chooseAction, AI_LEVELS, type AiLevel } from '../ai/simple';
 import { cardArt } from './art';
 import * as sfx from './sound';
 import { initGacha, openGacha } from './gacha';
-import { earn, coins, fmt, COIN_PER_POINT } from './wallet';
+import { earn, lose, coins, fmt, COIN_PER_POINT, FIRST_PPEOK_COINS } from './wallet';
 import { ITEMS, GRADES, GRADE_RATE, CATEGORY_LABEL, DROP_RATE, itemArt, gradeFill, ownedOf, bestGrade, ownedKinds, rollDrop, type Drop, type ItemDef, type Category, MAGIC_IDS, magicParams, grantTestMagic, type MagicId } from './collection';
 
 // 화면 = 엔진 상태를 그리기만 한다. 규칙 판단은 전부 엔진(getLegalActions/applyAction)에 맡긴다.
@@ -817,7 +817,8 @@ async function perform(a: Action) {
   }
   const fp = evs.find((e) => (e.type as string) === 'firstPpeok') as (GameEvent & { player: PlayerId; points: number }) | undefined;
   if (fp) {
-    banner(`${fp.player === ME ? '' : '상대 '}첫뻑! +${fp.points}점`); sfx.bonus(); sfx.buzz([30, 40, 30]);
+    if (fp.player === ME) earn(FIRST_PPEOK_COINS);
+    banner(fp.player === ME ? `첫뻑! +${fp.points}점 · 엽전 +${FIRST_PPEOK_COINS}` : `상대 첫뻑! +${fp.points}점`); sfx.bonus(); sfx.buzz([30, 40, 30]);
     await wait(750);
     if (no !== gameNo) return;
   }
@@ -885,6 +886,7 @@ let carry = 1;
 
 type WinExtra = { by: string; bak?: { pi: boolean; gwang: boolean; meong: boolean }; bakMultiplier?: number; carry?: number; nextCarry?: number };
 
+const paidResults = new WeakSet<object>();
 function showResult() {
   const r = s.result!;
   const sc = [scoreOf(s, 0), scoreOf(s, 1)];
@@ -926,13 +928,18 @@ function showResult() {
   $('btn-new').textContent = carry > 1 ? `새 판 (×${carry})` : '새 판';
   // 가상머니: 이긴 판 점수 × 100 엽전
   const rc = $('res-coins');
-  if (r.type === 'win' && r.winner === ME) {
+  const firstTime = !paidResults.has(r); paidResults.add(r); // 같은 결과로 두 번 정산하지 않음
+  if (!firstTime) { /* 이미 정산함: 표시만 유지 */ }
+  else if (r.type === 'win' && r.winner === ME) {
     const got = r.finalScore * COIN_PER_POINT; earn(got);
-    rc.innerHTML = `<i class="coin-ico" aria-hidden="true"></i> +${fmt(got)} 엽전 <small>보유 ${fmt(coins())}</small>`; rc.hidden = false;
+    rc.innerHTML = `<i class="coin-ico" aria-hidden="true"></i> +${fmt(got)} 엽전 <small>보유 ${fmt(coins())}</small>`; rc.hidden = false; rc.classList.remove('minus');
+  } else if (r.type === 'win') {
+    const lost = lose(r.finalScore * COIN_PER_POINT);
+    rc.innerHTML = `<i class="coin-ico" aria-hidden="true"></i> -${fmt(lost)} 엽전 <small>보유 ${fmt(coins())}</small>`; rc.hidden = false; rc.classList.add('minus');
   } else rc.hidden = true;
   // 매직 카드(수집품) 획득 판정 — 테스트용 봇전 드롭
   const outcome = r.type === 'nagari' ? 'nagari' : r.winner === ME ? 'win' : 'lose';
-  const drop = rollDrop(outcome, level);
+  const drop = firstTime ? rollDrop(outcome, level) : null;
   if (drop) setTimeout(() => showReward(drop), 900);
 }
 
