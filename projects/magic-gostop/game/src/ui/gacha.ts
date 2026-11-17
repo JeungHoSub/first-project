@@ -1,5 +1,5 @@
 // 뽑기 화면 + 뽑기 연출.
-// 화면: 큰 뽑기권 그림 + 단계 고르기 + 확률 요약/전체표 + 1회·10회 버튼(엽전).
+// 화면: 큰 뽑기권 그림 + 단계 고르기 + 확률 요약/전체표 + 1회·10회 버튼(금화).
 // 연출: 뽑기권이 날아와 빛나며 찢어짐 → 화투 뒷면이 사선 축으로 빨라지며 회전(잔상) + 빛 입자가 빨려 듦
 //      (높은 등급이면 화면 흔들림·번개) → 충격파와 함께 폭발 → 카드가 3D로 뒤집히며 공개.
 //      10회는 카드 10장이 깔린 뒤 한 장씩 뒤집히고, S 이상은 마지막에 따로 크게 뒤집힌다. 화면을 누르면 건너뛴다.
@@ -8,7 +8,7 @@ import { copyOf } from './item-copy';
 import { ALL_CARDS, type Card } from '../engine';
 import { cardArt } from './art';
 import * as sfx from './sound';
-import { coins, spend, earn, fmt, onCoins } from './wallet';
+import { bal, pay, add, fmt, onCoins } from './wallet';
 
 const $ = (id: string) => document.getElementById(id)!;
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -21,6 +21,7 @@ const badge = (gi: number) => {
   return `<span class="gbadge${c === 'rainbow' ? ' rainbow' : ''}" style="${c === 'rainbow' ? '' : `--gc:${c}`}">${GRADES[gi]}</span>`;
 };
 const S_INDEX = 6; // S
+const SS_INDEX = 7; // SS
 
 let onChange: () => void = () => {};
 // 뽑기 기록 (이 기기에만 저장)
@@ -39,7 +40,7 @@ export function initGacha(changed: () => void) {
   onChange = changed;
   $('btn-gacha-close').addEventListener('click', () => { $('gacha').hidden = true; });
   $('gr-close').addEventListener('click', () => { closeRun(); renderTickets(); });
-  $('btn-coin-test').addEventListener('click', () => { earn(10000); sfx.bonus(); renderTickets(); });
+  $('btn-coin-test').addEventListener('click', () => { add('geum', 50); sfx.bonus(); renderTickets(); });
   $('gacha-run').addEventListener('click', (e) => {
     if ((e.target as HTMLElement).closest('#gr-close')) return;
     if (running) skipping = true;
@@ -53,7 +54,7 @@ export function openGacha() {
 }
 
 function syncCoins() {
-  document.querySelectorAll('.coin-amt').forEach((e) => { e.textContent = fmt(coins()); });
+  document.querySelectorAll('.coin-amt').forEach((e) => { e.textContent = fmt(bal('geum')); });
 }
 
 // ---------- 뽑기권 그림 ----------
@@ -155,12 +156,12 @@ function renderTickets() {
 
   $('tx-actions').innerHTML = [1, 10].map((n) => {
     const p = priceOf(t, n);
-    return `<button type="button" class="tx-go${n === 10 ? ' ten' : ''}" data-n="${n}" ${coins() < p ? 'disabled' : ''} style="--tc:${t.hue}">
-      <b>${n}회 뽑기</b><span><i class="coin-ico" aria-hidden="true"></i>${fmt(p)}</span>${n === 10 ? '<em>1회분 덤</em>' : ''}</button>`;
+    return `<button type="button" class="tx-go${n === 10 ? ' ten' : ''}" data-n="${n}" ${bal('geum') < p ? 'disabled' : ''} style="--tc:${t.hue}">
+      <b>${n}회 뽑기</b><span><i class="cur-ico geum" aria-hidden="true"></i>금화 ${fmt(p)}</span>${n === 10 ? '<em>1회분 덤</em>' : ''}</button>`;
   }).join('');
   $('tx-actions').querySelectorAll<HTMLButtonElement>('.tx-go').forEach((b) => b.addEventListener('click', () => {
     const n = +b.dataset.n!;
-    if (!spend(priceOf(t, n))) { sfx.buzz([40]); return; }
+    if (!pay('geum', priceOf(t, n))) { sfx.buzz([40]); return; }
     run(t, sel, n);
   }));
 }
@@ -515,6 +516,19 @@ async function run(t: Ticket, tier: number, n: number) {
     // 낮은 등급부터 높은 등급 순서로 하나씩 뒤집는다 (같은 등급이면 놓인 순서대로)
     const order = els.map((el, i) => ({ el, gi: drops[i].gi, i })).sort((a, b) => a.gi - b.gi || a.i - b.i);
     for (const { el, gi } of order) {
+      if (gi >= SS_INDEX) {
+        // SS 이상: 따로 앞으로 불러내 사선으로 돌리며 뒤집고, 회전하는 하이라이트를 계속 두른다
+        if (gi >= 8) { sfx.heartbeat(); await wait(300); }
+        res.classList.add('focus'); el.classList.add('spot'); sfx.shake();
+        await wait(1250);
+        el.classList.add('open', 'stamp'); sfx.flip(); sfx.bonus();
+        const r = el.getBoundingClientRect();
+        spawnOut(gi >= 8 ? 140 : 90, gcol(gi), isRainbow(gi), { x: r.left + r.width / 2, y: r.top + r.height / 2 }, 0.8);
+        await wait(gi >= 8 ? 1100 : 800);
+        res.classList.remove('focus'); el.classList.remove('spot'); el.classList.add('ss-hl');
+        await wait(350);
+        continue;
+      }
       if (gi >= S_INDEX) {
         el.classList.add('tease'); sfx.shake();
         await wait(gi >= 8 ? 900 : 520);

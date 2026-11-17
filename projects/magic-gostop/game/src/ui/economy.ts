@@ -13,14 +13,14 @@ let onChange: () => void = () => {};
 let toast: (msg: string) => void = () => {};
 
 // ================= 오늘의 미션 =================
-interface Mission { id: string; text: string; goal: number; reward: number }
+interface Mission { id: string; text: string; goal: number; reward: number; yeop: number }
 export const MISSIONS: Mission[] = [
-  { id: 'play', text: '판 3번 하기', goal: 3, reward: 3 },
-  { id: 'win', text: '판 2번 이기기', goal: 2, reward: 5 },
-  { id: 'go', text: '고 3번 부르기', goal: 3, reward: 3 },
-  { id: 'special', text: '뻑 먹기·쪽·따닥·싹쓸이 합쳐 2번', goal: 2, reward: 4 },
-  { id: 'pibak', text: '상대에게 피박 씌우기', goal: 1, reward: 5 },
-  { id: 'yut', text: '윷놀이 내기 5번 던지기', goal: 5, reward: 2 },
+  { id: 'play', text: '판 3번 하기', goal: 3, reward: 3, yeop: 500 },
+  { id: 'win', text: '판 2번 이기기', goal: 2, reward: 5, yeop: 1000 },
+  { id: 'go', text: '고 3번 부르기', goal: 3, reward: 3, yeop: 500 },
+  { id: 'special', text: '뻑 먹기·쪽·따닥·싹쓸이 합쳐 2번', goal: 2, reward: 4, yeop: 800 },
+  { id: 'pibak', text: '상대에게 피박 씌우기', goal: 1, reward: 5, yeop: 1000 },
+  { id: 'yut', text: '윷놀이 내기 5번 던지기', goal: 5, reward: 2, yeop: 300 },
 ];
 interface MState { day: string; prog: Record<string, number>; claimed: string[] }
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
@@ -34,7 +34,7 @@ export function record(id: string, n = 1) {
   const m = MISSIONS.find((x) => x.id === id); if (!m || n <= 0) return;
   const before = ms.prog[id] ?? 0;
   ms.prog[id] = Math.min(m.goal, before + n); saveM();
-  if (before < m.goal && ms.prog[id] >= m.goal) toast(`미션 완료 · ${m.text} (은화 ${m.reward} 받기)`);
+  if (before < m.goal && ms.prog[id] >= m.goal) toast(`미션 완료 · ${m.text} (은화 ${m.reward} · 엽전 ${fmt(m.yeop)} 받기)`);
 }
 export const missionReady = () => { rollDay(); return MISSIONS.filter((m) => (ms.prog[m.id] ?? 0) >= m.goal && !ms.claimed.includes(m.id)).length; };
 function renderMissions() {
@@ -43,12 +43,12 @@ function renderMissions() {
     const p = ms.prog[m.id] ?? 0; const done = p >= m.goal; const got = ms.claimed.includes(m.id);
     return `<li class="ms-row${got ? ' got' : done ? ' done' : ''}">
       <div class="ms-txt"><b>${m.text}</b><span class="ms-bar"><i style="width:${(p / m.goal) * 100}%"></i></span><small>${p} / ${m.goal}</small></div>
-      <button type="button" class="ms-claim" data-id="${m.id}" ${!done || got ? 'disabled' : ''}>${got ? '받음' : `${curIco('eun')} ${m.reward}`}</button></li>`;
+      <button type="button" class="ms-claim" data-id="${m.id}" ${!done || got ? 'disabled' : ''}>${got ? '받음' : `${curIco('eun')} ${m.reward} ${curIco('yeop')} ${fmt(m.yeop)}`}</button></li>`;
   }).join('');
   $('ms-list').querySelectorAll<HTMLButtonElement>('.ms-claim').forEach((b) => b.addEventListener('click', () => {
     const m = MISSIONS.find((x) => x.id === b.dataset.id)!;
     if (ms.claimed.includes(m.id) || (ms.prog[m.id] ?? 0) < m.goal) return;
-    ms.claimed.push(m.id); saveM(); add('eun', m.reward); sfx.bonus(); renderMissions(); onChange();
+    ms.claimed.push(m.id); saveM(); add('eun', m.reward); add('yeop', m.yeop); sfx.bonus(); renderMissions(); onChange();
   }));
 }
 

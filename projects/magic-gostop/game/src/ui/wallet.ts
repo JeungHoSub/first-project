@@ -1,5 +1,5 @@
 // 가상머니(엽전). 게임 안에서만 쓰는 재화: 현금 충전·환전·선물 없음(사행성 방지).
-// 판에서 이기면 벌고, 뽑기권에 쓴다. 나중에 첫뻑 보너스 등을 돈으로 바꿀 자리.
+// 판에서 이기면 벌고, 판돈·윷놀이 내기에 쓴다. 나중에 첫뻑 보너스 등을 돈으로 바꿀 자리.
 const KEY = 'mg-coins-v1';
 export const START_COINS = 10000;
 export const COIN_PER_POINT = 100; // 이긴 판 점수 1점당 엽전
@@ -30,8 +30,8 @@ export function onCoins(f: (n: number) => void) { listeners.add(f); }
 export const fmt = (n: number) => n.toLocaleString('ko-KR');
 
 // ---------- 은화 · 금화 ----------
-// 엽전: 게임머니(판 걸기·윷놀이 내기·낮은 뽑기권) / 은화: 미션·윷놀이 큰 승리로만 얻음(높은 뽑기권) /
-// 금화: 결제로만 얻는 재화(지금은 테스트 충전) → 엽전으로 바꿀 수 있음. 금화는 어떤 내기로도 얻을 수 없다(사행성 방지).
+// 엽전: 게임머니(판 걸기·윷놀이 내기) / 은화: 미션·윷놀이 큰 승리로 얻음(아이템 승급·은화 상점·꾸미기) /
+// 금화: 결제로만 얻는 재화(지금은 테스트 충전) → 뽑기권 구매, 엽전 교환. 금화는 어떤 내기로도 얻을 수 없다(사행성 방지).
 export type Cur = 'yeop' | 'eun' | 'geum';
 export const CUR_NAME: Record<Cur, string> = { yeop: '엽전', eun: '은화', geum: '금화' };
 const KEYS: Record<'eun' | 'geum', string> = { eun: 'mg-eun-v1', geum: 'mg-geum-v1' };
