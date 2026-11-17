@@ -170,13 +170,22 @@
     <rect x="-20" y="630" width="840" height="170" fill="url(#hb-wave)"/>
   </svg>
 </div>
-  <div class="coin-chip home-coin"><i class="coin-ico" aria-hidden="true"></i><span class="coin-amt">0</span></div>
+  <div class="cur-bar home-coin">
+    <span class="cur-chip"><i class="cur-ico yeop" aria-hidden="true"></i><b data-cur="yeop">0</b><span class="sr">엽전</span></span>
+    <span class="cur-chip"><i class="cur-ico eun" aria-hidden="true"></i><b data-cur="eun">0</b><span class="sr">은화</span></span>
+    <button type="button" class="cur-chip gold" data-open="gold" aria-label="금화 상점"><i class="cur-ico geum" aria-hidden="true"></i><b data-cur="geum">0</b><em>+</em></button>
+  </div>
   <div class="home-inner">
     <div class="home-fan" id="home-fan" aria-hidden="true"></div>
     <h1 class="home-title">매직고스톱</h1>
     <p class="home-sub">한국 화투로 즐기는 맞고 · 아이템 수집</p>
     <button class="big go-btn home-start" id="btn-start" type="button">게임 시작<small>상대: <span id="home-level">쉬움</span></small></button>
     <button class="big gacha-btn" id="btn-gacha" type="button">뽑기<small>엽전으로 뽑기권 사용</small></button>
+    <div class="home-trio">
+      <button class="home-tile" id="btn-missions" type="button"><b>오늘의 미션</b><span id="home-ms">은화 받기</span></button>
+      <button class="home-tile" id="btn-yut" type="button"><b>윷놀이 내기</b><span>엽전 걸기</span></button>
+      <button class="home-tile" id="btn-silver" type="button"><b>은화 상점</b><span>승급·구매</span></button>
+    </div>
     <div class="home-row">
       <span class="home-label">난이도</span>
       <div class="seg" id="seg-level" role="radiogroup" aria-label="상대 난이도"></div>
@@ -312,4 +321,49 @@
   <button class="big go-btn gx-close" id="gr-close" type="button" hidden>확인</button>
   <div class="gx-skip" aria-hidden="true">화면을 누르면 건너뜁니다</div>
   <div class="gx-tip" id="gx-tip" role="tooltip" hidden></div>
+</div>
+
+<div class="sheet" id="missions" hidden>
+  <div class="sheet-card inv-card">
+    <div class="inv-head"><div><div class="sheet-kicker">매일 새로</div><div class="sheet-title">오늘의 미션</div></div><button class="x-btn" data-close type="button" aria-label="닫기">✕</button></div>
+    <div class="cur-line"><i class="cur-ico eun"></i> 보유 은화 <b data-cur="eun">0</b></div>
+    <ul class="ms-list" id="ms-list"></ul>
+    <p class="dt-note">미션은 날마다 바뀌지 않고 진행도만 0으로 돌아갑니다. 은화는 돈으로 살 수 없고, 승급·아이템·꾸미기에 씁니다.</p>
+    <button class="tk-close" data-close type="button">닫기</button>
+  </div>
+</div>
+
+<div class="sheet" id="yut" hidden>
+  <div class="sheet-card inv-card yt-card">
+    <div class="inv-head"><div><div class="sheet-kicker">조선 장터 놀이</div><div class="sheet-title">윷놀이 내기</div></div><button class="x-btn" data-close type="button" aria-label="닫기">✕</button></div>
+    <div class="cur-line"><i class="cur-ico yeop"></i><b data-cur="yeop">0</b> <i class="cur-ico eun"></i><b data-cur="eun">0</b></div>
+    <div class="yt-mat"><div class="yt-stage" id="yt-stage"></div><div class="yt-result" id="yt-result"></div></div>
+    <div class="yt-label">무엇이 나올지 고르세요</div>
+    <div class="yt-picks" id="yt-picks"></div>
+    <div class="yt-label">걸 엽전</div>
+    <div class="yt-bets" id="yt-bets"></div>
+    <button class="big go-btn" id="yt-throw" type="button">던지기</button>
+    <p class="dt-note"><span id="yt-left"></span> · 윷가락 4개의 평평한 면이 위로 오는 수: 1개 도, 2개 개, 3개 걸, 4개 윷, 0개 모. 배당은 실제 확률보다 조금 낮게 정해져 있어 계속 하면 엽전이 줄어듭니다. 윷·모를 맞히면 은화도 받습니다. 금화는 내기로 얻을 수 없습니다.</p>
+  </div>
+</div>
+
+<div class="sheet" id="silver" hidden>
+  <div class="sheet-card inv-card">
+    <div class="inv-head"><div><div class="sheet-kicker">노력의 화폐</div><div class="sheet-title">은화 상점</div></div><button class="x-btn" data-close type="button" aria-label="닫기">✕</button></div>
+    <div class="cur-line"><i class="cur-ico eun"></i> 보유 은화 <b data-cur="eun">0</b></div>
+    <div class="tx-tabs" id="sv-tabs"></div>
+    <div id="sv-body"></div>
+    <button class="tk-close" data-close type="button">닫기</button>
+  </div>
+</div>
+
+<div class="sheet" id="goldshop" hidden>
+  <div class="sheet-card inv-card">
+    <div class="inv-head"><div><div class="sheet-kicker">환전소</div><div class="sheet-title">금화 상점</div></div><button class="x-btn" data-close type="button" aria-label="닫기">✕</button></div>
+    <div class="cur-line"><i class="cur-ico geum"></i> 보유 금화 <b data-cur="geum">0</b> · <i class="cur-ico yeop"></i><b data-cur="yeop">0</b></div>
+    <ul class="gs-list" id="gs-list"></ul>
+    <button class="text-btn" id="gs-test" type="button">테스트: 금화 +10 (결제는 아직 연결 안 됨)</button>
+    <p class="dt-note">금화는 정식 버전에서 결제로 얻습니다. 금화는 엽전으로만 바꿀 수 있고, 내기나 미션으로는 얻을 수 없습니다. 엽전·은화·금화 모두 현금으로 되돌릴 수 없습니다.</p>
+    <button class="tk-close" data-close type="button">닫기</button>
+  </div>
 </div>

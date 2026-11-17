@@ -28,3 +28,39 @@ export function spend(n: number): boolean { if (coins() < n) return false; set(c
 export function lose(n: number): number { const v = Math.min(coins(), Math.max(0, n)); set(coins() - v); return v; }
 export function onCoins(f: (n: number) => void) { listeners.add(f); }
 export const fmt = (n: number) => n.toLocaleString('ko-KR');
+
+// ---------- 은화 · 금화 ----------
+// 엽전: 게임머니(판 걸기·윷놀이 내기·낮은 뽑기권) / 은화: 미션·윷놀이 큰 승리로만 얻음(높은 뽑기권) /
+// 금화: 결제로만 얻는 재화(지금은 테스트 충전) → 엽전으로 바꿀 수 있음. 금화는 어떤 내기로도 얻을 수 없다(사행성 방지).
+export type Cur = 'yeop' | 'eun' | 'geum';
+export const CUR_NAME: Record<Cur, string> = { yeop: '엽전', eun: '은화', geum: '금화' };
+const KEYS: Record<'eun' | 'geum', string> = { eun: 'mg-eun-v1', geum: 'mg-geum-v1' };
+const START: Record<'eun' | 'geum', number> = { eun: 20, geum: 0 };
+const cache2: Partial<Record<'eun' | 'geum', number>> = {};
+function get2(c: 'eun' | 'geum') {
+  if (cache2[c] != null) return cache2[c]!;
+  let v = START[c];
+  try { const raw = localStorage.getItem(KEYS[c]); if (raw != null && !Number.isNaN(+raw)) v = Math.max(0, Math.floor(+raw)); } catch { /* 무시 */ }
+  return (cache2[c] = v);
+}
+function set2(c: 'eun' | 'geum', n: number) {
+  cache2[c] = Math.max(0, Math.floor(n));
+  try { localStorage.setItem(KEYS[c], String(cache2[c])); } catch { /* 무시 */ }
+  listeners.forEach((f) => f(coins()));
+}
+export const bal = (c: Cur) => (c === 'yeop' ? coins() : get2(c));
+export function add(c: Cur, n: number) { if (n <= 0) return; if (c === 'yeop') earn(n); else set2(c, get2(c) + n); }
+export function pay(c: Cur, n: number): boolean { if (c === 'yeop') return spend(n); if (get2(c) < n) return false; set2(c, get2(c) - n); return true; }
+/** 금화 → 엽전 교환 상품 */
+export const EXCHANGE = [
+  { id: 'x1', geum: 1, yeop: 1000, label: '엽전 한 꾸러미' },
+  { id: 'x10', geum: 10, yeop: 11000, label: '엽전 한 궤짝 (+10%)' },
+  { id: 'x50', geum: 50, yeop: 60000, label: '엽전 한 곳간 (+20%)' },
+];
+export function exchange(id: string): boolean {
+  const x = EXCHANGE.find((e) => e.id === id); if (!x) return false;
+  if (!pay('geum', x.geum)) return false;
+  add('yeop', x.yeop); return true;
+}
+/** 화폐 아이콘 (CSS) */
+export const curIco = (c: Cur) => `<i class="cur-ico ${c}" aria-hidden="true"></i>`;

@@ -240,3 +240,30 @@ export function drawWithTicket(t: Ticket, rng = Math.random): Drop {
   save(mem);
   return { item, grade, gi, isNewBest };
 }
+
+// ---------- 은화 사용: 승급 · 직접 구매 ----------
+/** 아이템 지급 (은화 상점 등) */
+export function grantItem(id: string, gi: number, n = 1) {
+  const g = GRADES[gi];
+  mem = { ...mem, [id]: { ...ownedOf(id), [g]: (ownedOf(id)[g] ?? 0) + n } };
+  save(mem);
+}
+/** 승급 비용: 같은 등급 2장 + 은화 (F→E … SSS→SSS+) */
+export const UPGRADE_SILVER = [5, 8, 12, 18, 25, 35, 50, 70, 100];
+/** 승급할 수 있는 등급 (같은 등급 2장 이상 & SSS+ 아님). 가장 높은 것 */
+export function upgradable(id: string): number {
+  const o = ownedOf(id);
+  for (let i = GRADES.length - 2; i >= 0; i--) if ((o[GRADES[i]] ?? 0) >= 2) return i;
+  return -1;
+}
+/** 같은 등급 2장을 합쳐 한 등급 위 1장으로 (은화는 부르는 쪽에서 낸다) */
+export function upgradeItem(id: string, gi: number): boolean {
+  const o = { ...ownedOf(id) };
+  const g = GRADES[gi], up = GRADES[gi + 1];
+  if (!up || (o[g] ?? 0) < 2) return false;
+  o[g] = (o[g] ?? 0) - 2; if (!o[g]) delete o[g];
+  o[up] = (o[up] ?? 0) + 1;
+  mem = { ...mem, [id]: o };
+  save(mem);
+  return true;
+}

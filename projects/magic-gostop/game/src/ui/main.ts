@@ -6,6 +6,7 @@ import { chooseAction, AI_LEVELS, type AiLevel } from '../ai/simple';
 import { cardArt } from './art';
 import * as sfx from './sound';
 import { initGacha, openGacha } from './gacha';
+import { initEconomy, record as missionRecord, missionReady, syncCurrencies } from './economy';
 import { earn, lose, coins, fmt, COIN_PER_POINT, FIRST_PPEOK_COINS } from './wallet';
 import { ITEMS, GRADES, GRADE_RATE, CATEGORY_LABEL, EQUIP_LIMITS, DROP_RATE, itemArt, gradeFill, ownedOf, bestGrade, ownedKinds, rollDrop, type Drop, type ItemDef, type Category, MAGIC_IDS, magicParams, grantTestMagic, type MagicId } from './collection';
 
@@ -1082,6 +1083,12 @@ function showResult() {
   // 가상머니: 이긴 판 점수 × 100 엽전
   const rc = $('res-coins');
   const firstTime = !paidResults.has(r); paidResults.add(r); // 같은 결과로 두 번 정산하지 않음
+  if (firstTime) {
+    missionRecord('play');
+    if (r.type === 'win' && r.winner === ME) { missionRecord('win'); if ((r as unknown as WinExtra).bak?.pi) missionRecord('pibak'); }
+    missionRecord('go', s.events.filter((e) => e.type === 'go' && e.player === ME).length);
+    missionRecord('special', s.events.filter((e) => (e.type === 'ppeokEat' || e.type === 'jjok' || e.type === 'ttadak' || e.type === 'sweep') && e.player === ME).length);
+  }
   if (!firstTime) { /* 이미 정산함: 표시만 유지 */ }
   else if (r.type === 'win' && r.winner === ME) {
     const ag = items.lossAfterGuard(r.finalScore, s.goCount[AI], AI); // 상대 해태 부적·고 보험
@@ -1194,6 +1201,8 @@ function renderMusic() {
 }
 
 function syncHome() {
+  syncCurrencies();
+  { const n = missionReady(); const el = document.getElementById('home-ms'); if (el) { el.textContent = n ? `받을 은화 ${n}개` : '은화 받기'; el.parentElement!.classList.toggle('ready', n > 0); } }
   document.querySelectorAll('.coin-amt').forEach((e) => { e.textContent = fmt(coins()); });
   const label = AI_LEVELS.find((l) => l.id === level)!.label;
   $('home-level').textContent = label;
@@ -1217,7 +1226,7 @@ function setLevel(l: AiLevel) {
 }
 function showHome() {
   gameNo++; busy = false;
-  for (const id of ['result', 'special', 'choose', 'gostop', 'info', 'reward', 'collection', 'caps-detail', 'item-detail', 'gukjin', 'magic-pick', 'gacha', 'gacha-run', 'music']) $(id).hidden = true;
+  for (const id of ['result', 'special', 'choose', 'gostop', 'info', 'reward', 'collection', 'caps-detail', 'item-detail', 'gukjin', 'magic-pick', 'gacha', 'gacha-run', 'music', 'missions', 'yut', 'silver', 'goldshop']) $(id).hidden = true;
   syncHome();
   $('home').hidden = false;
 }
@@ -1323,6 +1332,7 @@ $('btn-start').addEventListener('click', () => { sfx.unlock(); sfx.click(); sfx.
 $('btn-mp-go').addEventListener('click', () => { items.saveLoadout(picked); $('magic-pick').hidden = true; $('home').hidden = true; newGame(); });
 $('btn-mp-none').addEventListener('click', () => { picked = []; $('magic-pick').hidden = true; $('home').hidden = true; newGame(); });
 initGacha(() => syncHome());
+initEconomy(() => syncHome(), (msg) => banner(msg));
 $('btn-gacha').addEventListener('click', () => { sfx.unlock(); sfx.click(); sfx.startBgm(); openGacha(); });
 $('btn-mp-test').addEventListener('click', () => { grantTestMagic(); sfx.magic(); openMagicPick(); syncHome(); });
 $('magic-cancel').addEventListener('click', () => { selectMode = null; render(s); });

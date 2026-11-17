@@ -73,6 +73,19 @@ export function slap(power = 0.7) {
   clack(t + 0.011, 0.22 + 0.12 * power, 0.85); // 패가 바닥에 납작하게 붙는 두 번째 미세 접촉
   noise(t + 0.004, 0.06, 'lowpass', 500, 0.18 * power, 0.7);   // 눌린 공기
 }
+/** 윷가락 던지기: 나무가 부딪히며 날아오르는 소리 */
+export function yutToss() {
+  if (!ready()) return;
+  const t = now();
+  for (let i = 0; i < 4; i++) { noise(t + i * 0.03, 0.04, 'bandpass', 900 + i * 120, 0.25, 4); tone(t + i * 0.03, 0.05, 'triangle', 420 + i * 40, 300, 0.08, 0.001); }
+  noise(t + 0.1, 0.35, 'bandpass', 1500, 0.06, 0.8, 600);
+}
+/** 윷가락이 멍석에 떨어지는 소리: 나무 "따닥 딱딱" */
+export function yutLand() {
+  if (!ready()) return;
+  const t = now();
+  [0, 0.05, 0.09, 0.16, 0.2].forEach((d, i) => { noise(t + d, 0.05, 'bandpass', 700 + (i % 3) * 180, 0.4 - i * 0.05, 5); tone(t + d, 0.07, 'triangle', 380 - i * 20, 220, 0.12, 0.001); });
+}
 /** 더미에서 뒤집는 소리 (가볍게 "착") */
 export function flip() {
   if (!ready()) return;
