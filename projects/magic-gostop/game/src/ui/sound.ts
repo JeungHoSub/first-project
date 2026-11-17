@@ -58,20 +58,48 @@ function tone(t: number, dur: number, type: OscillatorType, f0: number, f1: numb
 function ready() { return !!ctx && !!master && !muted; }
 const now = () => ctx!.currentTime;
 
-/** 화투장 한 장이 담요에 "착" 붙는 순간: 아주 짧은 플라스틱 딸깍 + 몸통 울림 */
-function clack(t: number, vol: number, bright = 1) {
-  noise(t, 0.008, 'highpass', 2200 * bright, vol, 0.7);           // 첫 접촉 "ㅊ"
-  noise(t, 0.03, 'bandpass', 1150 * bright, vol * 0.85, 3.2);     // 딱딱한 패의 "착"
-  tone(t, 0.018, 'triangle', 1450 * bright, 950, vol * 0.14, 0.001); // 패 가장자리 딸깍
-  tone(t, 0.045, 'sine', 150, 95, vol * 0.45, 0.002);             // 담요가 받는 낮은 몸통
+/** 화투 "착" 소리 샘플: 무작위 잡음을 매번 겹치면 지글거리므로(뿌직), 한 번 계산해 둔 깨끗한 타격음을 재생한다.
+ *  ① 아주 짧은 건조한 순간음(패 모서리가 부딪히는 "ㅊ") ② 딱딱한 플라스틱 판의 짧은 울림("악") ③ 담요가 받는 낮은 "턱" */
+let hitBufs: AudioBuffer[] = [];
+function makeHits() {
+  const c = ctx!; const sr = c.sampleRate;
+  const out: AudioBuffer[] = [];
+  for (let v = 0; v < 3; v++) {
+    const len = Math.floor(sr * 0.11);
+    const buf = c.createBuffer(1, len, sr); const d = buf.getChannelData(0);
+    let seed = 1234 + v * 777; const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647 * 2 - 1; };
+    const modes = [[760 + v * 30, 0.012, 0.42], [1580 + v * 50, 0.008, 0.55], [2650 + v * 60, 0.0055, 0.4], [3900 + v * 90, 0.0035, 0.22]];
+    let lp = 0, peak = 0;
+    for (let i = 0; i < len; i++) {
+      const t = i / sr;
+      lp += 0.55 * (rnd() - lp); // 부드럽게 다듬은 잡음 (쇳소리 제거)
+      const atk = Math.min(1, t / 0.0004);
+      let x = lp * Math.exp(-t / 0.0022) * 1.1;
+      for (const [f, tau, amp] of modes) x += amp * Math.sin(2 * Math.PI * f * t) * Math.exp(-t / tau);
+      const ft = 135 - 55 * Math.min(1, t / 0.04);
+      x += 0.7 * Math.sin(2 * Math.PI * ft * t) * Math.exp(-t / 0.016);
+      x *= atk; d[i] = x; peak = Math.max(peak, Math.abs(x));
+    }
+    for (let i = 0; i < len; i++) d[i] /= peak;
+    out.push(buf);
+  }
+  return out;
 }
-/** 화투장을 바닥에 내리치는 소리. power 0~1 — "착!" 하고 바로 달라붙음 */
+let hitN = 0;
+function clack(t: number, vol: number, bright = 1) {
+  const c = ctx!;
+  if (!hitBufs.length) hitBufs = makeHits();
+  const src = c.createBufferSource(); src.buffer = hitBufs[hitN++ % hitBufs.length];
+  src.playbackRate.value = bright;
+  const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 6500; f.Q.value = 0.5;
+  const g = c.createGain(); g.gain.value = vol;
+  src.connect(f).connect(g).connect(master!);
+  src.start(t);
+}
+/** 화투장을 바닥에 내리치는 소리. power 0~1 — 한 번에 "착!" */
 export function slap(power = 0.7) {
   if (!ready()) return;
-  const t = now();
-  clack(t, 0.45 + 0.45 * power);
-  clack(t + 0.011, 0.22 + 0.12 * power, 0.85); // 패가 바닥에 납작하게 붙는 두 번째 미세 접촉
-  noise(t + 0.004, 0.06, 'lowpass', 500, 0.18 * power, 0.7);   // 눌린 공기
+  clack(now(), 0.55 + 0.4 * power, 0.98);
 }
 /** 윷가락 던지기: 나무가 부딪히며 날아오르는 소리 */
 export function yutToss() {
@@ -86,12 +114,12 @@ export function yutLand() {
   const t = now();
   [0, 0.05, 0.09, 0.16, 0.2].forEach((d, i) => { noise(t + d, 0.05, 'bandpass', 700 + (i % 3) * 180, 0.4 - i * 0.05, 5); tone(t + d, 0.07, 'triangle', 380 - i * 20, 220, 0.12, 0.001); });
 }
-/** 더미에서 뒤집는 소리 (가볍게 "착") */
+/** 더미에서 뒤집는 소리: 살짝 넘기는 소리 뒤 가볍게 "착" */
 export function flip() {
   if (!ready()) return;
   const t = now();
-  noise(t, 0.03, 'highpass', 3500, 0.12, 0.7);   // 패가 미끄러지는 소리
-  clack(t + 0.035, 0.32, 1.1);
+  noise(t, 0.05, 'bandpass', 2400, 0.035, 0.6, 1400);
+  clack(t + 0.05, 0.4, 1.06);
 }
 /** 패를 먹어 가져오는 소리 ("착착" + 짧은 반짝임) */
 /** 꾸미기 "효과음 팩" 단계 (-1 = 기본). 먹을 때 소리에 국악풍 음을 얹는다 */
@@ -102,8 +130,8 @@ export function capture(count = 2) {
   if (!ready()) return;
   const t = now();
   // 먹은 패를 모아 쥐는 "착착": 장수만큼 빠르게 겹쳐 붙는 소리
-  const n = Math.max(2, Math.min(count, 4));
-  for (let i = 0; i < n; i++) clack(t + i * 0.07, i === n - 1 ? 0.62 : 0.42, 1 + i * 0.04);
+  const n = Math.max(2, Math.min(count, 3));
+  for (let i = 0; i < n; i++) clack(t + i * 0.085, i === n - 1 ? 0.75 : 0.55, 1.02 + i * 0.03);
   if (pack < 1) return;
   // 가야금 뜯는 소리(1~), 장구(2~), 징(3~), 여러 음 꾸밈(6~)
   const base = PENTA[Math.floor(Math.random() * 4)];
