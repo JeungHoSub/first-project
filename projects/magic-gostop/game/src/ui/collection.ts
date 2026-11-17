@@ -171,3 +171,30 @@ export function grantTestMagic(rng = Math.random) {
   }
   save(mem);
 }
+
+// ---------- 뽑기권 (테스트: 무료) ----------
+export interface Ticket { id: string; name: string; desc: string; hue: string; rates: Record<Grade, number>; minGrade?: Grade }
+/** 기본 뽑기권 5단계 (items-data.ts의 TICKETS가 있으면 그걸 씀) */
+export let TICKETS: Ticket[] = [
+  { id: 'copper', name: '동전 뽑기권', desc: '가볍게 한 번', hue: '#c07a3d', rates: { F: 38, E: 26, D: 17, C: 10, B: 5, A: 2.5, S: 1, SS: 0.4, SSS: 0.08, 'SSS+': 0.02 } },
+  { id: 'silver', name: '은전 뽑기권', desc: 'D 이상 확률 ↑', hue: '#b8c4cc', rates: { F: 20, E: 22, D: 22, C: 16, B: 10, A: 5.5, S: 3, SS: 1.1, SSS: 0.32, 'SSS+': 0.08 } },
+  { id: 'gold', name: '금전 뽑기권', desc: 'C 이상 보장', hue: '#f0c35a', rates: { F: 0, E: 0, D: 0, C: 40, B: 28, A: 17, S: 9, SS: 4.5, SSS: 1.2, 'SSS+': 0.3 }, minGrade: 'C' },
+  { id: 'jade', name: '옥 뽑기권', desc: 'A 이상 보장', hue: '#5bd1a0', rates: { F: 0, E: 0, D: 0, C: 0, B: 0, A: 55, S: 27, SS: 12, SSS: 4.8, 'SSS+': 1.2 }, minGrade: 'A' },
+  { id: 'dragon', name: '용 뽑기권', desc: 'S 이상 보장 · 최고 단계', hue: '#ff5a5f', rates: { F: 0, E: 0, D: 0, C: 0, B: 0, A: 0, S: 60, SS: 27, SSS: 10, 'SSS+': 3 }, minGrade: 'S' },
+];
+export function setTickets(t: Ticket[]) { TICKETS = t; }
+
+/** 뽑기권으로 1회 뽑기: 항목은 가중치, 등급은 뽑기권 확률표 */
+export function drawWithTicket(t: Ticket, rng = Math.random): Drop {
+  const total = ITEMS.reduce((a, m) => a + m.weight, 0);
+  let r = rng() * total;
+  const item = ITEMS.find((m) => (r -= m.weight) < 0) ?? ITEMS[0];
+  const sum = GRADES.reduce((a, g) => a + t.rates[g], 0);
+  let g = rng() * sum; let gi = 0;
+  for (; gi < GRADES.length - 1; gi++) { g -= t.rates[GRADES[gi]]; if (g < 0) break; }
+  const grade = GRADES[gi];
+  const isNewBest = gi > bestGrade(item.id);
+  mem = { ...mem, [item.id]: { ...ownedOf(item.id), [grade]: (ownedOf(item.id)[grade] ?? 0) + 1 } };
+  save(mem);
+  return { item, grade, gi, isNewBest };
+}

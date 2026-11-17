@@ -3,6 +3,7 @@ import type { Action, Card, GameEvent, GameState, PlayerId } from '../engine';
 import { chooseAction, AI_LEVELS, type AiLevel } from '../ai/simple';
 import { cardArt } from './art';
 import * as sfx from './sound';
+import { initGacha, openGacha } from './gacha';
 import { ITEMS, GRADES, GRADE_RATE, CATEGORY_LABEL, DROP_RATE, itemArt, gradeFill, ownedOf, bestGrade, ownedKinds, rollDrop, type Drop, type ItemDef, type Category, MAGIC_IDS, magicParams, grantTestMagic, type MagicId } from './collection';
 
 // 화면 = 엔진 상태를 그리기만 한다. 규칙 판단은 전부 엔진(getLegalActions/applyAction)에 맡긴다.
@@ -1013,7 +1014,7 @@ function setLevel(l: AiLevel) {
 }
 function showHome() {
   gameNo++; busy = false;
-  for (const id of ['result', 'special', 'choose', 'gostop', 'info', 'reward', 'collection', 'caps-detail', 'item-detail', 'gukjin', 'magic-pick']) $(id).hidden = true;
+  for (const id of ['result', 'special', 'choose', 'gostop', 'info', 'reward', 'collection', 'caps-detail', 'item-detail', 'gukjin', 'magic-pick', 'gacha', 'gacha-run']) $(id).hidden = true;
   syncHome();
   $('home').hidden = false;
 }
@@ -1108,6 +1109,8 @@ $('sp-cancel').addEventListener('click', () => { $('special').hidden = true; });
 $('btn-start').addEventListener('click', () => { sfx.unlock(); sfx.click(); sfx.startBgm(); openMagicPick(); });
 $('btn-mp-go').addEventListener('click', () => { try { localStorage.setItem('mg-picked', JSON.stringify(picked)); } catch { /* 무시 */ } $('magic-pick').hidden = true; $('home').hidden = true; newGame(); });
 $('btn-mp-none').addEventListener('click', () => { picked = []; $('magic-pick').hidden = true; $('home').hidden = true; newGame(); });
+initGacha(() => syncHome());
+$('btn-gacha').addEventListener('click', () => { sfx.unlock(); sfx.click(); sfx.startBgm(); openGacha(); });
 $('btn-mp-test').addEventListener('click', () => { grantTestMagic(); sfx.magic(); openMagicPick(); syncHome(); });
 $('magic-cancel').addEventListener('click', () => { selectMode = null; render(s); });
 for (const id of ['opp-caps', 'my-caps']) $(id).addEventListener('click', () => { if (s) { sfx.click(); showCapsDetail(); } });

@@ -133,6 +133,7 @@
     <h1 class="home-title">매직고스톱</h1>
     <p class="home-sub">한국 화투로 즐기는 맞고 · 아이템 수집</p>
     <button class="big go-btn home-start" id="btn-start" type="button">게임 시작<small>상대: <span id="home-level">쉬움</span></small></button>
+    <button class="big gacha-btn" id="btn-gacha" type="button">뽑기<small>뽑기권 5단계 · 테스트 무료</small></button>
     <div class="home-row">
       <span class="home-label">난이도</span>
       <div class="seg" id="seg-level" role="radiogroup" aria-label="상대 난이도"></div>
@@ -211,4 +212,22 @@
       <button class="big go-btn" id="btn-mp-go" type="button">시작</button>
     </div>
   </div>
+</div>
+
+<div class="sheet" id="gacha" hidden>
+  <div class="sheet-card gacha-card">
+    <div class="sheet-kicker">뽑기 · 테스트 (무료)</div>
+    <div class="sheet-title">뽑기권</div>
+    <p class="sheet-sub">단계가 높은 뽑기권일수록 높은 등급이 잘 나옵니다. 확률은 아래에 그대로 공개합니다.</p>
+    <div class="ticket-list" id="ticket-list"></div>
+    <p class="dt-note">정식 버전에서는 뽑기권을 게임 보상으로 얻습니다. 유료 판매 시 확률 공개 의무를 지킵니다. 아이템은 현금 가치가 없습니다.</p>
+    <button class="big stop-btn" id="btn-gacha-close" type="button">닫기</button>
+  </div>
+</div>
+
+<div class="gacha-run" id="gacha-run" hidden>
+  <div class="gr-rays" aria-hidden="true"></div>
+  <div class="gr-spin" id="gr-spin" aria-hidden="true"></div>
+  <div class="gr-results" id="gr-results" hidden></div>
+  <button class="big go-btn gr-close" id="gr-close" type="button" hidden>확인</button>
 </div>
