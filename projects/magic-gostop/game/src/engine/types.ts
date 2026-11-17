@@ -30,6 +30,13 @@ export interface RuleOptions {
   carry: number;
   /** 첫뻑(자기 첫 차례에 뻑) 보너스 점수. 나중에 돈 지급으로 바꿀 자리 (기본 3, 0이면 없음) */
   firstPpeokBonus: number;
+  // --- 귀속 아이템(판 이벤트권 등)이 판 시작 때 정하는 규칙 변화. 없으면 기본 규칙 ---
+  /** 쌍피를 3피로 센다 (쌍피 축제 B 이상) */
+  piBoost?: boolean;
+  /** 첫 흔들기·폭탄 배수 (땅울림). 없으면 ×2 */
+  quakeFirst?: number;
+  /** 피박 기준(패자 피 1~N장). 기본 5. 플레이어별 (현무 거북 A 이상이면 4) */
+  pibakMax?: [number, number];
 }
 
 export const DEFAULT_OPTIONS: RuleOptions = {
@@ -67,7 +74,7 @@ export type GameEvent =
   | { type: 'steal'; player: PlayerId; from: PlayerId; card: string }
   | { type: 'firstPpeok'; player: PlayerId; points: number }
   | { type: 'shieldBlock'; player: PlayerId } // 방패가 피 뺏김을 막음 (player = 막은 사람)
-  | { type: 'magic'; player: PlayerId; magic: 'swap' | 'sweep'; cards: string[] }
+  | { type: 'magic'; player: PlayerId; magic: 'swap' | 'sweep' | 'take' | 'extraFlip'; cards: string[] }
   | { type: 'dummy'; player: PlayerId }
   | { type: 'flip'; player: PlayerId; card: string }
   | { type: 'place'; player: PlayerId; card: string }
@@ -114,6 +121,10 @@ export interface GameState {
   magic?: MagicState;
   /** 카드 외 추가 점수(첫뻑 등). 점수 계산에 더해진다 */
   extra?: [ExtraPoint[], ExtraPoint[]];
+  /** 아이템 가산 점수. 고/스톱 기준(7점)에는 넣지 않고 최종 정산에만 더한다 */
+  itemPts?: [ExtraPoint[], ExtraPoint[]];
+  /** 판이 끝난 방식(아이템 점수가 바뀌면 같은 방식으로 다시 정산) */
+  endInfo?: { stopper: PlayerId | null; by: 'stop' | 'exhaust' };
   captured: [Card[], Card[]];
   pending: PendingChoice | null;
   goCount: [number, number];

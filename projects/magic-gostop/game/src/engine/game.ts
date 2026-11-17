@@ -4,7 +4,7 @@ import { score, settleWin } from './score';
 import type { EngineHooks } from './hooks';
 import {
   DEFAULT_OPTIONS,
-  type Action, type Card, type GukjinMode, type GameResult, type GameState, type PlayerId, type RuleOptions,
+  type Action, type Card, type ExtraPoint, type GukjinMode, type GameResult, type GameState, type PlayerId, type RuleOptions,
 } from './types';
 
 const HAND = 10;
@@ -450,6 +450,16 @@ function nextTurn(ctx: Ctx) {
 
 /** 판 종료. stopper가 있으면 그 사람이 승자, 없으면 패가 떨어진 정산. */
 function finish(s: GameState, stopper: PlayerId | null, by: 'stop' | 'exhaust') {
+  s.endInfo = { stopper, by };
+  const result = computeResult(s, stopper, by);
+  s.result = result;
+  s.phase = 'ended';
+  s.events.push({ type: 'end', result });
+}
+
+const sumPts = (xs?: { points: number }[]) => (xs ?? []).reduce((a, x) => a + x.points, 0);
+
+function computeResult(s: GameState, stopper: PlayerId | null, by: 'stop' | 'exhaust'): GameResult {
   const sc = [scoreOf(s, 0).total, scoreOf(s, 1).total];
   let winner: PlayerId | null = stopper;
   if (winner === null) {
@@ -458,17 +468,71 @@ function finish(s: GameState, stopper: PlayerId | null, by: 'stop' | 'exhaust') 
     else if (ok[1] && !ok[0]) winner = 1;
     else if (ok[0] && ok[1] && sc[0] !== sc[1]) winner = sc[0] > sc[1] ? 0 : 1;
   }
-  let result: GameResult;
-  if (winner === null) result = { type: 'nagari', nextCarry: Math.min(s.options.carry * 2, 4) }; // R12
-  else {
-    const loser = (1 - winner) as PlayerId;
-    result = settleWin(winner, s.captured, s.goCount[winner], s.shakes[winner], s.options, by, s.gukjinAs?.[winner], s.gukjinAs?.[loser],
-      s.magic ? { double: s.magic.double[winner], noPibak: s.magic.noPibak[loser], noGwangbak: s.magic.noGwangbak[loser] } : undefined,
-      (s.extra?.[winner] ?? []).reduce((a, x) => a + x.points, 0));
+  if (winner === null) return { type: 'nagari', nextCarry: Math.min(s.options.carry * 2, 4) }; // R12
+  const loser = (1 - winner) as PlayerId;
+  return settleWin(winner, s.captured, s.goCount[winner], s.shakes[winner], s.options, by, s.gukjinAs?.[winner], s.gukjinAs?.[loser],
+    s.magic ? { double: s.magic.double[winner], noPibak: s.magic.noPibak[loser], noGwangbak: s.magic.noGwangbak[loser] } : undefined,
+    sumPts(s.extra?.[winner]) + sumPts(s.itemPts?.[winner]));
+}
+
+// ---------- 귀속 아이템 훅 (화면이 판 진행 중에 부른다). 모두 새 state를 돌려준다 ----------
+/** 아이템 가산 점수를 정한다. 판이 이미 끝났으면 같은 방식으로 다시 정산한다(마지막 수에서 얻은 점수 반영) */
+export function setItemPoints(state: GameState, p: PlayerId, pts: ExtraPoint[]): GameState {
+  const s: GameState = structuredClone(state);
+  const cur = s.itemPts ?? [[], []];
+  cur[p] = pts.map((x) => ({ ...x }));
+  s.itemPts = cur;
+  if (s.phase === 'ended' && s.endInfo) {
+    const r = computeResult(s, s.endInfo.stopper, s.endInfo.by);
+    s.result = r;
+    const last = s.events[s.events.length - 1];
+    if (last?.type === 'end') last.result = r;
   }
-  s.result = result;
-  s.phase = 'ended';
-  s.events.push({ type: 'end', result });
+  return s;
+}
+/** 카드를 바닥 또는 상대 획득 패에서 p의 획득 패로 옮긴다 (방망이 도깨비·구미호·거울 반사). 일반 피만 */
+export function magicTake(state: GameState, p: PlayerId, from: 'floor' | 'opp', n: number): { state: GameState; taken: string[] } {
+  const s: GameState = structuredClone(state);
+  const src = from === 'floor' ? s.floor : s.captured[(1 - p) as PlayerId];
+  const taken: string[] = [];
+  for (let k = 0; k < n; k++) {
+    const i = src.findIndex((c) => c.kind === 'P' && (from === 'opp' || !s.ppeok[c.month]));
+    if (i < 0) break;
+    const [c] = src.splice(i, 1);
+    s.captured[p].push(c); taken.push(c.id);
+  }
+  if (taken.length) s.events.push({ type: 'magic', player: p, magic: 'take', cards: taken });
+  return { state: s, taken };
+}
+/** 쌍둥이 그림자: 내 차례(패 내기 전)에 더미를 한 장 더 뒤집는다. 맞는 바닥 패가 있으면 먹고, 없으면 바닥에 둔다.
+ *  2장이 맞으면 높은 패(광>열끗>띠>쌍피>피)를 고르고, 3장이면 모두 먹는다. 뻑·쪽 같은 특수 판정은 하지 않는다. */
+export function magicExtraFlip(state: GameState, p: PlayerId): GameState {
+  if (state.phase !== 'play' || state.turn !== p || !state.deck.length) throw new Error('더 뒤집을 수 없는 때');
+  const s: GameState = structuredClone(state);
+  const top = s.deck.shift()!;
+  s.events.push({ type: 'magic', player: p, magic: 'extraFlip', cards: [top.id] });
+  s.events.push({ type: 'flip', player: p, card: top.id });
+  if (top.month === 13) { // 보너스 패는 그냥 먹는다
+    s.captured[p].push(top);
+    s.events.push({ type: 'bonus', player: p, card: top.id, from: 'flip' });
+    return s;
+  }
+  const same = s.floor.filter((c) => c.month === top.month);
+  const rank: Record<string, number> = { G: 5, Y: 4, T: 3, D: 2, P: 1 };
+  let take: Card[] = [];
+  if (same.length >= 3) take = same;
+  else if (same.length === 2) take = [[...same].sort((a, b) => (rank[b.kind] ?? 0) - (rank[a.kind] ?? 0))[0]];
+  else take = same;
+  if (!take.length) {
+    s.floor.push(top);
+    s.events.push({ type: 'place', player: p, card: top.id });
+    return s;
+  }
+  s.floor = s.floor.filter((c) => !take.includes(c));
+  for (const c of take) delete s.ppeok[c.month];
+  s.captured[p].push(top, ...take);
+  s.events.push({ type: 'capture', player: p, cards: [top.id, ...take.map((c) => c.id)] });
+  return s;
 }
 
 /** 카드 총합 (손패+바닥+더미+획득+처리 중인 카드). 항상 48이어야 한다. */

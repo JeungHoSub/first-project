@@ -75,11 +75,22 @@ export function flip() {
   tone(t + 0.03, 0.06, 'sine', 140, 70, 0.25);
 }
 /** 패를 먹어 가져오는 소리 ("착착" + 짧은 반짝임) */
+/** 꾸미기 "효과음 팩" 단계 (-1 = 기본). 먹을 때 소리에 국악풍 음을 얹는다 */
+let pack = -1;
+export function setPack(g: number) { pack = g; }
+const PENTA = [392, 440, 523, 587, 659, 784, 880]; // 평조풍 5음
 export function capture(count = 2) {
   if (!ready()) return;
   const t = now();
   for (let i = 0; i < Math.min(count, 4); i++) noise(t + i * 0.045, 0.035, 'bandpass', 2800 - i * 200, 0.28, 1.2);
   tone(t + 0.05, 0.18, 'triangle', 1320, 1760, 0.06);
+  if (pack < 1) return;
+  // 가야금 뜯는 소리(1~), 장구(2~), 징(3~), 여러 음 꾸밈(6~)
+  const base = PENTA[Math.floor(Math.random() * 4)];
+  tone(t + 0.02, 0.5, 'sawtooth', base * 2, base * 1.98, 0.035, 0.002);
+  if (pack >= 2) noise(t, 0.09, 'lowpass', 220, 0.35, 0.7, 120);
+  if (pack >= 3) tone(t + 0.04, 0.9, 'sine', 196, 188, 0.05, 0.01);
+  if (pack >= 6) for (let i = 1; i <= Math.min(pack - 4, 4); i++) tone(t + 0.07 * i, 0.3, 'triangle', PENTA[(i * 2) % PENTA.length] * 2, PENTA[(i * 2) % PENTA.length] * 2, 0.03);
 }
 /** 피 뺏어 오기 */
 export function steal() {

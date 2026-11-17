@@ -30,6 +30,7 @@
       </div>
     </div>
     <div class="feed" id="feed" aria-live="polite"></div>
+    <div class="lantern" id="lantern" hidden></div>
   </section>
 
   <section class="seat me player" aria-label="나">
@@ -205,13 +206,14 @@
 
 <div class="sheet" id="magic-pick" hidden>
   <div class="sheet-card">
-    <div class="sheet-kicker">판 시작 · 매직 카드</div>
-    <div class="sheet-title">가져갈 매직 카드 <span id="mp-count"></span></div>
-    <p class="sheet-sub" id="mp-empty">아직 매직 카드가 없습니다. 봇전에서 얻거나, 테스트용으로 바로 받아 보세요.</p>
+    <div class="sheet-kicker">판 시작 · 아이템 장착</div>
+    <div class="sheet-title">가져갈 아이템 <span id="mp-count"></span></div>
+    <p class="sheet-sub">주문 2 · 부적 1 · 수호 정령 1 · 판 이벤트권 1 · 마법 도구 1 · 꾸미기 종류별 1. 배수 아이템(황금 배수·땅울림)은 하나만.</p>
+    <p class="sheet-sub" id="mp-empty">아직 아이템이 없습니다. 뽑기나 봇전에서 얻거나, 테스트용으로 바로 받아 보세요.</p>
     <div class="mp-grid" id="mp-grid"></div>
-    <button class="text-btn" id="btn-mp-test" type="button">테스트: 매직 카드 6종 받기(무작위 등급)</button>
+    <button class="text-btn" id="btn-mp-test" type="button">테스트: 아이템 35종 받기(무작위 등급)</button>
     <div class="gs-btns">
-      <button class="big stop-btn" id="btn-mp-none" type="button">매직 없이</button>
+      <button class="big stop-btn" id="btn-mp-none" type="button">아이템 없이</button>
       <button class="big go-btn" id="btn-mp-go" type="button">시작</button>
     </div>
   </div>

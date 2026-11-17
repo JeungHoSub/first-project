@@ -61,8 +61,8 @@ export function ownedKinds() { return ITEMS.filter((it) => bestGrade(it.id) >= 0
 export interface Drop { item: ItemDef; grade: Grade; gi: number; isNewBest: boolean }
 
 /** 판이 끝났을 때 한 번 굴린다. 얻으면 항목·등급을 돌려준다. */
-export function rollDrop(outcome: 'win' | 'lose' | 'nagari', level: 'easy' | 'normal' | 'hard', rng = Math.random): Drop | null {
-  if (rng() * 100 >= DROP_RATE[outcome][level]) return null;
+export function rollDrop(outcome: 'win' | 'lose' | 'nagari', level: 'easy' | 'normal' | 'hard', rng = Math.random, bonusPct = 0): Drop | null {
+  if (rng() * 100 >= DROP_RATE[outcome][level] + bonusPct) return null; // 복주머니 보정(봇전 획득만, 뽑기권과 무관)
   const total = ITEMS.reduce((a, m) => a + m.weight, 0);
   let r = rng() * total;
   const item = ITEMS.find((m) => (r -= m.weight) < 0) ?? ITEMS[0];
@@ -156,9 +156,9 @@ export function magicParams(id: MagicId, g: number) {
   }
 }
 
-/** 테스트용: 매직 카드 6종을 무작위 등급으로 1장씩 지급 */
+/** 테스트용: 모든 아이템을 무작위 등급으로 1장씩 지급 */
 export function grantTestMagic(rng = Math.random) {
-  for (const id of MAGIC_IDS) {
+  for (const { id } of ITEMS) {
     let g = rng() * 100; let gi = 0;
     for (; gi < GRADES.length - 1; gi++) { g -= GRADE_RATE[GRADES[gi]]; if (g < 0) break; }
     const grade = GRADES[gi];

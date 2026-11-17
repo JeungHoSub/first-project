@@ -80,7 +80,7 @@ const cache = new Map<string, string>();
 export function cardArt(c: Card): string {
   let s = cache.get(c.id);
   if (!s) {
-    s = (OVERRIDES[c.id] ?? HWATU_SVG[c.id]).replace('<svg ', '<svg aria-hidden="true" ');
+    s = (OVERRIDES[c.id] ?? HWATU_SVG[c.id] ?? (c.kind === 'B3' ? bonusArt(3) : bonusArt(2))).replace('<svg ', '<svg aria-hidden="true" ');
     cache.set(c.id, s);
   }
   return s;

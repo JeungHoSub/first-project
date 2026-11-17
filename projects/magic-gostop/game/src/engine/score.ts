@@ -4,7 +4,7 @@ import { PI_VALUE } from './cards';
 
 const isGukjin = (c: Card) => c.tag === 'gukjin';
 
-function scoreWith(captured: readonly Card[], gj: 'yeol' | 'pi'): ScoreResult {
+function scoreWith(captured: readonly Card[], gj: 'yeol' | 'pi', options: RuleOptions = DEFAULT_OPTIONS): ScoreResult {
   const details: ScoreDetail[] = [];
   const add = (key: string, label: string, points: number) => {
     if (points > 0) details.push({ key, label, points });
@@ -15,7 +15,7 @@ function scoreWith(captured: readonly Card[], gj: 'yeol' | 'pi'): ScoreResult {
   const gwang = captured.filter((c) => c.kind === 'G');
   const yeol = captured.filter((c) => c.kind === 'Y' && !(gj === 'pi' && isGukjin(c)));
   const tti = captured.filter((c) => c.kind === 'T');
-  const pi = piSum(captured, gj === 'pi');
+  const pi = piSum(captured, gj === 'pi', options);
 
   // 광
   const g = gwang.length;
@@ -41,9 +41,10 @@ function scoreWith(captured: readonly Card[], gj: 'yeol' | 'pi'): ScoreResult {
 }
 
 /** 피 장수 합. 국진은 asPi=true일 때만 쌍피(2)로 센다. */
-function piSum(captured: readonly Card[], gukjinAsPi: boolean): number {
-  let n = captured.reduce((a, c) => a + (PI_VALUE[c.kind] ?? 0), 0);
-  if (gukjinAsPi && captured.some(isGukjin)) n += 2;
+function piSum(captured: readonly Card[], gukjinAsPi: boolean, options: RuleOptions = DEFAULT_OPTIONS): number {
+  const dv = options.piBoost ? 3 : 2; // 쌍피 축제: 쌍피(국진 포함)를 3피로
+  let n = captured.reduce((a, c) => a + (c.kind === 'D' ? dv : (PI_VALUE[c.kind] ?? 0)), 0);
+  if (gukjinAsPi && captured.some(isGukjin)) n += dv;
   return n;
 }
 
@@ -53,10 +54,10 @@ function piSum(captured: readonly Card[], gukjinAsPi: boolean): number {
  * 어느 쪽으로 셌는지는 result.gukjin과 details의 label("국진→쌍피")에 나온다.
  */
 export function score(captured: readonly Card[], _options: RuleOptions = DEFAULT_OPTIONS, gukjin?: 'yeol' | 'pi'): ScoreResult {
-  if (gukjin) return scoreWith(captured, gukjin);
-  const a = scoreWith(captured, 'yeol');
+  if (gukjin) return scoreWith(captured, gukjin, _options);
+  const a = scoreWith(captured, 'yeol', _options);
   if (!captured.some(isGukjin)) return a;
-  const b = scoreWith(captured, 'pi');
+  const b = scoreWith(captured, 'pi', _options);
   return b.total > a.total ? b : a;
 }
 
@@ -71,10 +72,11 @@ export function settle(
 ): { goBonus: number; multiplier: number; shakeMultiplier: number; bakMultiplier: number; carry: number; finalScore: number } {
   const goBonus = goCount;
   const multiplier = goCount >= options.goMultiplierFrom ? 2 ** (goCount - options.goMultiplierFrom + 1) : 1;
-  const shakeMultiplier = 2 ** shakes;
+  // 땅울림: 첫 흔들기·폭탄만 ×quakeFirst, 그다음부터 ×2
+  const shakeMultiplier = shakes > 0 && options.quakeFirst ? options.quakeFirst * 2 ** (shakes - 1) : 2 ** shakes;
   return {
     goBonus, multiplier, shakeMultiplier, bakMultiplier, carry,
-    finalScore: (base + goBonus) * multiplier * shakeMultiplier * bakMultiplier * carry,
+    finalScore: Math.ceil((base + goBonus) * multiplier * shakeMultiplier * bakMultiplier * carry - 1e-9), // 아이템 0.5점 등은 정산 때 올림
   };
 }
 
@@ -83,12 +85,12 @@ export function settle(
  * 피박: 승자 피 점수 + 패자 피 합 0~5 (패자 국진은 쌍피로 세어 유리하게). 광박: 승자 광 점수 + 패자 광 0장.
  * 멍따: 승자 열끗 7장 이상 (패자 조건 없음). 국진은 승자 계산(winScore)이 어느 쪽으로 셌는지를 따른다.
  */
-export function judgeBak(winnerScore: ScoreResult, winner: readonly Card[], loser: readonly Card[], options: RuleOptions = DEFAULT_OPTIONS, loserGukjinAsPi = true): { bak: Bak; bakMultiplier: number } {
+export function judgeBak(winnerScore: ScoreResult, winner: readonly Card[], loser: readonly Card[], options: RuleOptions = DEFAULT_OPTIONS, loserGukjinAsPi = true, pibakMax = 5): { bak: Bak; bakMultiplier: number } {
   const off = !options.special.bak;
   const gj = winnerScore.gukjin === 'pi';
   const yeolCount = winner.filter((c) => c.kind === 'Y' && !(gj && isGukjin(c))).length;
   const bak: Bak = {
-    pi: !off && winnerScore.details.some((d) => d.key === 'pi') && piSum(loser, loserGukjinAsPi) >= 1 && piSum(loser, loserGukjinAsPi) <= 5, // 사용자 확정: 1~5장만 (0장은 피박 아님)
+    pi: !off && winnerScore.details.some((d) => d.key === 'pi') && piSum(loser, loserGukjinAsPi, options) >= 1 && piSum(loser, loserGukjinAsPi, options) <= pibakMax, // 사용자 확정: 1~5장만 (0장은 피박 아님)
     gwang: !off && winnerScore.details.some((d) => d.key === 'gwang') && !loser.some((c) => c.kind === 'G'),
     meong: !off && yeolCount >= 7,
   };
@@ -109,8 +111,8 @@ export function settleWin(
   let best: Extract<GameResult, { type: 'win' }> | null = null;
   const modes = winnerGukjin === 'auto' ? (['yeol', 'pi'] as const) : ([winnerGukjin] as const);
   for (const gj of modes) {
-    const sc = scoreWith(w, gj);
-    let { bak, bakMultiplier } = judgeBak(sc, w, l, options, loserGukjin === 'yeol' ? false : true);
+    const sc = scoreWith(w, gj, options);
+    let { bak, bakMultiplier } = judgeBak(sc, w, l, options, loserGukjin === 'yeol' ? false : true, options.pibakMax?.[1 - winner] ?? 5);
     // 매직 카드 "방패"(높은 등급): 진 쪽의 피박·광박을 한 번 막는다
     const blocked: ('pi' | 'gwang')[] = [];
     if (magic?.noPibak && bak.pi) { bak = { ...bak, pi: false }; bakMultiplier /= 2; blocked.push('pi'); }

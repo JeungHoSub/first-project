@@ -1,11 +1,12 @@
-import { applyAction, createGame, getLegalActions, score, scoreOf, setGukjin, setMagicState, magicSwap, magicSweep, PI_VALUE } from '../engine';
+import { applyAction, createGame, getLegalActions, score, scoreOf, setGukjin, setMagicState, magicSwap, magicSweep, magicExtraFlip, PI_VALUE } from '../engine';
+import * as items from './items-runtime';
 import type { Action, Card, GameEvent, GameState, PlayerId } from '../engine';
 import { chooseAction, AI_LEVELS, type AiLevel } from '../ai/simple';
 import { cardArt } from './art';
 import * as sfx from './sound';
 import { initGacha, openGacha } from './gacha';
 import { earn, lose, coins, fmt, COIN_PER_POINT, FIRST_PPEOK_COINS } from './wallet';
-import { ITEMS, GRADES, GRADE_RATE, CATEGORY_LABEL, DROP_RATE, itemArt, gradeFill, ownedOf, bestGrade, ownedKinds, rollDrop, type Drop, type ItemDef, type Category, MAGIC_IDS, magicParams, grantTestMagic, type MagicId } from './collection';
+import { ITEMS, GRADES, GRADE_RATE, CATEGORY_LABEL, EQUIP_LIMITS, DROP_RATE, itemArt, gradeFill, ownedOf, bestGrade, ownedKinds, rollDrop, type Drop, type ItemDef, type Category, MAGIC_IDS, magicParams, grantTestMagic, type MagicId } from './collection';
 
 // 화면 = 엔진 상태를 그리기만 한다. 규칙 판단은 전부 엔진(getLegalActions/applyAction)에 맡긴다.
 // 엔진은 한 행동을 한 번에 처리하므로, 화면은 이벤트로 중간 장면(낸 패가 바닥에 놓임 → 뒤집은 패가 놓임 → 먹은 패가 들어옴)을
@@ -107,6 +108,55 @@ function showCapsDetail() {
   $('caps-detail').hidden = false;
 }
 
+/** 아이템이 화면에 남기는 표시: 안개(가려진 바닥 패), 도깨비불 등롱(안 보인 패 정보) */
+function decorateItems(view: GameState) {
+  const run = items.current();
+  document.querySelectorAll<HTMLElement>('#floor .card').forEach((el) => {
+    const id = el.dataset.id ?? '';
+    const hidden = !!run?.fogHidden.has(id);
+    el.classList.toggle('fogged', hidden && !run!.fogPeeked.has(id));
+    el.classList.toggle('fog-peek', hidden && run!.fogPeeked.has(id));
+    if (hidden && !run!.fogPeeked.has(id)) el.classList.remove('target', 'only-me', 'm2', 'm3', 'risk');
+  });
+  const box = $('lantern');
+  const lg = items.lanternGrade();
+  if (lg < 0 || view.phase === 'ended') { box.hidden = true; return; }
+  box.hidden = false;
+  const seen = new Set<string>([...view.hands[ME], ...view.floor, ...view.captured[ME], ...view.captured[AI]].map((c) => c.id));
+  if (view.pending) { seen.add(view.pending.card.id); if (view.pending.later) seen.add(view.pending.later.id); }
+  const unseen = [...allCards.values()].filter((c) => !seen.has(c.id) && c.month <= 12 && !run?.fogHidden.has(c.id));
+  const myMonths = new Set(view.hands[ME].map((c) => c.month));
+  const floorMonths = new Set(view.floor.map((c) => c.month));
+  const months = Array.from({ length: 12 }, (_, i) => i + 1).filter((m) => lg >= 2 || myMonths.has(m) || (lg >= 1 && floorMonths.has(m)));
+  const gwangMonths = new Set(unseen.filter((c) => c.kind === 'G').map((c) => c.month));
+  let html = `<div class="ln-title">도깨비불 등롱 <small>안 보인 패</small></div><div class="ln-months">${months.map((m) => {
+    const n = unseen.filter((c) => c.month === m).length;
+    return `<span class="${n ? '' : 'zero'}${lg >= 7 && gwangMonths.has(m) ? ' gw' : ''}"><b>${m}월</b>${n}</span>`;
+  }).join('')}</div>`;
+  if (lg >= 3) {
+    const k = (kk: string[]) => unseen.filter((c) => kk.includes(c.kind)).length;
+    html += `<div class="ln-row">남은 종류 · 광 ${k(['G'])} · 열끗 ${k(['Y'])} · 띠 ${k(['T'])} · 피 ${k(['P', 'D'])}</div>`;
+  }
+  if (lg >= 4) {
+    const oc = view.captured[AI];
+    const k = (kk: string[]) => oc.filter((c) => kk.includes(c.kind)).length;
+    html += `<div class="ln-row">상대가 먹은 패 · 광 ${k(['G'])} · 열끗 ${k(['Y'])} · 띠 ${k(['T'])} · 피류 ${k(['P', 'D', 'B2', 'B3'])}</div>`;
+  }
+  if (lg >= 5) {
+    const opp = new Set(view.captured[AI].map((c) => c.id));
+    const can = (f: (c: Card) => boolean) => [...allCards.values()].filter(f).every((c) => !opp.has(c.id));
+    const tag = (t: string) => can((c) => c.tag === t);
+    html += `<div class="ln-row">완성 가능 · 홍단 ${tag('hong') ? '○' : '×'} · 청단 ${tag('cheong') ? '○' : '×'} · 초단 ${tag('cho') ? '○' : '×'} · 고도리 ${tag('godori') ? '○' : '×'}</div>`;
+  }
+  if (lg >= 8) html += `<div class="ln-row">상대는 7점까지 <b>${Math.max(0, view.options.winScore - scoreOf(view, AI).total)}점</b> 남음</div>`;
+  if (lg >= 6) {
+    const log = view.events.filter((e) => e.type === 'capture').slice(-(lg >= 7 ? 12 : 6)).reverse()
+      .map((e) => (e.type === 'capture' ? `${e.player === ME ? '나' : '상대'} ${e.cards.map((x) => byId(x).month).filter((m) => m <= 12).join('·')}월` : ''));
+    if (log.length) html += `<div class="ln-row ln-log">먹기 기록 · ${log.join(' / ')}</div>`;
+  }
+  box.innerHTML = html;
+}
+
 /** 상태 하나를 그린다. view가 진짜 상태이고 내 차례이며 연출 중이 아닐 때만 누를 수 있다. */
 function render(view: GameState) {
   const live = view === s && !busy;
@@ -120,7 +170,8 @@ function render(view: GameState) {
     b.parentElement!.classList.toggle('hot', sc[p].total >= view.options.winScore);
     b.parentElement!.style.setProperty('--pct', String(Math.min(sc[p].total / view.options.winScore, 1)));
     const go = $(`${sfx}-go`);
-    const tags = [view.goCount[p] ? `${view.goCount[p]}고` : '', view.shakes[p] ? `흔들 ×${2 ** view.shakes[p]}` : ''].filter(Boolean);
+    const ip = (view.itemPts?.[p] ?? []).reduce((a, x) => a + x.points, 0);
+    const tags = [view.goCount[p] ? `${view.goCount[p]}고` : '', view.shakes[p] ? `흔들 ×${2 ** view.shakes[p]}` : '', ip ? `아이템 +${ip}` : ''].filter(Boolean);
     go.hidden = !tags.length;
     go.textContent = tags.join(' · ');
   }
@@ -284,63 +335,96 @@ function render(view: GameState) {
       : '마지막 차례라 스톱만 할 수 있습니다.';
     ($('btn-go') as HTMLButtonElement).hidden = !canGo;
   }
+  decorateItems(view);
 }
 
 // ---------- 매직 카드 (실제 판 적용) ----------
 interface Equipped { id: MagicId; g: number; uses: number }
-let picked: MagicId[] = []; // 다음 판에 가져갈 매직 카드 (최대 2)
+const MAGIC_SET = new Set<string>(MAGIC_IDS);
+let picked: string[] = []; // 다음 판에 가져갈 아이템 (분류별 장착 한도 · items-runtime)
 let equipped: Equipped[] = [];
 let selectMode: null | { kind: 'swap' | 'sweep'; slot: Equipped; need: number; chosen: string[] } = null;
 let prevTurnStart: GameState | null = null; // 되돌리기: 내 직전 차례가 시작될 때 상태
 let curTurnStart: GameState | null = null;
 const itemOf = (id: string) => ITEMS.find((x) => x.id === id)!;
-try { const v = JSON.parse(localStorage.getItem('mg-picked') || '[]'); if (Array.isArray(v)) picked = v.filter((x) => (MAGIC_IDS as readonly string[]).includes(x)); } catch { /* 무시 */ }
+picked = items.loadLoadout();
+items.setLookup((id) => allCards.get(id));
 
 function ownedMagic() { return MAGIC_IDS.filter((id) => bestGrade(id) >= 0); }
 
 function openMagicPick() {
-  picked = picked.filter((id) => bestGrade(id) >= 0).slice(0, 2);
+  picked = items.sanitize(picked);
   const box = $('mp-grid'); box.innerHTML = '';
-  const own = ownedMagic();
-  $('mp-empty').hidden = own.length > 0;
-  for (const id of own) {
-    const it = itemOf(id); const g = bestGrade(id);
-    const b = document.createElement('button');
-    b.type = 'button'; b.className = 'mp-item' + (picked.includes(id) ? ' on' : '');
-    b.innerHTML = `<div class="mp-card">${itemArt(it, g)}</div><div class="mp-name">${it.name} ${gradeBadge(g)}</div><div class="mp-desc">${it.effect(g)}</div>`;
-    b.addEventListener('click', () => {
-      sfx.click();
-      if (picked.includes(id)) picked = picked.filter((x) => x !== id);
-      else if (picked.length < 2) picked = [...picked, id];
-      else { banner('최대 2장'); return; }
-      openMagicPick();
-    });
-    box.append(b);
+  const ownAny = ITEMS.some((it) => bestGrade(it.id) >= 0);
+  $('mp-empty').hidden = ownAny;
+  for (const cat of Object.keys(CATEGORY_LABEL) as Category[]) {
+    const own = ITEMS.filter((it) => it.category === cat && bestGrade(it.id) >= 0);
+    if (!own.length) continue;
+    const n = picked.filter((id) => items.catOf(id) === cat).length;
+    const head = document.createElement('div'); head.className = 'mp-cat';
+    head.innerHTML = `<b>${CATEGORY_LABEL[cat]}</b><span>${n} / ${EQUIP_LIMITS[cat]}</span>`;
+    box.append(head);
+    for (const it of own) {
+      const id = it.id; const g = bestGrade(id);
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'mp-item' + (picked.includes(id) ? ' on' : '');
+      b.innerHTML = `<div class="mp-card">${itemArt(it, g)}</div><div class="mp-name">${it.name} ${gradeBadge(g)}</div><div class="mp-desc">${it.effect(g)}</div>`;
+      b.addEventListener('click', () => {
+        sfx.click();
+        if (picked.includes(id)) picked = picked.filter((x) => x !== id);
+        else {
+          const why = items.canAdd(picked, id);
+          if (why) {
+            // 같은 분류가 꽉 찼으면(한도 1) 바꿔 끼운다
+            if (EQUIP_LIMITS[cat] === 1 && !why.includes('배수')) picked = [...picked.filter((x) => items.catOf(x) !== cat), id];
+            else { banner(why); return; }
+          } else picked = [...picked, id];
+        }
+        openMagicPick();
+      });
+      box.append(b);
+    }
   }
-  $('mp-count').textContent = `${picked.length} / 2`;
+  $('mp-count').textContent = `${picked.length}개 장착`;
   $('magic-pick').hidden = false;
 }
 
-/** 판 시작: 고른 매직 카드를 장착하고, 방패·점수 2배 같은 지속 효과는 발동 확률을 굴린다 */
+/** 판 시작: 고른 주문 카드를 장착하고, 방패·점수 2배 같은 지속 효과와 나머지 아이템 효과를 적용한다 */
 function equipForGame(): string[] {
   const notes: string[] = [];
-  equipped = picked.filter((id) => bestGrade(id) >= 0).map((id) => {
-    const g = bestGrade(id);
-    return { id, g, uses: magicParams(id, g).uses };
+  const run = items.current();
+  const spells = (run?.slots ?? []).filter((x) => MAGIC_SET.has(x.id));
+  let extraGiven = !items.gourdExtraUse();
+  equipped = spells.map(({ id, g }) => {
+    let uses = magicParams(id as MagicId, g).uses;
+    if (!extraGiven && uses === 1) { uses = 2; extraGiven = true; notes.push(`호리병 · ${itemOf(id).name} +1회`); }
+    return { id: id as MagicId, g, uses };
   });
+  let shield = 0; const patch: { noPibak?: boolean; noGwangbak?: boolean; double?: boolean } = {};
   for (const e of equipped) {
     const p = magicParams(e.id, e.g) as { chancePct: number; shield?: number; noPibak?: boolean; noGwangbak?: boolean };
-    const ok = Math.random() * 100 < p.chancePct;
+    const ok = Math.random() * 100 < Math.min(100, p.chancePct + items.spellBonus());
     if (e.id === 'shield') {
-      if (ok) { s = setMagicState(s, ME, { shield: p.shield, noPibak: p.noPibak, noGwangbak: p.noGwangbak }); notes.push(`방패 ${p.shield}회${p.noPibak ? '·피박' : ''}${p.noGwangbak ? '·광박' : ''}`); }
-      else notes.push('방패 불발');
+      if (ok) { shield = p.shield ?? 0; patch.noPibak = p.noPibak; patch.noGwangbak = p.noGwangbak; notes.push(`금강 방패 ${p.shield}회${p.noPibak ? '·피박' : ''}${p.noGwangbak ? '·광박' : ''}`); }
+      else notes.push('금강 방패 불발');
     }
     if (e.id === 'double') {
-      if (ok) { s = setMagicState(s, ME, { double: true }); notes.push('점수 2배 대기'); } else notes.push('점수 2배 불발');
+      if (ok) { patch.double = true; notes.push('황금 배수 대기'); } else notes.push('황금 배수 불발');
     }
   }
+  s = items.begin(s, shield, patch);
+  notes.push(...(run?.notes ?? []));
+  applyCosmetics();
   selectMode = null; prevTurnStart = null; curTurnStart = s;
   return notes;
+}
+
+/** 꾸미기: 카드 뒷면·판 테마·먹기 이펙트·이름표 테두리·효과음 팩 (능력치 없음) */
+function applyCosmetics() {
+  const tier = (id: string) => { const g = items.cosmetic(id); return g < 0 ? '' : String(Math.min(4, Math.floor(g / 2))); };
+  const b = document.body.dataset;
+  b.cb = tier('cardback'); b.theme = tier('theme'); b.fx = tier('effect'); b.frame = tier('frame');
+  sfx.setPack(items.cosmetic('voice'));
 }
 
 function renderMagicBar(view: GameState) {
@@ -362,7 +446,20 @@ function renderMagicBar(view: GameState) {
     b.addEventListener('click', () => useMagic(e));
     bar.append(b);
   }
-  bar.hidden = !equipped.length;
+  // 쌍둥이 그림자(정령): 내 차례에 더미 한 번 더 뒤집기
+  const tf = items.twoflipInfo();
+  if (items.isOn('twoflip') && tf) {
+    const it = itemOf('twoflip'); const g = bestGrade('twoflip');
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'mbar-btn';
+    b.innerHTML = `<span class="mbar-card">${itemArt(it, g)}</span><span class="mbar-n">${tf.left}</span>`;
+    b.title = tf.turn < tf.from ? `${it.name} · ${tf.from}턴째부터` : `${it.name} · 더미 한 번 더 뒤집기 (${tf.left}회)`;
+    b.setAttribute('aria-label', b.title);
+    b.disabled = !live || !items.canExtraFlip(view);
+    b.addEventListener('click', () => extraFlip());
+    bar.append(b);
+  }
+  bar.hidden = !bar.children.length;
   // 고르는 중이면 대상 표시
   document.body.classList.toggle('selecting', !!selectMode);
   if (selectMode) {
@@ -398,7 +495,7 @@ function canUndo(e: Equipped) {
 function rollMagic(e: Equipped): boolean {
   const p = magicParams(e.id, e.g) as { chancePct: number };
   e.uses -= 1;
-  if (Math.random() * 100 < p.chancePct) return true;
+  if (Math.random() * 100 < Math.min(100, p.chancePct + items.spellBonus())) return true;
   banner(`${itemOf(e.id).name} 불발`); sfx.lose();
   render(s);
   return false;
@@ -420,7 +517,7 @@ async function useMagic(e: Equipped) {
   }
   if (e.id === 'undo') {
     if (!canUndo(e) || !rollMagic(e)) return;
-    s = structuredClone(prevTurnStart!);
+    s = items.recompute(structuredClone(prevTurnStart!));
     curTurnStart = s; prevTurnStart = null;
     $('feed').innerHTML = '<b>되돌리기</b> · 내 직전 차례로 돌아갔습니다';
     banner('되돌리기!'); sfx.magic();
@@ -448,11 +545,31 @@ async function useMagic(e: Equipped) {
   void it;
 }
 
+async function extraFlip() {
+  if (busy || !items.canExtraFlip(s)) return;
+  sfx.unlock();
+  const run = items.current()!;
+  items.markExtraFlip();
+  if (Math.random() * 100 >= items.CH[run.g.twoflip]) { banner('쌍둥이 그림자 불발'); sfx.lose(); render(s); return; }
+  const prev = s;
+  const top = s.deck[0].id;
+  const next = items.after(prev, magicExtraFlip(prev, ME)).state;
+  busy = true;
+  banner('쌍둥이 그림자!'); sfx.magic(); sfx.flip();
+  const got = next.events.slice(prev.events.length).find((e) => e.type === 'capture');
+  $('feed').innerHTML = `<b>쌍둥이 그림자</b> · 더미에서 ${cardName(byId(top))}${got && got.type === 'capture' ? ` → ${got.cards.length}장 먹음` : ' → 바닥에 놓음'}`;
+  s = next;
+  curTurnStart = s;
+  await show(s, { deck: new Set([top]) }, MOVE + BEAT);
+  if (got) sfx.capture(2);
+  busy = false; render(s);
+}
+
 async function pickSwap(id: string) {
   if (!selectMode || selectMode.kind !== 'swap') return;
   const top = s.deck[0].id;
   selectMode = null;
-  s = magicSwap(s, ME, id);
+  s = items.recompute(magicSwap(s, ME, id));
   $('feed').innerHTML = `<b>패 바꾸기</b> · ${cardName(byId(id))} ↔ ${cardName(byId(top))}`;
   banner('패 바꾸기!'); sfx.magic();
   busy = true;
@@ -467,7 +584,7 @@ async function pickSweep(id: string) {
   const ids = selectMode.chosen;
   selectMode = null;
   const before = snapshot();
-  s = magicSweep(s, ME, ids);
+  s = items.recompute(magicSweep(s, ME, ids));
   $('feed').innerHTML = `<b>바닥 정리</b> · ${ids.map((x) => cardName(byId(x))).join(', ')} → 더미 밑`;
   banner('바닥 정리!'); sfx.magic();
   // 바닥에서 더미로 날아가는 연출
@@ -740,11 +857,12 @@ function describe(events: GameEvent[]): string {
  * 1) 낸 패(폭탄이면 3장)가 바닥 같은 월 위로 → 2) 더미에서 뒤집은 패가 바닥으로 → 3) 먹은 패가 트레이로.
  */
 async function perform(a: Action) {
-  if (busy) return;
+  if (busy || s.phase === 'ended') return;
   busy = true;
   const no = gameNo;
   const prev = s;
-  const next = applyAction(prev, a);
+  const ia = items.after(prev, applyAction(prev, a));
+  const next = ia.state;
   const evs = next.events.slice(prev.events.length);
   const T = (e: GameEvent) => e.type as string; // 엔진에 새 이벤트가 붙어도 화면이 안전하게 읽도록
   const who = prev.turn;
@@ -841,6 +959,7 @@ async function perform(a: Action) {
     if (no !== gameNo) return;
   }
   if (evs.some((e) => e.type === 'steal')) { sfx.steal(); }
+  for (const n of ia.notes) { banner(n.text); sfx.magic(); $('feed').innerHTML = `<b>아이템</b> · ${n.text}`; await wait(700); if (no !== gameNo) return; }
   const goEv = evs.find((e) => e.type === 'go');
   if (goEv && goEv.type === 'go') { banner(`${goEv.goCount}고!`); sfx.go(); sfx.buzz(30); }
   if (evs.some((e) => e.type === 'stop')) { banner('스톱!'); sfx.stop(); }
@@ -907,13 +1026,15 @@ function showResult() {
     if (r.shakeMultiplier > 1) parts.push(`흔들 ×${r.shakeMultiplier}`);
     if ((x.bakMultiplier ?? 1) > 1) parts.push(`박 ×${x.bakMultiplier}`);
     if ((x.carry ?? 1) > 1) parts.push(`나가리 ×${x.carry}`);
-    if ((r as unknown as { magicDouble?: boolean }).magicDouble) parts.push('매직 ×2');
+    if ((r as unknown as { magicDouble?: boolean }).magicDouble) parts.push('황금 배수 ×2');
     $('res-formula').textContent = `${parts.join(' · ')} = ${r.finalScore}점`;
     if (x.bak?.pi) badge('피박');
     if (x.bak?.gwang) badge('광박');
     if (x.bak?.meong) badge('멍따');
     const mx = r as unknown as { magicDouble?: boolean; magicBlocked?: string[] };
-    if (mx.magicDouble) badge('매직 점수 2배');
+    if (mx.magicDouble) badge('황금 배수 ×2');
+    const myIp = (s.itemPts?.[r.winner] ?? []).reduce((a2, x2) => a2 + x2.points, 0);
+    if (myIp) badge(`아이템 +${myIp}점`);
     for (const b of mx.magicBlocked ?? []) badge(b === 'pi' ? '방패: 피박 막음' : '방패: 광박 막음');
     if (r.shakeMultiplier > 1) badge('흔들기');
   }
@@ -921,8 +1042,10 @@ function showResult() {
   ([ME, AI] as PlayerId[]).forEach((p) => {
     const col = document.createElement('div');
     col.className = 'res-col' + (r.type === 'win' && r.winner === p ? ' win' : '');
-    const items = sc[p].details.map((d) => `<li><span>${d.label}</span><span>${d.points}</span></li>`).join('') || '<li><span>점수 없음</span><span></span></li>';
-    col.innerHTML = `<h3>${p === ME ? '나' : '상대'}</h3><div class="tot">${sc[p].total}점</div><ul>${items}</ul>`;
+    const ip = s.itemPts?.[p] ?? [];
+    const ipSum = ip.reduce((a2, x2) => a2 + x2.points, 0);
+    const lines = [...sc[p].details, ...ip.map((d) => ({ ...d, label: `${d.label} (아이템)` }))].map((d) => `<li><span>${d.label}</span><span>${d.points}</span></li>`).join('') || '<li><span>점수 없음</span><span></span></li>';
+    col.innerHTML = `<h3>${p === ME ? '나' : '상대'}</h3><div class="tot">${sc[p].total}점${ipSum ? `<small> + 아이템 ${ipSum}</small>` : ''}</div><ul>${lines}</ul>`;
     grid.append(col);
   });
   $('btn-new').textContent = carry > 1 ? `새 판 (×${carry})` : '새 판';
@@ -934,12 +1057,13 @@ function showResult() {
     const got = r.finalScore * COIN_PER_POINT; earn(got);
     rc.innerHTML = `<i class="coin-ico" aria-hidden="true"></i> +${fmt(got)} 엽전 <small>보유 ${fmt(coins())}</small>`; rc.hidden = false; rc.classList.remove('minus');
   } else if (r.type === 'win') {
-    const lost = lose(r.finalScore * COIN_PER_POINT);
-    rc.innerHTML = `<i class="coin-ico" aria-hidden="true"></i> -${fmt(lost)} 엽전 <small>보유 ${fmt(coins())}</small>`; rc.hidden = false; rc.classList.add('minus');
+    const guard = items.lossAfterGuard(r.finalScore, s.goCount[ME]);
+    const lost = lose(guard.lost * COIN_PER_POINT);
+    rc.innerHTML = `<i class="coin-ico" aria-hidden="true"></i> -${fmt(lost)} 엽전 <small>${guard.saved ? `${guard.why.join(' · ')} → ${guard.saved}점 덜 잃음 · ` : ''}보유 ${fmt(coins())}</small>`; rc.hidden = false; rc.classList.add('minus');
   } else rc.hidden = true;
   // 매직 카드(수집품) 획득 판정 — 테스트용 봇전 드롭
   const outcome = r.type === 'nagari' ? 'nagari' : r.winner === ME ? 'win' : 'lose';
-  const drop = firstTime ? rollDrop(outcome, level) : null;
+  const drop = firstTime ? rollDrop(outcome, level, Math.random, items.dropBonus()) : null;
   if (drop) setTimeout(() => showReward(drop), 900);
 }
 
@@ -1047,7 +1171,9 @@ async function newGame() {
   const no = gameNo;
   busy = false;
   const seed = Math.floor(Math.random() * 1e9).toString(36);
-  s = createGame(seed, { carry } as Parameters<typeof createGame>[1]);
+  const itemOpts = items.prepare(picked);
+  s = createGame(seed, { carry, ...itemOpts } as Parameters<typeof createGame>[1]);
+  for (const c of [...s.hands[0], ...s.hands[1], ...s.floor, ...s.deck]) allCards.set(c.id, c);
   const magicNotes = equipForGame();
   slotOf.clear();
   for (const c of [...s.hands[0], ...s.hands[1], ...s.floor, ...s.deck, ...s.captured[0], ...s.captured[1]]) allCards.set(c.id, c);
@@ -1060,7 +1186,14 @@ async function newGame() {
   render(s);
   await dealIn(no);
   if (no !== gameNo) return;
-  if (magicNotes.length) { $('feed').innerHTML = `<b>매직</b> · ${magicNotes.join(' · ')}`; sfx.magic(); }
+  if (magicNotes.length) { $('feed').innerHTML = `<b>아이템</b> · ${magicNotes.join(' · ')}`; sfx.magic(); }
+  const seer = items.current()?.seerCards ?? [];
+  if (seer.length) {
+    busy = true; render(s);
+    await peekShow(`달토끼 점쟁이 · 더미 위 ${seer.length}장 (위에서부터)`, seer, 3);
+    busy = false; render(s);
+    if (no !== gameNo) return;
+  }
   // 총통: 분배하자마자 같은 월 4장 → 보여 주고 바로 끝
   const ct = s.events.find((e) => (e.type as string) === 'chongtong') as (GameEvent & { player: PlayerId; cards: string[] }) | undefined;
   if (ct) {
@@ -1123,7 +1256,7 @@ $('btn-level').addEventListener('click', () => {
 });
 $('sp-cancel').addEventListener('click', () => { $('special').hidden = true; });
 $('btn-start').addEventListener('click', () => { sfx.unlock(); sfx.click(); sfx.startBgm(); openMagicPick(); });
-$('btn-mp-go').addEventListener('click', () => { try { localStorage.setItem('mg-picked', JSON.stringify(picked)); } catch { /* 무시 */ } $('magic-pick').hidden = true; $('home').hidden = true; newGame(); });
+$('btn-mp-go').addEventListener('click', () => { items.saveLoadout(picked); $('magic-pick').hidden = true; $('home').hidden = true; newGame(); });
 $('btn-mp-none').addEventListener('click', () => { picked = []; $('magic-pick').hidden = true; $('home').hidden = true; newGame(); });
 initGacha(() => syncHome());
 $('btn-gacha').addEventListener('click', () => { sfx.unlock(); sfx.click(); sfx.startBgm(); openGacha(); });
