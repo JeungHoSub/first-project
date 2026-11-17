@@ -6,7 +6,7 @@ description: 수익화 아이디어 프로젝트(money-ideas)의 아침·점심�
 # 수익화 아이디어 브리핑
 
 ## 공통 순서
-1. `VISION.md`, `projects/money-ideas/brief.md`, `outputs/feedback.md`, `outputs/idea-pool.md`, 가장 최근 브리핑을 읽는다.
+1. `VISION.md`, `style/profile.md`, `projects/money-ideas/brief.md`, `outputs/feedback.md`, `outputs/idea-pool.md`, 가장 최근 브리핑을 읽는다.
 2. 회차별 조사(아래). 웹검색은 **5~8회 이내**.
 3. `outputs/briefings/YYYY-MM-DD-{am|noon|pm}.md`로 저장, `idea-pool.md` 갱신, `log.md`에 한 줄 기록.
 4. 커밋·푸시한다.

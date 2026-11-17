@@ -9,7 +9,7 @@ model: sonnet
 
 ## 작업 전 (반드시)
 1. `VISION.md` — 판단 기준. "가치를 만들어 판다", "1~10단계를 시스템화·자동화한다".
-2. `style/style-guide.md`
+2. `style/style-guide.md`, `style/profile.md` — 사용자의 강점(공공조달·보안개발·식음료 R&D)과 "시간을 줄이는 사업" 선호를 점수에 반영
 3. `projects/money-ideas/brief.md`, `log.md` 마지막 항목
 4. `outputs/feedback.md`, `outputs/idea-pool.md` — 이미 나온 아이디어는 다시 내지 않는다. 탈락 사유는 다음 발굴에 반영.
 
