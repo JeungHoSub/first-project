@@ -769,3 +769,5 @@ body.selecting #hand.locked .card { filter: none; }
   .tk-btn { min-width: 50px; padding: 6px 7px; }
 }
 .gr-results[data-n="10"] .gr-name, .gr-results[data-n="10"] .gr-cat { display: none; }
+.id-stack { font-size: .74rem; color: var(--muted); line-height: 1.5; margin: 4px 0 8px; padding: 8px 10px; border-radius: 8px; background: rgba(255,255,255,.04); }
+.id-stack:empty { display: none; }

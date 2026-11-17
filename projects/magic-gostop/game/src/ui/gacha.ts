@@ -47,7 +47,7 @@ function renderTickets() {
     el.style.setProperty('--tc', t.hue);
     const hi = GRADES.reduce((a, g, gi) => a + (gi >= 6 ? t.rates[g] : 0), 0);
     const bar = GRADES.map((g, gi) => (t.rates[g] > 0 ? `<i style="flex:${t.rates[g]};background:${gcol(gi)}"></i>` : '')).join('');
-    const sub = [t.minGrade ? `${t.minGrade} 이상 보장` : t.desc, hi < 100 ? `S↑ ${Math.round(hi * 100) / 100}%` : ''].filter(Boolean).join(' · ');
+    const sub = [t.minGrade ? `${t.minGrade} 이상 보장` : '보장 없음', hi < 100 ? `S↑ ${Math.round(hi * 100) / 100}%` : ''].filter(Boolean).join(' · ');
     el.innerHTML = `<div class="tk-icon">${ticketIcon(t, i)}</div>
       <div class="tk-info"><b>${t.name}</b><small>${sub}</small><div class="tk-bar" title="등급 분포">${bar}</div></div>
       <div class="tk-btns">${[1, 10].map((n) => {

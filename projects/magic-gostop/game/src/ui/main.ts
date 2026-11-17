@@ -960,7 +960,7 @@ function renderCollection() {
   $('coll-count').textContent = `${ownedKinds()} / ${ITEMS.length}`;
   const grid = $('coll-grid'); grid.innerHTML = '';
   const total = ITEMS.reduce((a, m) => a + m.weight, 0);
-  for (const cat of ['magic', 'character', 'event'] as Category[]) {
+  for (const cat of Object.keys(CATEGORY_LABEL) as Category[]) {
     const head = document.createElement('div'); head.className = 'coll-cat'; head.textContent = CATEGORY_LABEL[cat];
     grid.append(head);
     const row = document.createElement('div'); row.className = 'coll-row';
@@ -994,6 +994,7 @@ function showItem(it: ItemDef) {
     const n = own[g] ?? 0;
     return `<li class="${n ? 'have' : ''}">${gradeBadge(i)}<span>${gi < 0 && i > 0 ? '???' : it.effect(i)}</span><b>${n ? `×${n}` : ''}</b></li>`;
   }).join('');
+  $('id-stack').textContent = it.stack ? `중첩 규칙 · ${it.stack}` : '';
   $('item-detail').hidden = false;
 }
 
