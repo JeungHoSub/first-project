@@ -131,6 +131,45 @@
 </div>
 
 <div class="home" id="home">
+<div class="home-bg" aria-hidden="true">
+  <svg viewBox="0 0 800 800" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="hb-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#10161f"/><stop offset=".55" stop-color="#1a2a2c"/><stop offset="1" stop-color="#121a18"/></linearGradient>
+      <radialGradient id="hb-moon" cx=".45" cy=".42" r=".6"><stop offset="0" stop-color="#fbf6ea"/><stop offset="1" stop-color="#d9cba6"/></radialGradient>
+      <radialGradient id="hb-sun" cx=".45" cy=".42" r=".6"><stop offset="0" stop-color="#c8665a"/><stop offset="1" stop-color="#8a3a32"/></radialGradient>
+      <radialGradient id="hb-glow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#f3ead8" stop-opacity=".22"/><stop offset="1" stop-color="#f3ead8" stop-opacity="0"/></radialGradient>
+      <linearGradient id="hb-peak" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6e9a8e"/><stop offset=".5" stop-color="#3d6660"/><stop offset="1" stop-color="#1c3330"/></linearGradient>
+      <linearGradient id="hb-hill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4b6f5a"/><stop offset="1" stop-color="#1a2b22"/></linearGradient>
+      <linearGradient id="hb-sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a4a5a"/><stop offset="1" stop-color="#101c24"/></linearGradient>
+      <pattern id="hb-wave" width="56" height="26" patternUnits="userSpaceOnUse">
+        <path d="M0 22 C10 8 24 8 28 18 C31 25 40 25 42 18 C44 11 36 9 34 14" fill="none" stroke="#e9e2cf" stroke-opacity=".22" stroke-width="1.2"/>
+      </pattern>
+    </defs>
+    <rect width="800" height="800" fill="url(#hb-sky)"/>
+    <circle cx="250" cy="200" r="90" fill="url(#hb-glow)"/>
+    <circle cx="250" cy="200" r="34" fill="url(#hb-moon)" opacity=".92"/>
+    <circle cx="550" cy="200" r="80" fill="url(#hb-glow)" opacity=".6"/>
+    <circle cx="550" cy="200" r="32" fill="url(#hb-sun)" opacity=".9"/>
+    <g class="hb-clouds" fill="none" stroke="#e9e2cf" stroke-opacity=".28" stroke-width="1.4">
+      <path d="M300 300 c10 -14 30 -14 36 -2 c8 -12 28 -10 30 4 c14 -4 22 10 10 16 c-20 6 -60 6 -80 0 c-10 -4 -4 -16 4 -18 z"/>
+      <path d="M450 280 c10 -12 26 -12 32 -2 c8 -10 24 -8 26 4 c12 -2 18 8 8 13 c-18 5 -50 5 -66 0 c-8 -3 -4 -13 0 -15 z"/>
+    </g>
+    <path d="M60 560 L150 420 L200 470 L270 350 L330 450 L400 290 L470 450 L530 350 L600 470 L650 420 L740 560 Z" fill="url(#hb-peak)"/>
+    <path d="M150 420 L162 446 L176 440 L200 470 M270 350 L284 388 L300 380 L330 450 M400 290 L416 336 L434 328 L470 450 M530 350 L544 388 L560 382 L600 470 M650 420 L662 446" fill="none" stroke="#e9e2cf" stroke-opacity=".35" stroke-width="1.6"/>
+    <path d="M-20 610 C80 530 160 560 230 520 C300 485 340 540 400 520 C470 495 520 540 590 515 C660 490 720 545 820 520 V660 H-20 Z" fill="url(#hb-hill)"/>
+    <g stroke="#e9e2cf" stroke-linecap="round"><path d="M330 455 V560" stroke-opacity=".45" stroke-width="2"/><path d="M470 455 V560" stroke-opacity=".45" stroke-width="2"/></g>
+    <g stroke="#6e3a2a" stroke-linecap="round" fill="none">
+      <path d="M110 720 C116 660 104 610 118 560 C126 530 118 508 130 482" stroke-width="10"/>
+      <path d="M118 580 C140 570 156 562 176 558" stroke-width="5"/>
+      <path d="M690 720 C684 668 696 620 680 578 C672 556 680 532 670 508" stroke-width="10"/>
+      <path d="M682 600 C660 590 642 586 626 584" stroke-width="5"/>
+    </g>
+    <g fill="#2c4636"><ellipse cx="134" cy="478" rx="34" ry="11"/><ellipse cx="178" cy="552" rx="28" ry="9"/><ellipse cx="122" cy="452" rx="22" ry="8"/>
+      <ellipse cx="666" cy="504" rx="34" ry="11"/><ellipse cx="624" cy="578" rx="28" ry="9"/><ellipse cx="680" cy="478" rx="22" ry="8"/></g>
+    <path d="M-20 640 C100 615 200 650 300 628 C400 606 480 648 580 630 C680 612 740 640 820 628 V800 H-20 Z" fill="url(#hb-sea)"/>
+    <rect x="-20" y="630" width="840" height="170" fill="url(#hb-wave)"/>
+  </svg>
+</div>
   <div class="coin-chip home-coin"><i class="coin-ico" aria-hidden="true"></i><span class="coin-amt">0</span></div>
   <div class="home-inner">
     <div class="home-fan" id="home-fan" aria-hidden="true"></div>

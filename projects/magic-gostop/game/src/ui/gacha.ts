@@ -20,7 +20,6 @@ const badge = (gi: number) => {
   const c = GRADE_COLOR[GRADES[gi]];
   return `<span class="gbadge${c === 'rainbow' ? ' rainbow' : ''}" style="${c === 'rainbow' ? '' : `--gc:${c}`}">${GRADES[gi]}</span>`;
 };
-const ROMAN = ['Ⅰ', 'Ⅱ', 'Ⅲ', 'Ⅳ', 'Ⅴ'];
 const S_INDEX = 6; // S
 
 let onChange: () => void = () => {};
@@ -60,42 +59,37 @@ function syncCoins() {
 // ---------- 뽑기권 그림 ----------
 let tkSeq = 0;
 function ticketArt(t: Ticket, i: number, mini = false): string {
+  // 한지 바탕 위에 단계 색 띠 + 얇은 금선 + 붉은 낙관. 화려함보다 절제된 고급감.
   const id = `tk${++tkSeq}`;
-  const dark = ['#3a1e0e', '#2a3038', '#3d2a06', '#08362a', '#3e0a12'][i];
-  const ink = ['#fff1e0', '#ffffff', '#fff6d8', '#e8fff6', '#fff0f0'][i];
+  const band = ['#9a6a45', '#8e98a2', '#b8923e', '#5f8f7e', '#7a2e33'][i];
+  const word = ['동', '은', '금', '옥', '용'][i];
   const motif = [
-    // 동전: 엽전 무늬
-    `<g opacity=".18" fill="none" stroke="${ink}" stroke-width="2">${[40, 110, 180].map((x) => `<circle cx="${x}" cy="70" r="26"/><rect x="${x - 7}" y="63" width="14" height="14"/>`).join('')}</g>`,
-    // 은전: 구름
-    `<g opacity=".2" fill="none" stroke="${ink}" stroke-width="2.2">${[[40, 50], [130, 95], [190, 40]].map(([x, y]) => `<path d="M${x - 30} ${y} q10 -18 24 -6 q8 -16 24 -2 q16 -4 14 12 q-30 8 -62 -4z"/>`).join('')}</g>`,
-    // 금전: 물결
-    `<g opacity=".2" fill="none" stroke="${ink}" stroke-width="2">${[30, 60, 90, 120].map((y) => `<path d="M0 ${y} q20 -14 40 0 t40 0 t40 0 t40 0 t40 0 t40 0"/>`).join('')}</g>`,
-    // 옥패: 매화
-    `<g opacity=".22" fill="${ink}">${[[46, 44], [120, 96], [196, 52]].map(([x, y]) => [0, 72, 144, 216, 288].map((a) => `<circle cx="${x + 9 * Math.cos((a * Math.PI) / 180)}" cy="${y + 9 * Math.sin((a * Math.PI) / 180)}" r="6"/>`).join('')).join('')}</g>`,
-    // 용옥: 용 비늘
-    `<g opacity=".2" fill="none" stroke="${ink}" stroke-width="1.8">${Array.from({ length: 5 }, (_, r) => Array.from({ length: 9 }, (_, c) => `<path d="M${c * 28 + (r % 2) * 14} ${r * 28 + 14} a14 14 0 0 1 28 0"/>`).join('')).join('')}</g>`,
+    `<g fill="none" stroke="${band}" stroke-opacity=".22" stroke-width="1.4">${[70, 130, 190].map((x) => `<circle cx="${x}" cy="74" r="20"/><rect x="${x - 6}" y="68" width="12" height="12"/>`).join('')}</g>`,
+    `<g fill="none" stroke="${band}" stroke-opacity=".25" stroke-width="1.4">${[[80, 60], [170, 92]].map(([x, y]) => `<path d="M${x - 30} ${y} c8 -12 20 -12 24 -2 c6 -10 20 -8 22 4 c12 -2 16 8 8 12 c-18 4 -40 4 -54 -2 z"/>`).join('')}</g>`,
+    `<g fill="none" stroke="${band}" stroke-opacity=".22" stroke-width="1.2">${[50, 74, 98].map((y) => `<path d="M30 ${y} q20 -10 40 0 t40 0 t40 0 t40 0 t40 0"/>`).join('')}</g>`,
+    `<g fill="${band}" fill-opacity=".2">${[[90, 60], [180, 96]].map(([x, y]) => [0, 72, 144, 216, 288].map((a) => `<circle cx="${x + 8 * Math.cos((a * Math.PI) / 180)}" cy="${y + 8 * Math.sin((a * Math.PI) / 180)}" r="5"/>`).join('')).join('')}</g>`,
+    `<g fill="none" stroke="${band}" stroke-opacity=".22" stroke-width="1.2">${Array.from({ length: 4 }, (_, r) => Array.from({ length: 8 }, (_, c) => `<path d="M${30 + c * 26 + (r % 2) * 13} ${30 + r * 24} a13 13 0 0 1 26 0"/>`).join('')).join('')}</g>`,
   ][i];
   return `<svg class="tx-svg" viewBox="0 0 320 140" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
   <defs>
-    <linearGradient id="${id}b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${t.hue}"/><stop offset=".55" stop-color="${t.hue}" stop-opacity=".82"/><stop offset="1" stop-color="${dark}"/></linearGradient>
-    <linearGradient id="${id}e" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset=".5" stop-color="${t.hue}"/><stop offset="1" stop-color="#fff" stop-opacity=".7"/></linearGradient>
-    <radialGradient id="${id}m" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#fff"/><stop offset=".45" stop-color="${t.hue}"/><stop offset="1" stop-color="${dark}"/></radialGradient>
+    <linearGradient id="${id}p" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f7f1e3"/><stop offset="1" stop-color="#e6dcc4"/></linearGradient>
+    <linearGradient id="${id}g" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#a8823a"/><stop offset=".5" stop-color="#e9cf8a"/><stop offset="1" stop-color="#a8823a"/></linearGradient>
     <clipPath id="${id}c"><path d="M14 4 H306 a10 10 0 0 1 10 10 V56 a14 14 0 0 0 0 28 V126 a10 10 0 0 1 -10 10 H14 a10 10 0 0 1 -10 -10 V84 a14 14 0 0 0 0 -28 V14 a10 10 0 0 1 10 -10 Z"/></clipPath>
   </defs>
   <g clip-path="url(#${id}c)">
-    <rect width="320" height="140" fill="url(#${id}b)"/>
+    <rect width="320" height="140" fill="url(#${id}p)"/>
     ${motif}
-    <rect x="0" y="0" width="320" height="140" fill="none" stroke="url(#${id}e)" stroke-width="7"/>
-    <rect x="12" y="12" width="296" height="116" rx="6" fill="none" stroke="${ink}" stroke-opacity=".55" stroke-width="1.2"/>
-    <rect x="16" y="16" width="288" height="108" rx="4" fill="none" stroke="${ink}" stroke-opacity=".25" stroke-width="1"/>
-    <line x1="232" y1="14" x2="232" y2="126" stroke="${dark}" stroke-opacity=".55" stroke-width="2" stroke-dasharray="4 5"/>
-    <circle cx="276" cy="70" r="30" fill="url(#${id}m)" stroke="${ink}" stroke-opacity=".8" stroke-width="2"/>
-    <circle cx="276" cy="70" r="23" fill="none" stroke="${dark}" stroke-opacity=".5" stroke-width="1.2" stroke-dasharray="2 3"/>
-    <text x="276" y="80" text-anchor="middle" font-size="28" font-weight="900" fill="${dark}" font-family="serif">${ROMAN[i]}</text>
+    <rect x="0" y="0" width="14" height="140" fill="${band}"/>
+    <rect x="232" y="0" width="88" height="140" fill="${band}" fill-opacity=".1"/>
+    <rect x="22" y="12" width="290" height="116" rx="4" fill="none" stroke="url(#${id}g)" stroke-width="1.2"/>
+    <line x1="232" y1="16" x2="232" y2="124" stroke="${band}" stroke-opacity=".5" stroke-width="1.2" stroke-dasharray="3 4"/>
+    <rect x="252" y="46" width="48" height="48" rx="5" fill="#a5302a" transform="rotate(-6 276 70)"/>
+    <rect x="256" y="50" width="40" height="40" rx="3" fill="none" stroke="#f7f1e3" stroke-opacity=".8" stroke-width="1.5" transform="rotate(-6 276 70)"/>
+    <text x="276" y="80" text-anchor="middle" font-size="26" font-weight="800" fill="#f7f1e3" font-family="Nanum Myeongjo, Noto Serif KR, serif" transform="rotate(-6 276 70)">${word}</text>
   </g>
-  ${mini ? '' : `<text x="30" y="50" font-size="13" font-weight="700" fill="${ink}" fill-opacity=".8" letter-spacing="3">매직고스톱 · 뽑기권</text>
-  <text x="30" y="88" font-size="34" font-weight="900" fill="${ink}" style="paint-order:stroke" stroke="${dark}" stroke-opacity=".45" stroke-width="3">${t.name}</text>
-  <text x="30" y="114" font-size="14" font-weight="700" fill="${ink}" fill-opacity=".9">${t.minGrade ? `${t.minGrade} 등급 이상 보장` : '누구나 가볍게'}</text>`}
+  ${mini ? '' : `<text x="40" y="46" font-size="11" font-weight="700" fill="${band}" letter-spacing="4" font-family="Nanum Myeongjo, Noto Serif KR, serif">매직고스톱 뽑기권</text>
+  <text x="40" y="90" font-size="32" font-weight="800" fill="#2a2018" font-family="Nanum Myeongjo, Noto Serif KR, serif">${t.name}</text>
+  <text x="40" y="114" font-size="12.5" font-weight="700" fill="#6b5a44" font-family="Nanum Myeongjo, Noto Serif KR, serif">${t.minGrade ? `${t.minGrade} 등급 이상 보장` : '보장 없이 가볍게'}</text>`}
 </svg>`;
 }
 
@@ -109,8 +103,7 @@ function renderTickets() {
   hero.dataset.tier = String(sel);
   hero.innerHTML = `<div class="tx-hero-card">${ticketArt(t, sel)}<i class="tx-foil" aria-hidden="true"></i><i class="tx-shine" aria-hidden="true"></i></div>
     <div class="tx-altar" aria-hidden="true"></div>
-    <i class="chorong l" aria-hidden="true"><b>福</b></i><i class="chorong r" aria-hidden="true"><b>運</b></i>
-    <div class="tx-petals" aria-hidden="true">${Array.from({ length: 12 }, (_, i) => `<i style="--x:${(i * 37) % 100}%;--d:${(i * 0.83) % 6}s;--s:${0.6 + ((i * 7) % 5) / 6};--dur:${6 + (i % 4)}s"></i>`).join('')}</div>
+
     <div class="tx-hero-info"><b>${t.name}</b><span>${t.minGrade ? `${t.minGrade} 등급 이상 보장` : '보장 없음'} · S 이상 ${Math.round(GRADES.reduce((a, g, gi) => a + (gi >= S_INDEX ? t.rates[g] : 0), 0) * 100) / 100}%</span></div>`;
   const card = hero.firstElementChild as HTMLElement;
   const tilt = (x: number, y: number) => { card.style.setProperty('--rx', `${(0.5 - y) * 16}deg`); card.style.setProperty('--ry', `${(x - 0.5) * 22}deg`); card.style.setProperty('--mx', `${x * 100}%`); card.style.setProperty('--my', `${y * 100}%`); };
@@ -163,7 +156,7 @@ function renderTickets() {
   $('tx-actions').innerHTML = [1, 10].map((n) => {
     const p = priceOf(t, n);
     return `<button type="button" class="tx-go${n === 10 ? ' ten' : ''}" data-n="${n}" ${coins() < p ? 'disabled' : ''} style="--tc:${t.hue}">
-      <b>${n}회 뽑기</b><span><i class="coin-ico" aria-hidden="true"></i>${fmt(p)}</span>${n === 10 ? '<em>1회 무료</em>' : ''}</button>`;
+      <b>${n}회 뽑기</b><span><i class="coin-ico" aria-hidden="true"></i>${fmt(p)}</span>${n === 10 ? '<em>1회분 덤</em>' : ''}</button>`;
   }).join('');
   $('tx-actions').querySelectorAll<HTMLButtonElement>('.tx-go').forEach((b) => b.addEventListener('click', () => {
     const n = +b.dataset.n!;
@@ -251,10 +244,10 @@ function draw() {
   g.globalCompositeOperation = 'lighter';
   for (const p of fx.parts) {
     const a = Math.max(0, 1 - p.life / p.max) * (p.mode === 'float' ? Math.min(1, p.life * 2) : 1);
-    const col = p.hue != null ? `hsla(${(p.hue + fx.t * 120) % 360},95%,65%,${a})` : hexA(p.color, a);
+    const col = p.hue != null ? `hsla(${(p.hue + fx.t * 60) % 360},40%,74%,${a})` : hexA(p.color, a);
     g.fillStyle = col;
     g.beginPath(); g.arc(p.x, p.y, p.size, 0, Math.PI * 2); g.fill();
-    g.fillStyle = p.hue != null ? `hsla(${(p.hue + fx.t * 120) % 360},95%,65%,${a * 0.18})` : hexA(p.color, a * 0.18);
+    g.fillStyle = p.hue != null ? `hsla(${(p.hue + fx.t * 60) % 360},40%,74%,${a * 0.18})` : hexA(p.color, a * 0.18);
     g.beginPath(); g.arc(p.x, p.y, p.size * 3.2, 0, Math.PI * 2); g.fill();
   }
   for (const b of fx.bolts) {
@@ -283,7 +276,7 @@ async function climax(stage: HTMLElement, gi: number) {
   for (let k = 0; k < 2; k++) { sfx.heartbeat(); await wait(430); }
   if (gi >= 9) {
     fxLayer.innerHTML = `<div class="stars"></div>${['#1f6f8b', '#b3261e', '#e8b84a', '#f3ead8', '#2e7d4f'].map((c, i) => `<i class="beam" style="--c:${c};--x:${10 + i * 20}%;--d:${i * 110}ms"></i>`).join('')}
-      <div class="banner"><span>천하제일</span></div>`;
+      <div class="banner"><span>신품</span></div>`;
     await wait(120);
     fxLayer.classList.add('go'); sfx.chime(9);
     for (let k = 0; k < 5; k++) setTimeout(() => sfx.chime(5 + k), 110 * k);

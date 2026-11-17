@@ -175,139 +175,130 @@ export function buzz(ms: number | number[]) {
   try { navigator.vibrate?.(ms); } catch { /* 무시 */ }
 }
 
-// ---------- 배경음악: 자진모리 장단(장구·꽹과리) + 태평소 + 가야금, 합성으로 무한 반복 ----------
+// ---------- 배경음악: 계면조 가야금 산조풍(농현·떠는음·꺾는음) + 대금 + 은은한 장구 + 지속음, 잔향 ----------
+// 중국풍으로 들리기 쉬운 평조 5음·꽹과리·태평소 대신, 한국 특유의 계면조(미·라·시·레)와 농현으로 차분하고 고급스럽게.
 let bgmOn = true;
 try { bgmOn = localStorage.getItem('mg-bgm') !== '0'; } catch { /* 무시 */ }
 let bgmTimer: number | null = null;
 let bgmGain: GainNode | null = null;
+let bgmBus: GainNode | null = null; // 악기 → 이 버스 → (원음 + 잔향) → bgmGain
 let nextT = 0;
 let step = 0;
-// 평조(솔라도레미) 음계. 0=황(G3) …
-const SCALE = [196.0, 220.0, 261.6, 293.7, 329.6, 392.0, 440.0, 523.3, 587.3, 659.3, 784.0];
-// 굿거리 장단: 한 마디 12칸(3칸씩 4박). 덩=양편, 쿵=북편, 덕=채편, 기=채편 약, 더러러=굴림
-// 자진모리 장단(빠르고 신나는): 한 마디 12칸
-const JANGGU = ['덩', '', '덕', '쿵', '', '덕', '쿵', '', '덕', '더', '러', '러'];
-const JANGGU2 = ['덩', '', '덕', '쿵', '', '덕', '쿵', '', '덕', '쿵', '', '덕'];
-// 꽹과리: 박마다 "갱", 사이 "개"
-const KKWAENG = ['갱', '', '개', '갱', '', '개', '갱', '', '개', '갱', '개', '개'];
-// 대금 선율: [음, 길이(칸)] 8마디 = 96칸. -1 쉼
-// 태평소 선율(신나게): [음, 길이(칸)] 8마디 = 96칸. -1 쉼
-const DAEGEUM: [number, number][] = [
-  [7, 3], [8, 2], [7, 1], [6, 3], [5, 3],
-  [6, 2], [7, 1], [8, 3], [9, 6],
-  [8, 2], [7, 1], [6, 2], [5, 1], [6, 3], [7, 3],
-  [8, 3], [7, 3], [5, 6],
-  [9, 2], [10, 1], [9, 3], [8, 2], [7, 1], [8, 3],
-  [9, 3], [8, 2], [7, 1], [6, 6],
-  [5, 2], [6, 1], [7, 2], [8, 1], [9, 2], [8, 1], [7, 3],
-  [6, 3], [5, 3], [5, 6],
+// 계면조(E): 미 라 시 레 미 …
+const SC = [164.8, 220.0, 246.9, 293.7, 329.6, 440.0, 493.9, 587.3, 659.3];
+// 가야금 선율: [음, 길이(칸), 꾸밈(0 평음 · 1 떠는음 · 2 꺾는음)] 한 마디 12칸 × 8마디
+const GAYA: [number, number, number][] = [
+  [4, 3, 1], [5, 3, 0], [6, 6, 2],
+  [5, 3, 0], [4, 3, 0], [3, 3, 0], [4, 3, 1],
+  [5, 6, 1], [6, 3, 0], [7, 3, 0],
+  [8, 6, 2], [7, 3, 0], [6, 3, 0],
+  [5, 3, 0], [6, 3, 0], [5, 3, 2], [4, 3, 0],
+  [3, 6, 0], [4, 6, 1],
+  [2, 3, 0], [3, 3, 0], [4, 6, 1],
+  [4, 9, 1], [-1, 3, 0],
 ];
-// 가야금 반주: 마디마다 근음 [음]
-const GAYA_ROOT = [2, 4, 2, 5, 4, 2, 4, 2];
+// 대금: 드문드문 길게 (8마디 = 96칸)
+const DAE: [number, number][] = [[-1, 24], [8, 12], [7, 12], [-1, 24], [5, 12], [4, 12]];
 
 export function isBgmOn() { return bgmOn; }
-/** 가야금: 뜯는 소리 + 농현(살짝 흔들며 끌어올림) */
-function pluck(t: number, f: number, vol: number) {
-  const c = ctx!;
-  const o = c.createOscillator(); o.type = 'triangle'; o.frequency.setValueAtTime(f, t);
-  const o2 = c.createOscillator(); o2.type = 'sawtooth'; o2.frequency.setValueAtTime(f, t);
-  const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.setValueAtTime(f * 6, t); lp.frequency.exponentialRampToValueAtTime(f * 1.5, t + 0.4);
-  const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.6);
-  const g2 = c.createGain(); g2.gain.value = 0.35;
-  o.frequency.setValueAtTime(f, t + 0.25); o.frequency.linearRampToValueAtTime(f * 1.018, t + 0.45); o.frequency.linearRampToValueAtTime(f, t + 0.65);
-  o.connect(g); o2.connect(g2).connect(lp).connect(g); g.connect(bgmGain!);
-  o.start(t); o2.start(t); o.stop(t + 1.7); o2.stop(t + 1.7);
+
+function makeReverb(c: AudioContext, sec = 2.8) {
+  const len = Math.floor(c.sampleRate * sec);
+  const buf = c.createBuffer(2, len, c.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = buf.getChannelData(ch);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.6);
+  }
+  const cv = c.createConvolver(); cv.buffer = buf; return cv;
 }
-/** 대금: 숨소리 섞인 긴 소리 + 점점 깊어지는 떨림 */
-function daegeum(t: number, f: number, dur: number, vol: number) {
+/** 가야금: 명주실을 뜯는 둥근 소리. orn 1 = 떠는음(깊은 떨림), 2 = 꺾는음(한 음 아래로 꺾어 내림) */
+function gaya(t: number, f: number, orn: number, dur: number, vol: number) {
   const c = ctx!;
-  // 태평소: 겹리드 특유의 코맹맹한 소리(톱니파를 좁은 대역으로 거름)
-  const o = c.createOscillator(); o.type = 'sawtooth'; o.frequency.setValueAtTime(f, t);
-  const o2 = c.createOscillator(); o2.type = 'square'; o2.frequency.setValueAtTime(f, t);
-  const bpf = c.createBiquadFilter(); bpf.type = 'bandpass'; bpf.frequency.value = Math.min(3200, f * 3.2); bpf.Q.value = 1.4;
-  const lfo = c.createOscillator(); lfo.frequency.value = 6.2;
-  const lg = c.createGain(); lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(f * 0.012, t + dur * 0.8);
-  lfo.connect(lg); lg.connect(o.frequency); lg.connect(o2.frequency);
-  // 꺾는 소리: 앞머리를 아래에서 밀어 올림
-  o.frequency.setValueAtTime(f * 0.94, t); o.frequency.linearRampToValueAtTime(f, t + 0.12);
-  const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.18);
-  g.gain.setValueAtTime(vol, t + dur * 0.75); g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.25);
-  const g2 = c.createGain(); g2.gain.value = 0.12;
-  o.connect(bpf); o2.connect(g2).connect(bpf); bpf.connect(g); g.connect(bgmGain!);
-  // 숨소리
-  const n = c.createBufferSource(); n.buffer = noiseBuffer(dur + 0.3);
-  const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f * 2.5; bp.Q.value = 2;
-  const ng = c.createGain(); ng.gain.setValueAtTime(0.0001, t); ng.gain.exponentialRampToValueAtTime(vol * 0.5, t + 0.05); ng.gain.exponentialRampToValueAtTime(vol * 0.12, t + 0.3); ng.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.2);
-  n.connect(bp).connect(ng).connect(bgmGain!);
-  [o, o2, lfo].forEach((x) => { x.start(t); x.stop(t + dur + 0.35); }); n.start(t); n.stop(t + dur + 0.3);
+  const o = c.createOscillator(); o.type = 'triangle';
+  const o2 = c.createOscillator(); o2.type = 'sawtooth';
+  const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 0.7;
+  lp.frequency.setValueAtTime(f * 7, t); lp.frequency.exponentialRampToValueAtTime(f * 1.6, t + 0.5);
+  const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, t + Math.max(1.6, dur + 0.8));
+  const g2 = c.createGain(); g2.gain.value = 0.22;
+  for (const x of [o, o2]) x.frequency.setValueAtTime(f, t);
+  if (orn === 1) { // 떠는음: 천천히 시작해 깊어지는 떨림
+    const lfo = c.createOscillator(); lfo.frequency.value = 5.5;
+    const lg = c.createGain(); lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(0, t + 0.18); lg.gain.linearRampToValueAtTime(f * 0.03, t + Math.min(dur, 0.9));
+    lfo.connect(lg); lg.connect(o.frequency); lg.connect(o2.frequency); lfo.start(t); lfo.stop(t + dur + 1);
+  } else if (orn === 2) { // 꺾는음: 살짝 밀어 올렸다가 아래로 꺾음
+    for (const x of [o, o2]) { x.frequency.linearRampToValueAtTime(f * 1.03, t + 0.12); x.frequency.setValueAtTime(f * 1.03, t + dur * 0.45); x.frequency.exponentialRampToValueAtTime(f * 0.89, t + dur * 0.75); }
+  }
+  o.connect(g); o2.connect(lp).connect(g2).connect(g); g.connect(bgmBus!);
+  const end = t + Math.max(1.7, dur + 0.9);
+  o.start(t); o2.start(t); o.stop(end); o2.stop(end);
 }
-/** 장구 */
-function janggu(t: number, hit: string) {
+/** 대금: 숨이 섞인 부드러운 긴 소리 */
+function dae(t: number, f: number, dur: number, vol: number) {
   const c = ctx!;
-  const low = (vol: number) => { // 북편 (궁편)
-    const o = c.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(62, t + 0.18);
-    const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
-    o.connect(g).connect(bgmGain!); o.start(t); o.stop(t + 0.4);
-  };
-  const high = (vol: number, at = t) => { // 채편: 대나무 채가 가죽을 때리는 소리
-    const n = c.createBufferSource(); n.buffer = noiseBuffer(0.12);
-    const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1900; bp.Q.value = 3;
-    const g = c.createGain(); g.gain.setValueAtTime(0.0001, at); g.gain.exponentialRampToValueAtTime(vol, at + 0.002); g.gain.exponentialRampToValueAtTime(0.0001, at + 0.1);
-    n.connect(bp).connect(g).connect(bgmGain!); n.start(at); n.stop(at + 0.12);
-    const o = c.createOscillator(); o.type = 'triangle'; o.frequency.setValueAtTime(420, at); o.frequency.exponentialRampToValueAtTime(300, at + 0.06);
-    const og = c.createGain(); og.gain.setValueAtTime(0.0001, at); og.gain.exponentialRampToValueAtTime(vol * 0.4, at + 0.003); og.gain.exponentialRampToValueAtTime(0.0001, at + 0.08);
-    o.connect(og).connect(bgmGain!); o.start(at); o.stop(at + 0.1);
-  };
-  if (hit === '덩') { low(0.32); high(0.22); }
-  else if (hit === '쿵') low(0.26);
-  else if (hit === '덕') high(0.2);
-  else if (hit === '기') high(0.08);
-  else if (hit === '더') high(0.12);
-  else if (hit === '러') high(0.07);
+  const o = c.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(f * 0.97, t); o.frequency.linearRampToValueAtTime(f, t + 0.25);
+  const lfo = c.createOscillator(); lfo.frequency.value = 4.6;
+  const lg = c.createGain(); lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(f * 0.01, t + dur * 0.7);
+  lfo.connect(lg).connect(o.frequency);
+  const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.5); g.gain.setValueAtTime(vol, t + dur * 0.7); g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.6);
+  o.connect(g).connect(bgmBus!);
+  const n = c.createBufferSource(); n.buffer = noiseBuffer(dur + 0.7);
+  const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f * 2; bp.Q.value = 3;
+  const ng = c.createGain(); ng.gain.setValueAtTime(0.0001, t); ng.gain.exponentialRampToValueAtTime(vol * 0.25, t + 0.1); ng.gain.exponentialRampToValueAtTime(vol * 0.06, t + 0.6); ng.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.5);
+  n.connect(bp).connect(ng).connect(bgmBus!);
+  o.start(t); lfo.start(t); n.start(t); const end = t + dur + 0.7; o.stop(end); lfo.stop(end); n.stop(end);
 }
-/** 꽹과리: 쇳소리 (갱=세게, 개=약하게) */
-function kkwaeng(t: number, hit: string) {
+/** 장구: 부드러운 북편(덩·쿵)만 은은하게 */
+function drum(t: number, vol: number) {
   const c = ctx!;
-  const vol = hit === '갱' ? 0.07 : 0.035;
-  [1, 1.47, 2.13].forEach((m) => {
-    const o = c.createOscillator(); o.type = 'square'; o.frequency.setValueAtTime(1180 * m, t);
-    const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 3600; bp.Q.value = 1.2;
-    const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.002); g.gain.exponentialRampToValueAtTime(0.0001, t + (hit === '갱' ? 0.28 : 0.1));
-    o.connect(bp).connect(g).connect(bgmGain!); o.start(t); o.stop(t + 0.3);
-  });
+  const o = c.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(52, t + 0.25);
+  const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+  o.connect(g).connect(bgmBus!); o.start(t); o.stop(t + 0.55);
 }
-let melIdx = 0; let melLeft = 0;
+/** 바닥에 깔리는 지속음 (아쟁 느낌) */
+function drone(t: number, dur: number) {
+  const c = ctx!;
+  for (const [f, v] of [[82.4, 0.05], [123.5, 0.025]] as const) {
+    const o = c.createOscillator(); o.type = 'triangle'; o.frequency.value = f;
+    const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 400;
+    const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + dur * 0.4); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(lp).connect(g).connect(bgmBus!); o.start(t); o.stop(t + dur + 0.1);
+  }
+}
+let gIdx = 0, gLeft = 0, dIdx = 0, dLeft = 0;
 function scheduler() {
-  if (!ctx || !bgmGain) return;
-  const spb = 60 / 104 / 3; // 한 칸 = 점4분의 1/3 (자진모리, 신나게)
+  if (!ctx || !bgmGain || !bgmBus) return;
+  const spb = 60 / 72 / 3; // 중중모리 느낌의 느긋한 12칸
   while (nextT < ctx.currentTime + 0.5) {
-    const bar = Math.floor(step / 12);
-    const k = step % 12;
-    // 장구 (4마디마다 굴림 넣기)
-    const jp = bar % 4 === 3 ? JANGGU : JANGGU2;
-    if (jp[k]) janggu(nextT, jp[k]);
-    if (KKWAENG[k] && bar % 8 !== 7) kkwaeng(nextT, KKWAENG[k]);
-    // 대금 선율
-    if (melLeft <= 0) {
-      const [n, len] = DAEGEUM[melIdx % DAEGEUM.length];
-      if (n >= 0) daegeum(nextT, SCALE[n], len * spb * 0.92, 0.055);
-      melLeft = len; melIdx++;
+    const k = step % 12; const bar = Math.floor(step / 12);
+    if (k === 0) drum(nextT, 0.16);
+    if (k === 6) drum(nextT, 0.09);
+    if (k === 9 && bar % 2 === 1) drum(nextT, 0.06);
+    if (k === 0 && bar % 4 === 0) drone(nextT, spb * 48);
+    if (gLeft <= 0) {
+      const [n, len, orn] = GAYA[gIdx % GAYA.length];
+      if (n >= 0) gaya(nextT, SC[n], orn, len * spb, 0.11);
+      gLeft = len; gIdx++;
     }
-    melLeft--;
-    // 가야금: 박마다 근음·5도·옥타브 뜯기
-    const root = GAYA_ROOT[bar % GAYA_ROOT.length];
-    if (k % 3 !== 1) {
-      const pat = [root, -1, root + 2, root + 4, -1, root + 2, root + 1, -1, root + 3, root + 4, -1, root + 2][k];
-      if (pat >= 0) pluck(nextT, SCALE[Math.min(SCALE.length - 1, pat)] / 2, k === 0 ? 0.12 : 0.07);
+    gLeft--;
+    if (dLeft <= 0) {
+      const [n, len] = DAE[dIdx % DAE.length];
+      if (n >= 0 && Math.floor(step / 96) % 2 === 1) dae(nextT, SC[n] * 2, len * spb, 0.035); // 두 번째 바퀴부터 대금이 얹힘
+      dLeft = len; dIdx++;
     }
+    dLeft--;
     nextT += spb; step++;
   }
 }
 export function startBgm() {
   if (!ctx || !master || !bgmOn || bgmTimer !== null) return;
   bgmGain = ctx.createGain(); bgmGain.gain.value = 0.0001; bgmGain.connect(ctx.destination); // 효과음 끄기와 따로
-  bgmGain.gain.exponentialRampToValueAtTime(0.42, ctx.currentTime + 2);
-  nextT = ctx.currentTime + 0.1; step = 0; melIdx = 0; melLeft = 0;
+  bgmGain.gain.exponentialRampToValueAtTime(0.5, ctx.currentTime + 3);
+  bgmBus = ctx.createGain();
+  const dry = ctx.createGain(); dry.gain.value = 0.75;
+  const wet = ctx.createGain(); wet.gain.value = 0.45;
+  const rv = makeReverb(ctx);
+  bgmBus.connect(dry).connect(bgmGain); bgmBus.connect(rv).connect(wet).connect(bgmGain);
+  nextT = ctx.currentTime + 0.1; step = 0; gIdx = 0; gLeft = 0; dIdx = 0; dLeft = 0;
   bgmTimer = window.setInterval(scheduler, 100);
 }
 export function stopBgm() {
