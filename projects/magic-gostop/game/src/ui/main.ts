@@ -1,6 +1,6 @@
 import { applyAction, createGame, getLegalActions, score, scoreOf, setGukjin, setMagicState, magicSwap, magicSweep, magicExtraFlip, PI_VALUE } from '../engine';
 import * as items from './items-runtime';
-import { copyOf, USE_LABEL } from './item-copy';
+import { copyOf, USE_LABEL, STACK_RULE } from './item-copy';
 import type { Action, Card, GameEvent, GameState, PlayerId } from '../engine';
 import { chooseAction, AI_LEVELS, type AiLevel } from '../ai/simple';
 import { cardArt } from './art';
@@ -1164,13 +1164,35 @@ function showItem(it: ItemDef) {
   else cur.innerHTML = `<div class="ic-head">내 등급 ${gradeBadge(gi)}</div><div class="ic-eff">${it.effect(gi)}</div>${gi < 9 ? `<div class="ic-next"><span>다음 ${gradeBadge(gi + 1)}</span>${it.effect(gi + 1)}</div>` : '<div class="ic-next"><span>최고 등급</span>더 오를 등급이 없습니다</div>'}`;
   const have = GRADES.map((g, i) => ({ g, i, n: own[g] ?? 0 })).filter((x) => x.n > 0);
   $('id-own').innerHTML = have.length ? `<span class="io-label">보유</span>${have.map((x) => `<span class="io">${gradeBadge(x.i)}×${x.n}</span>`).join('')}` : '';
-  $('id-stack').innerHTML = it.stack ? `<b>함께 쓸 때</b>${it.stack}` : '';
+  $('id-stack').innerHTML = it.category === 'cosmetic' ? '<b>함께 쓸 때</b>꾸미기는 종류마다 하나씩 쓸 수 있고, 게임 결과에는 영향이 없습니다.' : `<b>함께 쓸 때</b>${STACK_RULE}`;
   $('id-list').innerHTML = GRADES.map((g, i) => `<li class="${(own[g] ?? 0) ? 'have' : ''}${i === gi ? ' cur' : ''}">${gradeBadge(i)}<span>${it.effect(i)}</span></li>`).join('');
   $('id-rate').textContent = `이 아이템이 나올 확률 ${Math.round((it.weight / total) * 1000) / 10}% (모든 아이템 중)`;
   $('item-detail').hidden = false;
 }
 
 // ---------- 처음 화면 ----------
+/** 배경음악 고르기 화면 */
+function renderMusic() {
+  const on = sfx.isBgmOn();
+  const onoff = $('mu-onoff');
+  onoff.textContent = on ? '음악 켜짐' : '음악 꺼짐'; onoff.classList.toggle('off', !on);
+  $('mu-mode').querySelectorAll<HTMLButtonElement>('button').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.m === sfx.bgmMode())));
+  const favs = sfx.bgmFavs(); const cur = sfx.bgmTrack();
+  const list = $('mu-list'); list.innerHTML = '';
+  for (const t of sfx.BGM_TRACKS) {
+    const li = document.createElement('li');
+    li.className = 'mu-row' + (t.id === cur ? ' cur' : '') + (t.id === cur && on ? ' playing' : '');
+    li.innerHTML = `<button type="button" class="mu-play" aria-label="${t.name} 듣기"><i class="eq"><b></b><b></b><b></b></i></button>
+      <div class="mu-txt"><b>${t.name}</b><span>${t.desc}</span></div>
+      <button type="button" class="mu-fav${favs.includes(t.id) ? ' on' : ''}" aria-pressed="${favs.includes(t.id)}" aria-label="좋아요">${favs.includes(t.id) ? '♥' : '♡'}</button>`;
+    const pick = () => { sfx.unlock(); if (!sfx.isBgmOn()) sfx.setBgm(true); sfx.setBgmTrack(t.id); renderMusic(); };
+    li.querySelector('.mu-play')!.addEventListener('click', pick);
+    li.querySelector('.mu-txt')!.addEventListener('click', pick);
+    li.querySelector('.mu-fav')!.addEventListener('click', () => { sfx.toggleFav(t.id); sfx.click(); renderMusic(); });
+    list.append(li);
+  }
+}
+
 function syncHome() {
   document.querySelectorAll('.coin-amt').forEach((e) => { e.textContent = fmt(coins()); });
   const label = AI_LEVELS.find((l) => l.id === level)!.label;
@@ -1185,7 +1207,7 @@ function syncHome() {
     seg.append(b);
   }
   const bgm = $('btn-bgm'), fx = $('btn-sfx');
-  bgm.classList.toggle('off', !sfx.isBgmOn()); bgm.querySelector('span')!.textContent = sfx.isBgmOn() ? '켜짐' : '꺼짐';
+  bgm.classList.toggle('off', !sfx.isBgmOn()); bgm.querySelector('span')!.textContent = sfx.isBgmOn() ? (sfx.BGM_TRACKS.find((x) => x.id === sfx.bgmTrack())?.name ?? '켜짐') + (sfx.bgmMode() === 'favs' ? ' · 좋아요' : '') : '꺼짐';
   fx.classList.toggle('off', sfx.isMuted()); fx.querySelector('span')!.textContent = sfx.isMuted() ? '꺼짐' : '켜짐';
 }
 function setLevel(l: AiLevel) {
@@ -1195,7 +1217,7 @@ function setLevel(l: AiLevel) {
 }
 function showHome() {
   gameNo++; busy = false;
-  for (const id of ['result', 'special', 'choose', 'gostop', 'info', 'reward', 'collection', 'caps-detail', 'item-detail', 'gukjin', 'magic-pick', 'gacha', 'gacha-run']) $(id).hidden = true;
+  for (const id of ['result', 'special', 'choose', 'gostop', 'info', 'reward', 'collection', 'caps-detail', 'item-detail', 'gukjin', 'magic-pick', 'gacha', 'gacha-run', 'music']) $(id).hidden = true;
   syncHome();
   $('home').hidden = false;
 }
@@ -1313,7 +1335,12 @@ $('btn-id-close').addEventListener('click', () => { $('item-detail').hidden = tr
 $('btn-coll-close').addEventListener('click', () => { $('collection').hidden = true; });
 $('btn-coll-x').addEventListener('click', () => { $('collection').hidden = true; });
 $('btn-home-rules').addEventListener('click', () => { sfx.click(); $('info').hidden = false; });
-$('btn-bgm').addEventListener('click', () => { sfx.unlock(); sfx.setBgm(!sfx.isBgmOn()); syncHome(); });
+$('btn-bgm').addEventListener('click', () => { sfx.unlock(); sfx.click(); renderMusic(); $('music').hidden = false; });
+$('btn-music-x').addEventListener('click', () => { $('music').hidden = true; syncHome(); });
+$('btn-music-close').addEventListener('click', () => { $('music').hidden = true; syncHome(); });
+$('mu-onoff').addEventListener('click', () => { sfx.unlock(); sfx.setBgm(!sfx.isBgmOn()); renderMusic(); syncHome(); });
+$('mu-mode').querySelectorAll<HTMLButtonElement>('button').forEach((b) => b.addEventListener('click', () => { sfx.setBgmMode(b.dataset.m as 'one' | 'favs'); sfx.click(); renderMusic(); }));
+sfx.onBgmTrack(() => { if (!$('music').hidden) renderMusic(); syncHome(); });
 $('btn-sfx').addEventListener('click', () => { sfx.unlock(); sfx.setMuted(!sfx.isMuted()); syncSoundBtn(); syncHome(); sfx.click(); });
 $('btn-reward-ok').addEventListener('click', () => { $('reward').hidden = true; });
 document.addEventListener('pointerdown', () => { if (!$('home').hidden) return; sfx.startBgm(); }, { capture: true });

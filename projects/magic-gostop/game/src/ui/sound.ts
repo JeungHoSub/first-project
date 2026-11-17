@@ -58,21 +58,27 @@ function tone(t: number, dur: number, type: OscillatorType, f0: number, f1: numb
 function ready() { return !!ctx && !!master && !muted; }
 const now = () => ctx!.currentTime;
 
-/** 화투장을 바닥에 "탁" 치는 소리. power 0~1 */
+/** 화투장 한 장이 담요에 "착" 붙는 순간: 아주 짧은 플라스틱 딸깍 + 몸통 울림 */
+function clack(t: number, vol: number, bright = 1) {
+  noise(t, 0.008, 'highpass', 2200 * bright, vol, 0.7);           // 첫 접촉 "ㅊ"
+  noise(t, 0.03, 'bandpass', 1150 * bright, vol * 0.85, 3.2);     // 딱딱한 패의 "착"
+  tone(t, 0.018, 'triangle', 1450 * bright, 950, vol * 0.14, 0.001); // 패 가장자리 딸깍
+  tone(t, 0.045, 'sine', 150, 95, vol * 0.45, 0.002);             // 담요가 받는 낮은 몸통
+}
+/** 화투장을 바닥에 내리치는 소리. power 0~1 — "착!" 하고 바로 달라붙음 */
 export function slap(power = 0.7) {
   if (!ready()) return;
   const t = now();
-  noise(t, 0.05, 'bandpass', 2400, 0.5 * power + 0.2, 0.9);
-  noise(t, 0.09, 'lowpass', 900, 0.35 * power, 0.7);
-  tone(t, 0.09, 'sine', 170, 55, 0.55 * power + 0.15);
+  clack(t, 0.45 + 0.45 * power);
+  clack(t + 0.011, 0.22 + 0.12 * power, 0.85); // 패가 바닥에 납작하게 붙는 두 번째 미세 접촉
+  noise(t + 0.004, 0.06, 'lowpass', 500, 0.18 * power, 0.7);   // 눌린 공기
 }
 /** 더미에서 뒤집는 소리 (가볍게 "착") */
 export function flip() {
   if (!ready()) return;
   const t = now();
-  noise(t, 0.035, 'highpass', 3000, 0.25, 0.7);
-  noise(t + 0.03, 0.05, 'bandpass', 2000, 0.35, 1);
-  tone(t + 0.03, 0.06, 'sine', 140, 70, 0.25);
+  noise(t, 0.03, 'highpass', 3500, 0.12, 0.7);   // 패가 미끄러지는 소리
+  clack(t + 0.035, 0.32, 1.1);
 }
 /** 패를 먹어 가져오는 소리 ("착착" + 짧은 반짝임) */
 /** 꾸미기 "효과음 팩" 단계 (-1 = 기본). 먹을 때 소리에 국악풍 음을 얹는다 */
@@ -82,8 +88,9 @@ const PENTA = [392, 440, 523, 587, 659, 784, 880]; // 평조풍 5음
 export function capture(count = 2) {
   if (!ready()) return;
   const t = now();
-  for (let i = 0; i < Math.min(count, 4); i++) noise(t + i * 0.045, 0.035, 'bandpass', 2800 - i * 200, 0.28, 1.2);
-  tone(t + 0.05, 0.18, 'triangle', 1320, 1760, 0.06);
+  // 먹은 패를 모아 쥐는 "착착": 장수만큼 빠르게 겹쳐 붙는 소리
+  const n = Math.max(2, Math.min(count, 4));
+  for (let i = 0; i < n; i++) clack(t + i * 0.07, i === n - 1 ? 0.62 : 0.42, 1 + i * 0.04);
   if (pack < 1) return;
   // 가야금 뜯는 소리(1~), 장구(2~), 징(3~), 여러 음 꾸밈(6~)
   const base = PENTA[Math.floor(Math.random() * 4)];
@@ -264,35 +271,157 @@ function drone(t: number, dur: number) {
     o.connect(lp).connect(g).connect(bgmBus!); o.start(t); o.stop(t + dur + 0.1);
   }
 }
+/** 부드러운 리듬: 킥(둥) · 쉐이커(사락) · 따뜻한 베이스 */
+function kick(t: number, vol: number) {
+  const c = ctx!;
+  const o = c.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(95, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.18);
+  const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.32);
+  o.connect(g).connect(bgmBus!); o.start(t); o.stop(t + 0.35);
+}
+function shaker(t: number, vol: number) {
+  const c = ctx!;
+  const n = c.createBufferSource(); n.buffer = noiseBuffer(0.08);
+  const f = c.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 6500; f.Q.value = 1.5;
+  const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
+  n.connect(f).connect(g).connect(bgmBus!); n.start(t); n.stop(t + 0.08);
+}
+function bass(t: number, f: number, dur: number, vol: number) {
+  const c = ctx!;
+  const o = c.createOscillator(); o.type = 'triangle'; o.frequency.value = f;
+  const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 320;
+  const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(lp).connect(g).connect(bgmBus!); o.start(t); o.stop(t + dur + 0.05);
+}
+// 마디별 베이스 근음 (계면조: 미·라·시·레)
+const BASS_ROOT = [82.4, 82.4, 110.0, 123.5, 110.0, 73.4, 82.4, 82.4];
+/** 장구 채편: 가벼운 "딱" (기덕·덕) */
+function chae(t: number, vol: number) {
+  const c = ctx!;
+  const n = c.createBufferSource(); n.buffer = noiseBuffer(0.06);
+  const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1700; bp.Q.value = 2.2;
+  const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.002); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+  n.connect(bp).connect(g).connect(bgmBus!); n.start(t); n.stop(t + 0.06);
+}
+
+// ---------- 곡 목록 ----------
+type Mel = [number, number, number][]; // [음, 길이(칸), 꾸밈]
+interface Track {
+  id: string; name: string; desc: string; bpm: number;
+  gaya?: Mel; arp?: number[]; gayaVol: number;
+  dae?: [number, number][]; daeFrom: number; // 몇 번째 바퀴부터 대금이 얹히는지 (-1 = 없음)
+  drone: boolean;
+  perc: (k: number, bar: number, step: number, t: number, spb: number) => void;
+}
+const T1_MEL: Mel = GAYA;
+const TRACKS: Track[] = [
+  { id: 'moon', name: '달빛 산조', desc: '계면조 가야금에 은은한 박자 — 차분하지만 살짝 들뜬', bpm: 84, gaya: T1_MEL, gayaVol: 0.11, dae: DAE, daeFrom: 1, drone: true,
+    perc: (k, bar, step, t, spb) => {
+      if (k === 0) drum(t, 0.14); if (k === 6) drum(t, 0.08); if (k === 9 && bar % 2 === 1) drum(t, 0.06);
+      if (step >= 48) {
+        if (k === 0 || k === 7) kick(t, 0.22);
+        if (k % 3 === 2) shaker(t, k === 5 || k === 11 ? 0.05 : 0.028);
+        if (k === 0 || k === 6) bass(t, BASS_ROOT[bar % 8], spb * 5, 0.09);
+        if (k === 10) bass(t, BASS_ROOT[bar % 8] * 1.5, spb * 2, 0.05);
+      }
+    } },
+  { id: 'pavilion', name: '고요한 정자', desc: '가야금과 대금만, 바람 소리처럼 느긋하게', bpm: 60, gayaVol: 0.12, drone: true, daeFrom: 0,
+    gaya: [[4, 6, 1], [5, 6, 0], [6, 12, 2], [5, 6, 0], [4, 6, 1], [3, 12, 0], [2, 6, 0], [3, 6, 0], [4, 12, 1], [4, 24, 1]],
+    dae: [[-1, 12], [7, 12], [6, 24], [-1, 12], [5, 12], [4, 24]],
+    perc: (k, bar, _s, t) => { if (k === 0 && bar % 2 === 0) drum(t, 0.07); } },
+  { id: 'market', name: '장터 한마당', desc: '자진모리 장단으로 흥겹게, 귀는 편안하게', bpm: 104, gayaVol: 0.1, drone: false, daeFrom: 2,
+    gaya: [[4, 2, 0], [5, 1, 0], [6, 3, 0], [7, 3, 0], [6, 3, 2], [5, 2, 0], [4, 1, 0], [5, 3, 0], [6, 6, 1], [7, 2, 0], [8, 1, 0], [7, 3, 0], [6, 3, 0], [5, 3, 2], [4, 3, 0],
+      [5, 3, 0], [3, 3, 0], [4, 6, 1], [6, 2, 0], [7, 1, 0], [8, 3, 0], [7, 3, 0], [6, 3, 0], [5, 2, 0], [4, 1, 0], [5, 3, 0], [4, 9, 1], [-1, 3, 0], [5, 6, 0], [4, 9, 1]],
+    dae: [[-1, 48], [8, 12], [7, 12], [6, 24]],
+    perc: (k, bar, _s, t, spb) => {
+      if (k === 0) { drum(t, 0.16); chae(t, 0.06); } if (k === 2 || k === 3 || k === 8) chae(t, 0.05);
+      if (k === 6 || k === 9) drum(t, 0.11); if (k === 10 || k === 11) chae(t, 0.03);
+      if (k % 3 === 2) shaker(t, 0.025);
+      if (k === 0 || k === 6) bass(t, BASS_ROOT[bar % 8], spb * 4, 0.08);
+    } },
+  { id: 'night', name: '밤 마실', desc: '로파이 박자 위로 가야금이 굴러가고 대금이 노래하는', bpm: 76, gayaVol: 0.07, drone: false, daeFrom: 0,
+    arp: [0, -1, 2, 4, -1, 2, 1, -1, 3, 4, -1, 2],
+    dae: [[7, 12], [6, 6], [5, 6], [4, 12], [-1, 12], [5, 12], [6, 6], [7, 6], [6, 12], [-1, 12]],
+    perc: (k, bar, _s, t, spb) => {
+      if (k === 0 || k === 7) kick(t, 0.24); if (k === 3 || k === 9) chae(t, 0.07);
+      if (k % 2 === 1) shaker(t, 0.022);
+      if (k === 0) bass(t, BASS_ROOT[bar % 8], spb * 5, 0.1); if (k === 6) bass(t, BASS_ROOT[bar % 8] * 1.5, spb * 3, 0.06);
+    } },
+  { id: 'spring', name: '봄 나들이', desc: '굿거리 장단에 산뜻한 가야금 — 가볍게 걷는 걸음', bpm: 92, gaya: T1_MEL, gayaVol: 0.1, dae: DAE, daeFrom: 0, drone: false,
+    perc: (k, bar, _s, t, spb) => {
+      if (k === 0) drum(t, 0.14); if (k === 3 || k === 4) chae(t, 0.05); if (k === 6) drum(t, 0.1); if (k === 9) chae(t, 0.05); if (k === 10 || k === 11) chae(t, 0.03);
+      if (k === 0 || k === 6) bass(t, BASS_ROOT[bar % 8], spb * 4, 0.07);
+    } },
+];
+export const BGM_TRACKS = TRACKS.map(({ id, name, desc }) => ({ id, name, desc }));
+
+// 선택·좋아요·재생 방식 (이 기기에 저장)
+let trackId = 'moon';
+let favs: string[] = [];
+let mode: 'one' | 'favs' = 'one';
+try {
+  const tId = localStorage.getItem('mg-bgm-track'); if (tId && TRACKS.some((x) => x.id === tId)) trackId = tId;
+  const f = JSON.parse(localStorage.getItem('mg-bgm-favs') || '[]'); if (Array.isArray(f)) favs = f.filter((x) => TRACKS.some((t) => t.id === x));
+  if (localStorage.getItem('mg-bgm-mode') === 'favs') mode = 'favs';
+} catch { /* 무시 */ }
+const saveBgmPrefs = () => { try { localStorage.setItem('mg-bgm-track', trackId); localStorage.setItem('mg-bgm-favs', JSON.stringify(favs)); localStorage.setItem('mg-bgm-mode', mode); } catch { /* 무시 */ } };
+export const bgmTrack = () => trackId;
+export const bgmFavs = () => [...favs];
+export const bgmMode = () => mode;
+let onTrackChange: (id: string) => void = () => {};
+export function onBgmTrack(f: (id: string) => void) { onTrackChange = f; }
+/** 곡 고르기: 바로 그 곡으로 바꿔 튼다 */
+export function setBgmTrack(id: string) {
+  if (!TRACKS.some((x) => x.id === id)) return;
+  trackId = id; saveBgmPrefs(); onTrackChange(id);
+  if (bgmOn) { stopBgm(); setTimeout(() => startBgm(), 350); }
+}
+export function toggleFav(id: string) { favs = favs.includes(id) ? favs.filter((x) => x !== id) : [...favs, id]; saveBgmPrefs(); return favs.includes(id); }
+export function setBgmMode(m: 'one' | 'favs') { mode = m; saveBgmPrefs(); }
+
 let gIdx = 0, gLeft = 0, dIdx = 0, dLeft = 0;
+const LOOP = 96; // 한 바퀴 = 8마디
 function scheduler() {
   if (!ctx || !bgmGain || !bgmBus) return;
-  const spb = 60 / 72 / 3; // 중중모리 느낌의 느긋한 12칸
+  const tr = TRACKS.find((x) => x.id === trackId) ?? TRACKS[0];
+  const spb = 60 / tr.bpm / 3;
   while (nextT < ctx.currentTime + 0.5) {
-    const k = step % 12; const bar = Math.floor(step / 12);
-    if (k === 0) drum(nextT, 0.16);
-    if (k === 6) drum(nextT, 0.09);
-    if (k === 9 && bar % 2 === 1) drum(nextT, 0.06);
-    if (k === 0 && bar % 4 === 0) drone(nextT, spb * 48);
-    if (gLeft <= 0) {
-      const [n, len, orn] = GAYA[gIdx % GAYA.length];
-      if (n >= 0) gaya(nextT, SC[n], orn, len * spb, 0.11);
-      gLeft = len; gIdx++;
+    const k = step % 12; const bar = Math.floor(step / 12); const loop = Math.floor(step / LOOP);
+    // 좋아요 목록 돌아가며 듣기: 3바퀴마다 다음 곡으로
+    if (mode === 'favs' && favs.length > 1 && step > 0 && step % (LOOP * 3) === 0) {
+      const i = favs.indexOf(trackId);
+      trackId = favs[(i + 1) % favs.length]; saveBgmPrefs(); onTrackChange(trackId);
+      step = 0; gIdx = gLeft = dIdx = dLeft = 0;
+      return;
     }
-    gLeft--;
-    if (dLeft <= 0) {
-      const [n, len] = DAE[dIdx % DAE.length];
-      if (n >= 0 && Math.floor(step / 96) % 2 === 1) dae(nextT, SC[n] * 2, len * spb, 0.035); // 두 번째 바퀴부터 대금이 얹힘
-      dLeft = len; dIdx++;
+    tr.perc(k, bar, step, nextT, spb);
+    if (tr.drone && k === 0 && bar % 4 === 0) drone(nextT, spb * 48);
+    if (tr.gaya) {
+      if (gLeft <= 0) {
+        const [n, len, orn] = tr.gaya[gIdx % tr.gaya.length];
+        if (n >= 0) gaya(nextT, SC[n], orn, len * spb, tr.gayaVol);
+        gLeft = len; gIdx++;
+      }
+      gLeft--;
+    } else if (tr.arp) {
+      const root = [2, 4, 2, 5, 4, 2, 4, 2][bar % 8];
+      const off = tr.arp[k];
+      if (off >= 0) gaya(nextT, SC[Math.min(SC.length - 1, root + off)], k === 0 ? 1 : 0, spb * 2, k === 0 ? tr.gayaVol * 1.3 : tr.gayaVol);
     }
-    dLeft--;
+    if (tr.dae && tr.daeFrom >= 0) {
+      if (dLeft <= 0) {
+        const [n, len] = tr.dae[dIdx % tr.dae.length];
+        if (n >= 0 && loop >= tr.daeFrom) dae(nextT, SC[n] * 2, len * spb, 0.035);
+        dLeft = len; dIdx++;
+      }
+      dLeft--;
+    }
     nextT += spb; step++;
   }
 }
 export function startBgm() {
   if (!ctx || !master || !bgmOn || bgmTimer !== null) return;
   bgmGain = ctx.createGain(); bgmGain.gain.value = 0.0001; bgmGain.connect(ctx.destination); // 효과음 끄기와 따로
-  bgmGain.gain.exponentialRampToValueAtTime(0.5, ctx.currentTime + 3);
+  bgmGain.gain.exponentialRampToValueAtTime(0.5, ctx.currentTime + 2);
   bgmBus = ctx.createGain();
   const dry = ctx.createGain(); dry.gain.value = 0.75;
   const wet = ctx.createGain(); wet.gain.value = 0.45;

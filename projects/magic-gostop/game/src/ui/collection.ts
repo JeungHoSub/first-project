@@ -3,6 +3,8 @@
 // 확률은 도감 화면에 그대로 공개한다(확률형 아이템 확률 공개 원칙). 효과는 아직 판에 적용하지 않는다(설명만).
 // 항목 출처: outputs/rules.md 9절 후보(A 매직 카드, B 캐릭터, C 판 이벤트) + brief의 "점수 2배".
 
+import { CH, B } from './balance';
+import { EFFECT } from './item-copy';
 import { ITEM_SPECS, TICKETS as TICKET_SPECS, EQUIP_LIMITS, CATEGORY_LABEL, type Category } from './items-data';
 export { CATEGORY_LABEL, EQUIP_LIMITS, type Category };
 
@@ -29,7 +31,7 @@ const chance = (g: number) => ` · 발동 ${pct(g, 40, 100)}%`;
 /** 귀속 아이템 35종 (데이터·중첩 규칙은 items-data.ts, 설계 근거는 outputs/items.md) */
 export const ITEMS: ItemDef[] = ITEM_SPECS.map((sp) => ({
   id: sp.id, name: sp.name, category: sp.category, icon: sp.icon, hue: sp.hue, weight: sp.weight, stack: sp.stack,
-  effect: (g: number) => sp.effects[Math.max(0, Math.min(9, g))],
+  effect: (g: number) => (EFFECT[sp.id] ?? ((x: number) => sp.effects[x]))(Math.max(0, Math.min(9, g))),
 }));
 
 /** 판 결과별 아이템 획득 확률(%) — 난이도가 높을수록 조금 더 */
@@ -88,7 +90,7 @@ const ICON: Record<string, string> = {
   flip2: '<rect x="-17" y="-16" width="16" height="24" rx="2" fill="#c8262d" stroke="#111" stroke-width="1.6" transform="rotate(-12)"/><rect x="1" y="-12" width="16" height="24" rx="2" fill="#fff" stroke="#111" stroke-width="1.6" transform="rotate(10)"/><path d="M-6 16 C0 22 8 20 12 14" fill="none" stroke="HUE" stroke-width="3.5" stroke-linecap="round"/>',
   gem: '<path d="M-16 -6 L-8 -16 H8 L16 -6 L0 18 Z" fill="HUE" stroke="#111" stroke-width="2" stroke-linejoin="round"/><path d="M-16 -6 H16 M-8 -16 L-4 -6 L0 18 M8 -16 L4 -6" fill="none" stroke="#111" stroke-width="1"/>',
   turtle: '<ellipse cy="2" rx="18" ry="12" fill="HUE" stroke="#111" stroke-width="2"/><path d="M-8 -6 L0 -10 L8 -6 L8 4 L0 8 L-8 4 Z" fill="none" stroke="#111" stroke-width="1.4"/><circle cx="20" cy="0" r="5" fill="HUE" stroke="#111" stroke-width="1.6"/><path d="M-12 12 L-14 18 M10 12 L12 18" stroke="#111" stroke-width="3" stroke-linecap="round"/>',
-  sun: '<circle r="11" fill="HUE" stroke="#111" stroke-width="2"/><g stroke="HUE" stroke-width="3.5" stroke-linecap="round"><path d="M0 -20 V-15 M0 15 V20 M-20 0 H-15 M15 0 H20 M-14 -14 L-11 -11 M11 11 L14 14 M-14 14 L-11 11 M11 -11 L14 -14"/></g><text y="5" text-anchor="middle" font-size="12" font-weight="900" fill="#c8262d" font-family="serif">光</text>',
+  sun: '<circle r="11" fill="HUE" stroke="#111" stroke-width="2"/><g stroke="HUE" stroke-width="3.5" stroke-linecap="round"><path d="M0 -20 V-15 M0 15 V20 M-20 0 H-15 M15 0 H20 M-14 -14 L-11 -11 M11 11 L14 14 M-14 14 L-11 11 M11 -11 L14 -14"/></g><circle r="4" fill="#fff" opacity=".8"/>',
   confetti: '<path d="M-18 18 L-4 -14 L14 4 Z" fill="HUE" stroke="#111" stroke-width="2" stroke-linejoin="round"/><circle cx="8" cy="-16" r="3" fill="#ffd23a"/><circle cx="16" cy="-6" r="2.5" fill="#4fb4ff"/><rect x="0" y="-22" width="4" height="4" fill="#5bbf6a" transform="rotate(20)"/>',
   fog: '<path d="M-18 6 C-22 -4 -10 -10 -6 -4 C-4 -14 10 -14 10 -4 C18 -8 24 2 16 8 Z" fill="HUE" stroke="#111" stroke-width="2"/><path d="M-20 14 H18 M-14 20 H12" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".7"/>',
   mirror: '<ellipse cy="-4" rx="13" ry="16" fill="#e8f0fa" stroke="#111" stroke-width="2.2"/><ellipse cy="-4" rx="9" ry="12" fill="HUE"/><path d="M-5 -12 L3 -16 M-6 -6 L5 -11" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="M0 12 V22 M-7 22 H7" stroke="#7a4a22" stroke-width="3.5" stroke-linecap="round"/>',
@@ -105,7 +107,7 @@ const ICON: Record<string, string> = {
   moon: '<circle r="19" fill="HUE" stroke="#111" stroke-width="2"/><circle cx="-6" cy="-5" r="4" fill="#000" opacity=".12"/><circle cx="7" cy="5" r="3" fill="#000" opacity=".12"/><path d="M-22 18 C-12 10 -4 14 0 18 C6 12 14 12 22 18" fill="#1b1640" stroke="#111" stroke-width="1.6"/>',
   drum: '<ellipse cy="-8" rx="17" ry="7" fill="#f5e6c8" stroke="#111" stroke-width="2"/><path d="M-17 -8 V10 C-17 18 17 18 17 10 V-8" fill="HUE" stroke="#111" stroke-width="2"/><path d="M-10 -1 V14 M0 0 V16 M10 -1 V14" stroke="#111" stroke-width="1.2" opacity=".5"/><path d="M8 -22 L-2 -10 M18 -18 L6 -9" stroke="#7a4a22" stroke-width="3" stroke-linecap="round"/>',
   gourd: '<circle cy="-10" r="8" fill="HUE" stroke="#111" stroke-width="2"/><circle cy="8" r="13" fill="HUE" stroke="#111" stroke-width="2"/><path d="M-6 -3 C-2 0 2 0 6 -3" stroke="#e84a4a" stroke-width="3" fill="none"/><path d="M0 -18 V-23" stroke="#7a4a22" stroke-width="3" stroke-linecap="round"/><circle cx="-5" cy="4" r="3" fill="#fff" opacity=".35"/>',
-  pouch: '<path d="M-8 -12 C-16 -4 -18 10 -12 18 H12 C18 10 16 -4 8 -12 Z" fill="HUE" stroke="#111" stroke-width="2" stroke-linejoin="round"/><path d="M-10 -14 L-4 -20 L0 -14 L4 -20 L10 -14" fill="HUE" stroke="#111" stroke-width="1.8" stroke-linejoin="round"/><path d="M-9 -11 H9" stroke="#f0c35a" stroke-width="3"/><text y="10" text-anchor="middle" font-size="13" font-weight="900" fill="#f0c35a" font-family="serif">福</text>',
+  pouch: '<path d="M-8 -12 C-16 -4 -18 10 -12 18 H12 C18 10 16 -4 8 -12 Z" fill="HUE" stroke="#111" stroke-width="2" stroke-linejoin="round"/><path d="M-10 -14 L-4 -20 L0 -14 L4 -20 L10 -14" fill="HUE" stroke="#111" stroke-width="1.8" stroke-linejoin="round"/><path d="M-9 -11 H9" stroke="#f0c35a" stroke-width="3"/><path d="M-5 6 H5 M0 2 V12" stroke="#f0c35a" stroke-width="2"/>',
   lantern: '<path d="M0 -24 V-17" stroke="#111" stroke-width="2"/><rect x="-8" y="-18" width="16" height="4" rx="1" fill="#3a2a1a"/><ellipse cy="0" rx="14" ry="15" fill="HUE" stroke="#111" stroke-width="2"/><path d="M-7 -12 V12 M7 -12 V12" stroke="#111" stroke-width="1" opacity=".4"/><rect x="-8" y="14" width="16" height="4" rx="1" fill="#3a2a1a"/><circle r="5" fill="#fff6c0" opacity=".85"/>',
   cardback: '<rect x="-14" y="-20" width="28" height="40" rx="3" fill="#c8262d" stroke="#111" stroke-width="2" transform="rotate(-8)"/><rect x="-10" y="-16" width="20" height="32" rx="2" fill="none" stroke="HUE" stroke-width="2" transform="rotate(-8)"/><circle r="5" fill="HUE" transform="rotate(-8)"/>',
   table: '<rect x="-20" y="-14" width="40" height="28" rx="4" fill="#1f6b45" stroke="#111" stroke-width="2"/><rect x="-16" y="-10" width="32" height="20" rx="2" fill="none" stroke="HUE" stroke-width="1.6"/><rect x="-8" y="-6" width="7" height="11" rx="1" fill="#fff" stroke="#111"/><rect x="2" y="-6" width="7" height="11" rx="1" fill="#c8262d" stroke="#111"/>',
@@ -121,39 +123,86 @@ export function gradeFill(gi: number) {
 }
 
 let artSeq = 0;
+/** 등급별 테두리 금속: 쇠 · 백랍 · 청동 · 은 · 청은 · 자수정 · 금 · 장미금 · 홍금 · 진주 */
+const METAL: [string, string, string][] = [
+  ['#4a4c50', '#8a8d92', '#3a3c40'], ['#6b7070', '#b9bfbd', '#555a59'], ['#6e4523', '#c8935a', '#5a3818'], ['#7d8790', '#e6ecf0', '#68727a'],
+  ['#4a5d8f', '#b9c8ec', '#3c4d78'], ['#5e4785', '#cdb6ea', '#4c386e'], ['#8a6a2a', '#f6dc8c', '#a87c2e'], ['#9a5a45', '#f3c2a6', '#85493a'],
+  ['#7a2a26', '#f0c070', '#8a3a2a'], ['#8fa8c8', '#fff4e8', '#c8a8d8'],
+];
+/** 분류별 창(아치) 안 밤하늘 색 */
+const NIGHT: Record<string, [string, string]> = {
+  spell: ['#2a3a64', '#0f1630'], talisman: ['#5a2428', '#1c0a0c'], spirit: ['#245244', '#0b1f18'],
+  event: ['#3a2c5c', '#130e24'], tool: ['#4a3622', '#160f08'], cosmetic: ['#4a2a46', '#170c16'],
+};
+/** 아이콘을 금박 판화처럼: 채움은 금, 선은 먹갈색 */
+function goldify(svg: string, id: string) {
+  return svg
+    .replace(/fill="HUE"/g, `fill="url(#${id}-au)"`)
+    .replace(/stroke="HUE"/g, `stroke="url(#${id}-au)"`)
+    .replace(/fill="#(?:fff|ffffff)"/gi, 'fill="#fbf3dc"')
+    .replace(/stroke="#(?:fff|ffffff)"/gi, 'stroke="#fbf3dc"')
+    .replace(/fill="#(?!fbf3dc)[0-9a-fA-F]{3,6}"/g, `fill="url(#${id}-au2)"`)
+    .replace(/stroke="#111"/g, 'stroke="#3a2a10"')
+    .replace(/stroke="#(?!fbf3dc|3a2a10)[0-9a-fA-F]{3,6}"/g, `stroke="url(#${id}-au)"`);
+}
 export function itemArt(it: ItemDef, gi: number, locked = false): string {
-  const id = `it-${it.id}-${gi}${locked ? 'l' : ''}-${(artSeq = (artSeq + 1) % 1e9)}`; // 매번 고유 id: 숨겨진 사본의 그라데이션을 참조하면 안 그려짐
-  const gc = gi < 0 ? '#3a4a43' : gradeFill(gi);
-  const frame = gc === 'rainbow'
-    ? `<linearGradient id="${id}-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff5a5f"/><stop offset=".25" stop-color="#ffd23a"/><stop offset=".5" stop-color="#5bbf6a"/><stop offset=".75" stop-color="#4fb4ff"/><stop offset="1" stop-color="#b678e8"/></linearGradient>`
-    : `<linearGradient id="${id}-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset=".35" stop-color="${gc}"/><stop offset="1" stop-color="${gc}" stop-opacity=".75"/></linearGradient>`;
-  const stars = Array.from({ length: 12 }, (_, i) => `<circle cx="${(i * 37) % 34 + 3}" cy="${(i * 23) % 40 + 4}" r="${(i % 3) * 0.25 + 0.35}" fill="#fff" opacity="${0.35 + (i % 4) * 0.15}"/>`).join('');
-  const icon = (ICON[it.icon] ?? ICON.gem).replaceAll('HUE', it.hue);
+  const id = `it${(artSeq = (artSeq + 1) % 1e9)}`; // 매번 고유 id: 숨겨진 사본의 그라데이션을 참조하면 안 그려짐
+  const g = Math.max(0, gi);
+  const [m0, m1, m2] = locked ? ['#3a3a38', '#6a6862', '#2e2e2c'] : METAL[g];
+  const [n0, n1] = locked ? ['#2a2a2a', '#121212'] : (NIGHT[it.category] ?? NIGHT.spell);
+  const pearl = !locked && g === 9;
+  const metal = pearl
+    ? `<linearGradient id="${id}-m" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6d6d0"/><stop offset=".25" stop-color="#f7ecc8"/><stop offset=".5" stop-color="#d4ecdf"/><stop offset=".75" stop-color="#d4def4"/><stop offset="1" stop-color="#e8d6f2"/></linearGradient>`
+    : `<linearGradient id="${id}-m" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${m0}"/><stop offset=".45" stop-color="${m1}"/><stop offset=".7" stop-color="${m0}"/><stop offset="1" stop-color="${m2}"/></linearGradient>`;
+  const rays = Array.from({ length: 16 }, (_, i) => { const a = (i / 16) * Math.PI * 2; return `<line x1="20" y1="25" x2="${(20 + Math.cos(a) * 22).toFixed(1)}" y2="${(25 + Math.sin(a) * 22).toFixed(1)}"/>`; }).join('');
+  const stars = [[10, 11], [30, 13], [8, 30], [32, 31], [14, 37], [27, 38]].map(([x, y], i) => `<path d="M${x} ${y - 0.9} L${x + 0.25} ${y} L${x} ${y + 0.9} L${x - 0.25} ${y} Z M${x - 0.9} ${y} L${x} ${y + 0.25} L${x + 0.9} ${y} L${x} ${y - 0.25} Z" opacity="${0.5 + (i % 3) * 0.15}"/>`).join('');
+  const icon = goldify((ICON[it.icon] ?? ICON.gem).replaceAll('HUE', 'HUE'), id);
   const grade = gi < 0 ? '' : GRADES[gi];
+  const name = locked ? '???' : it.name;
+  const nameSize = name.length > 5 ? 3.5 : 4.2;
   return `<svg viewBox="0 0 40 62" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-    <defs><radialGradient id="${id}" cx="50%" cy="38%" r="70%"><stop offset="0" stop-color="${it.hue}" stop-opacity="${locked ? 0.12 : 0.5}"/><stop offset=".55" stop-color="#1b1640"/><stop offset="1" stop-color="#0b0a1c"/></radialGradient>${frame}</defs>
-    <rect width="40" height="62" rx="3" fill="url(#${id}-g)"/>
-    <rect x="1.8" y="1.8" width="36.4" height="58.4" rx="2" fill="url(#${id})"/>
-    ${stars}
-    ${locked ? '<text x="20" y="30" text-anchor="middle" font-size="13" font-weight="900" fill="#55665e" font-family="sans-serif">?</text>' : `<g transform="translate(20 24) scale(.42)">${icon}</g>`}
-    <rect x="4" y="43" width="32" height="8.5" rx="4.2" fill="#0b0a1c" stroke="url(#${id}-g)" stroke-width=".7"/>
-    <text x="20" y="49.2" text-anchor="middle" font-size="4.7" font-weight="700" fill="#fff6dc" font-family="'Noto Sans KR','Apple SD Gothic Neo',sans-serif">${locked ? '???' : it.name}</text>
-    ${grade ? `<g transform="translate(20 56.2)"><rect x="-8" y="-3.4" width="16" height="6.8" rx="3.4" fill="url(#${id}-g)" stroke="#0b0a1c" stroke-width=".5"/><text y="1.9" text-anchor="middle" font-size="4.6" font-weight="900" fill="#0b0a1c" font-family="'Black Han Sans',sans-serif">${grade}</text></g>` : ''}
-  </svg>`;
+  <defs>
+    ${metal}
+    <linearGradient id="${id}-p" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4ead2"/><stop offset="1" stop-color="#dccba4"/></linearGradient>
+    <radialGradient id="${id}-n" cx=".5" cy=".42" r=".75"><stop offset="0" stop-color="${n0}"/><stop offset="1" stop-color="${n1}"/></radialGradient>
+    <linearGradient id="${id}-au" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8a6a2a"/><stop offset=".4" stop-color="#f6dc8c"/><stop offset=".7" stop-color="#c99a3a"/><stop offset="1" stop-color="#fff1c1"/></linearGradient>
+    <linearGradient id="${id}-au2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff1c1"/><stop offset="1" stop-color="#d9b45a"/></linearGradient>
+    <clipPath id="${id}-w"><path d="M6.5 45 V16 A13.5 13.5 0 0 1 33.5 16 V45 Z"/></clipPath>
+  </defs>
+  <rect width="40" height="62" rx="2.6" fill="url(#${id}-m)"/>
+  <rect x="1.4" y="1.4" width="37.2" height="59.2" rx="1.8" fill="url(#${id}-p)"/>
+  <rect x="2.6" y="2.6" width="34.8" height="56.8" rx="1.2" fill="none" stroke="url(#${id}-m)" stroke-width=".5"/>
+  <g clip-path="url(#${id}-w)">
+    <rect x="0" y="0" width="40" height="62" fill="url(#${id}-n)"/>
+    <g stroke="#e9cf8a" stroke-opacity="${locked ? 0.08 : 0.18}" stroke-width=".35">${rays}</g>
+    <circle cx="20" cy="25" r="11" fill="none" stroke="#e9cf8a" stroke-opacity="${locked ? 0.1 : 0.3}" stroke-width=".4"/>
+    <circle cx="20" cy="25" r="13.2" fill="none" stroke="#e9cf8a" stroke-opacity="${locked ? 0.06 : 0.16}" stroke-width=".3" stroke-dasharray=".6 .8"/>
+    <g fill="#f6dc8c">${locked ? '' : stars}</g>
+    ${locked ? '<text x="20" y="30" text-anchor="middle" font-size="12" font-weight="800" fill="#5a5850" font-family="Nanum Myeongjo, Noto Serif KR, serif">?</text>' : `<g transform="translate(20 26) scale(.4)">${icon}</g>`}
+  </g>
+  <path d="M6.5 45 V16 A13.5 13.5 0 0 1 33.5 16 V45 Z" fill="none" stroke="url(#${id}-m)" stroke-width=".9"/>
+  <path d="M8 45 V16.3 A12 12 0 0 1 32 16.3 V45" fill="none" stroke="#3a2a10" stroke-opacity=".35" stroke-width=".3"/>
+  ${grade ? `<g transform="translate(20 4.9)"><path d="M-6.5 -2.2 H6.5 L8 0 L6.5 2.2 H-6.5 L-8 0 Z" fill="url(#${id}-m)" stroke="#3a2a10" stroke-opacity=".5" stroke-width=".25"/><text y="1.35" text-anchor="middle" font-size="3.6" font-weight="800" fill="#241a0c" font-family="Nanum Myeongjo, Noto Serif KR, serif" letter-spacing=".15">${grade}</text></g>` : ''}
+  <rect x="5" y="47.4" width="30" height="8.4" rx=".8" fill="#f8f1de" stroke="url(#${id}-m)" stroke-width=".55"/>
+  <line x1="7" y1="49" x2="33" y2="49" stroke="#b89b5e" stroke-opacity=".5" stroke-width=".2"/>
+  <line x1="7" y1="54.2" x2="33" y2="54.2" stroke="#b89b5e" stroke-opacity=".5" stroke-width=".2"/>
+  <text x="20" y="53.1" text-anchor="middle" font-size="${nameSize}" font-weight="800" fill="#2a1f12" font-family="Nanum Myeongjo, Noto Serif KR, serif">${name}</text>
+  <path d="M20 57.6 l1 1 l-1 1 l-1 -1 z" fill="url(#${id}-m)"/>
+</svg>`;
 }
 
 // ---------- 매직 카드 실제 효과 값 (등급 순번 g = 0(F) … 9(SSS+)) ----------
 export const MAGIC_IDS = ['peek', 'swap', 'sweep', 'undo', 'shield', 'double'] as const;
 export type MagicId = (typeof MAGIC_IDS)[number];
 export function magicParams(id: MagicId, g: number) {
-  const chancePct = pct(g, 40, 100);
+  const chancePct = CH[g];
   switch (id) {
-    case 'peek': return { uses: 1, chancePct: 100, count: [1, 1, 1, 2, 2, 2, 3, 3, 4, 5][g], seconds: [2, 3, 4, 4, 5, 6, 6, 7, 8, 10][g] };
-    case 'swap': return { uses: g >= 8 ? 2 : 1, chancePct, preview: g >= 5 };
-    case 'sweep': return { uses: 1, chancePct, count: g >= 7 ? 2 : 1, anyCard: g >= 4 };
-    case 'undo': return { uses: g >= 9 ? 2 : 1, chancePct, undoPpeok: g >= 6 };
-    case 'shield': return { uses: 0, chancePct, shield: pick([1, 1, 2, 2, 2, 3, 3, 4, 4, 5], g), noPibak: g >= 5, noGwangbak: g >= 8 };
-    case 'double': return { uses: 0, chancePct: pct(g, 10, 100) };
+    case 'peek': return { uses: 1, chancePct: 100, count: B.peekCount[g], seconds: B.peekSec[g] };
+    case 'swap': return { uses: B.swapUses[g], chancePct, preview: g >= 5 };
+    case 'sweep': return { uses: 1, chancePct, count: B.sweepCount[g], anyCard: g >= B.sweepAny };
+    case 'undo': return { uses: B.undoUses[g], chancePct, undoPpeok: g >= 6 };
+    case 'shield': return { uses: 0, chancePct, shield: B.shield[g], noPibak: g >= B.shieldPibak, noGwangbak: g >= B.shieldGwangbak };
+    case 'double': return { uses: 0, chancePct: B.doublePct[g] };
   }
 }
 

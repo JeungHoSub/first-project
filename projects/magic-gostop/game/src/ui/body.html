@@ -223,6 +223,23 @@
   </div>
 </div>
 
+<div class="sheet" id="music" hidden>
+  <div class="sheet-card inv-card">
+    <div class="inv-head"><div><div class="sheet-kicker">배경음악</div><div class="sheet-title">음악 고르기</div></div>
+      <button class="x-btn" id="btn-music-x" type="button" aria-label="닫기">✕</button></div>
+    <div class="mu-ctrl">
+      <button type="button" class="mu-onoff" id="mu-onoff"></button>
+      <div class="seg mu-mode" id="mu-mode" role="radiogroup" aria-label="재생 방식">
+        <button type="button" data-m="one" role="radio">한 곡 반복</button>
+        <button type="button" data-m="favs" role="radio">좋아요 돌아가며</button>
+      </div>
+    </div>
+    <ul class="mu-list" id="mu-list"></ul>
+    <p class="dt-note">곡을 누르면 바로 들어 봅니다. 마음에 드는 곡에 ♥를 누르면 "좋아요 돌아가며"에서 그 곡들만 차례로 나옵니다(곡마다 세 바퀴).</p>
+    <button class="tk-close" id="btn-music-close" type="button">닫기</button>
+  </div>
+</div>
+
 <div class="sheet" id="item-detail" hidden>
   <div class="sheet-card inv-card">
     <div class="id-hero">

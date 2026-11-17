@@ -52,3 +52,42 @@ export const COPY: Record<string, { one: string; use: Use }> = {
   frame: { one: '내 이름표에 테두리가 생깁니다', use: 'look' },
 };
 export const copyOf = (id: string) => COPY[id] ?? { one: '', use: 'auto' as Use };
+
+// ---------- 등급별 효과 문구 (쉬운 말 · balance.ts 수치와 항상 같음) ----------
+import { CH, B } from './balance';
+const pc = (g: number) => `${CH[g]}% 확률`;
+const pt = (n: number) => `${n}점`;
+/** 장수·점수 등은 "한 판에" 기준. 꾸미기는 items-data.ts 문구를 그대로 쓴다 */
+export const EFFECT: Record<string, (g: number) => string> = {
+  peek: (g) => `내 차례에 눌러 쓰기 · 상대 손패 ${B.peekCount[g]}장을 ${B.peekSec[g]}초 동안 몰래 봅니다 (한 판에 1번, 항상 성공)`,
+  swap: (g) => `내 차례에 눌러 쓰기 · 손패 1장을 더미 맨 위 패와 바꿉니다${g >= 5 ? ' (바꾸기 전에 그 패를 먼저 봄)' : ''} · ${pc(g)}로 성공, 한 판에 ${B.swapUses[g]}번`,
+  sweep: (g) => `내 차례에 눌러 쓰기 · 바닥 패 ${B.sweepCount[g]}장을 더미 밑으로 치웁니다 (${g >= B.sweepAny ? '아무 패나' : '피만'}) · ${pc(g)}로 성공, 한 판에 1번`,
+  undo: (g) => `내 차례에 눌러 쓰기 · 방금 낸 내 차례를 되돌립니다${g >= 6 ? ' (뻑도 되돌림)' : ''} · ${pc(g)}로 성공, 한 판에 1번`,
+  shield: (g) => `판이 시작될 때 ${pc(g)}로 켜짐 · 켜지면 상대가 내 피를 ${B.shield[g]}번 못 가져갑니다${g >= B.shieldPibak ? ' · 피박도 1번 막음' : ''}${g >= B.shieldGwangbak ? ' · 광박도 1번 막음' : ''}`,
+  double: (g) => `이긴 판의 최종 점수가 ${B.doublePct[g]}% 확률로 2배가 됩니다`,
+  mirror: (g) => `상대가 내 피를 가져가면 ${pc(g)}로 상대 피 ${g >= 9 ? 2 : 1}장을 되받습니다 (한 판에 최대 ${B.mirrorCap[g]}번)`,
+  goinsure: (g) => `고를 불렀다가 지면, 고 1번마다 잃는 점수가 ${pt(B.insureEach[g])} 줄어듭니다 (최대 ${pt(B.insureCap[g])}) · ${pc(g)}로 켜짐`,
+  godori: (g) => `새 열끗을 먹을 때마다 +${pt(B.godoriEach[g])}, 고도리를 완성하면 +${pt(B.godoriDone[g])} (부적 점수는 한 판에 최대 ${B.talismanCap}점)`,
+  dan: (g) => `홍단·청단·초단을 하나 완성할 때마다 +${pt(B.dan[g])} (이 부적으로 한 판에 최대 ${pt(B.danCap[g])})`,
+  pibu: (g) => `쌍피·보너스 피를 먹을 때마다 +${pt(B.pibu[g])} (한 판에 최대 ${pt(B.pibuCap[g])})`,
+  jjok: (g) => `쪽이나 따닥에 성공할 때마다 +${pt(B.jjok[g])} (한 판에 최대 ${pt(B.jjokCap[g])})`,
+  fang: (g) => `고를 부를 때마다 +${pt(B.fang[g])} (한 판에 최대 ${pt(B.fangCap[g])})`,
+  haetae: (g) => `졌을 때 잃는 점수가 ${B.haetae[g]}% 줄어듭니다 (최소 1점은 잃음)`,
+  seer: (g) => `판이 시작될 때 ${pc(g)}로 더미 맨 위 ${B.seer[g]}장을 미리 봅니다`,
+  twoflip: (g) => `내 차례에 눌러 쓰기 · 더미를 한 장 더 뒤집어 맞으면 먹습니다 · ${B.twoflipFrom[g]}번째 내 차례부터, 한 판에 ${B.twoflipUses[g]}번 · ${pc(g)}로 켜짐`,
+  collector: (g) => `광을 먹을 때마다 +${pt(B.spiritEach[g])} (한 판에 최대 ${pt(B.spiritCap[g])}) · ${pc(g)}로 켜짐`,
+  turtle: (g) => `상대가 내 피를 ${B.turtle[g]}번 못 가져갑니다${g >= B.turtlePibak ? ' · 피박 기준이 4장으로 줄어듦' : ''} · ${pc(g)}로 켜짐`,
+  gumiho: (g) => `내가 고를 부를 때마다 상대 피 1장을 가져옵니다 (한 판에 최대 ${B.gumiho[g]}장) · ${pc(g)}로 켜짐`,
+  dokkaebi: (g) => `판이 시작될 때 바닥의 피 ${B.dokkaebi[g]}장을 가져옵니다 · ${pc(g)}로 켜짐`,
+  samjogo: (g) => `열끗을 먹을 때마다 +${pt(B.spiritEach[g])} (한 판에 최대 ${pt(B.spiritCap[g])}) · ${pc(g)}로 켜짐`,
+  gwangday: (g) => `이번 판은 광 점수에 +${pt(B.gwangday[g])}${g >= B.gwangdayBi ? ' · 비광 3장도 감점 없이 3점' : ''} (나와 상대 모두) · ${pc(g)}로 켜짐`,
+  pifest: (g) => `이번 판은 국진을 쌍피로 셉니다${g >= B.pifestBoost ? ' · 쌍피는 3피로' : ''}${g >= B.pifestBonus ? ' · 보너스 패 1장 추가' : ''} (모두) · ${pc(g)}로 켜짐`,
+  fog: (g) => `바닥 패 ${B.fog[g]}장이 가려진 채 시작합니다 (모두)${B.fogPeek[g] ? ` · 그중 ${B.fogPeek[g]}장은 나만 미리 봄` : ''} · ${pc(g)}로 켜짐`,
+  quake: (g) => `이번 판 첫 흔들기·폭탄이 2배 대신 ${B.quake[g]}배 (모두) · ${pc(g)}로 켜짐`,
+  fullmoon: (g) => `이번 판 8월 패를 먹을 때마다 +${pt(B.moon[g])} (모두, 한 사람당 최대 ${pt(B.moonCap[g])}) · ${pc(g)}로 켜짐`,
+  goday: (g) => `이번 판 고를 부를 때마다 +${pt(g >= B.godayStrong ? 2 : 1)} (모두, 3고까지) · ${pc(g)}로 켜짐`,
+  gourd: (g) => `장착한 주문 카드의 성공 확률 +${B.gourd[g]}%${g >= B.gourdExtraUse ? ' · 1번만 쓰는 주문 하나를 2번 쓸 수 있음' : ''}`,
+  pouch: (g) => `봇전에서 아이템을 얻을 확률 +${B.pouch[g]}% (뽑기권 확률은 그대로)`,
+};
+/** 함께 쓸 때 규칙(쉬운 말) */
+export const STACK_RULE = `아이템 보너스 점수는 한 판에 최대 ${B.itemCap}점(부적은 ${B.talismanCap}점)까지 · 피 지키기는 모두 합쳐 ${B.shieldCap}번까지 · 졌을 때 덜 잃기는 모두 합쳐 ${Math.round(B.lossCutCap * 100)}%까지 · 점수 배수 아이템(황금 배수·땅울림)은 하나만 · 보너스 점수는 7점(고/스톱 기준)에는 들어가지 않고 끝난 뒤 정산에만 더해집니다`;

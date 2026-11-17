@@ -13,36 +13,15 @@ export const ME: PlayerId = 0;
 export const AI: PlayerId = 1;
 
 /** 등급 순번(0=F…9=SSS+)별 발동 확률 */
-export const CH = [40, 47, 53, 60, 67, 73, 80, 87, 93, 100];
+import { CH, B } from './balance';
+export { CH };
 const roll = (g: number, bonus = 0) => Math.random() * 100 < Math.min(100, CH[g] + bonus);
 
 // ---------- 수치표 (items-data.ts 문구와 같은 값) ----------
-const T = {
-  godoriDone: [1, 1, 1.5, 1.5, 2, 2, 3, 3, 3.5, 4],
-  godoriEach: [0.5, 0.75, 0.75, 1, 1, 1.25, 1.25, 1.5, 1.5, 1.5],
-  dan: [1, 1, 1.5, 1.5, 2, 2, 2.5, 2.5, 3, 3.5], danCap: [2, 3, 3, 4, 4, 5, 5, 6, 6, 6],
-  pibu: [0.5, 0.5, 0.75, 0.75, 1, 1, 1.25, 1.25, 1.5, 2], pibuCap: [1, 2, 2, 3, 3, 4, 4, 5, 5, 5],
-  jjok: [1, 1, 1.5, 1.5, 2, 2, 2.5, 2.5, 3, 3.5], jjokCap: [2, 3, 3, 4, 4, 5, 5, 6, 6, 6],
-  fang: [0.5, 0.5, 0.75, 0.75, 1, 1, 1.25, 1.25, 1.5, 2], fangCap: [1, 2, 2, 3, 3, 4, 4, 5, 5, 5],
-  haetae: [10, 13, 17, 20, 23, 27, 30, 33, 37, 40],
-  seer: [1, 1, 2, 2, 2, 3, 3, 3, 4, 4],
-  twoflipFrom: [7, 6, 5, 4, 4, 3, 3, 2, 2, 1],
-  spiritEach: [0.5, 0.5, 1, 1, 1, 1.5, 1.5, 1.5, 2, 2], spiritCap: [1, 1.5, 2, 2.5, 3, 3, 3.5, 4, 4.5, 5],
-  turtle: [1, 1, 1, 1, 2, 2, 2, 2, 3, 3],
-  gumiho: [1, 1, 1, 1, 2, 2, 2, 2, 3, 3],
-  dokkaebi: [1, 1, 1, 1, 2, 2, 2, 2, 3, 3],
-  gwangday: [1, 1, 1, 1, 1, 2, 2, 2, 3, 3],
-  fog: [1, 1, 2, 2, 2, 3, 3, 3, 4, 4], fogPeek: [0, 0, 0, 1, 1, 1, 2, 2, 3, 3],
-  quake: [3, 3, 3, 3, 3, 3.5, 3.5, 3.5, 4, 4],
-  moon: [0.5, 0.5, 0.5, 1, 1, 1, 1, 1.5, 1.5, 1.5], moonCap: [1, 1, 1.5, 1.5, 2, 2, 2.5, 2.5, 3, 3],
-  pouch: [2, 3, 5, 6, 8, 9, 11, 12, 14, 15],
-  mirrorCap: [1, 1, 1, 1, 2, 2, 2, 2, 3, 3],
-  insureEach: [0.5, 0.5, 1, 1, 1, 1.5, 1.5, 2, 2, 2.5], insureCap: [1, 2, 2, 3, 4, 4, 5, 5, 6, 6],
-  shield: [1, 1, 2, 2, 2, 3, 3, 4, 4, 5],
-};
-export const ITEM_CAP = 8;
-export const TALISMAN_CAP = 6;
-export const SHIELD_CAP = 6;
+const T = B; // 수치는 balance.ts 한곳에서 관리
+export const ITEM_CAP = B.itemCap;
+export const TALISMAN_CAP = B.talismanCap;
+export const SHIELD_CAP = B.shieldCap;
 export const MULTIPLIER_IDS = ['double', 'quake'];
 
 // ---------- 장착(로드아웃) ----------
@@ -146,7 +125,7 @@ export function prepare(ids: string[], aiSlots: Slot[] = []): Partial<RuleOption
   const slots: Slot[] = sanitize(ids).map((id) => ({ id, g: bestGrade(id) }));
   const g: Record<string, number> = {}; slots.forEach((x) => { g[x.id] = x.g; });
   run = { ai: { slots: aiSlots, on: {}, g: {} }, aiGumihoLeft: 0, aiMirrorLeft: 0, slots, on: {}, g, notes: [], fogHidden: new Set(), fogPeeked: new Set(), seerCards: [], gumihoLeft: 0, mirrorLeft: 0, twoflipLeft: 0, myTurns: 0, extraFlippedThisTurn: false, seen: 0 };
-  const gourd = has('gourd') ? (gOf('gourd') + 1) * 3 : 0;
+  const gourd = has('gourd') ? B.gourd[gOf('gourd')] : 0;
   const opts: Partial<RuleOptions> = {};
   for (const sl of slots) {
     const it = ITEMS.find((x) => x.id === sl.id)!;
@@ -163,18 +142,18 @@ export function prepare(ids: string[], aiSlots: Slot[] = []): Partial<RuleOption
   const ai = run.ai;
   for (const sl of aiSlots) { ai.g[sl.id] = sl.g; ai.on[sl.id] = catOf(sl.id) === 'talisman' || roll(sl.g); }
   if (evOn('pifest')) {
-    if (evG('pifest') >= 4) opts.piBoost = true;
-    if (evG('pifest') >= 8) opts.bonus = { two: 3, three: 1 };
+    if (evG('pifest') >= B.pifestBoost) opts.piBoost = true;
+    if (evG('pifest') >= B.pifestBonus) opts.bonus = { two: 3, three: 1 };
   }
   if (evOn('quake')) opts.quakeFirst = T.quake[evG('quake')];
-  if ((onP(ME, 'turtle') && gP(ME, 'turtle') >= 6) || (onP(AI, 'turtle') && gP(AI, 'turtle') >= 6)) {
-    opts.pibakMax = [onP(ME, 'turtle') && gP(ME, 'turtle') >= 6 ? 4 : 5, onP(AI, 'turtle') && gP(AI, 'turtle') >= 6 ? 4 : 5];
+  if ((onP(ME, 'turtle') && gP(ME, 'turtle') >= B.turtlePibak) || (onP(AI, 'turtle') && gP(AI, 'turtle') >= B.turtlePibak)) {
+    opts.pibakMax = [onP(ME, 'turtle') && gP(ME, 'turtle') >= B.turtlePibak ? 4 : 5, onP(AI, 'turtle') && gP(AI, 'turtle') >= B.turtlePibak ? 4 : 5];
   }
   run.gumihoLeft = isOn('gumiho') ? T.gumiho[gOf('gumiho')] : 0;
   run.mirrorLeft = isOn('mirror') ? T.mirrorCap[gOf('mirror')] : 0;
   run.aiGumihoLeft = onP(AI, 'gumiho') ? T.gumiho[gP(AI, 'gumiho')] : 0;
   run.aiMirrorLeft = onP(AI, 'mirror') ? T.mirrorCap[gP(AI, 'mirror')] : 0;
-  run.twoflipLeft = isOn('twoflip') ? (gOf('twoflip') >= 8 ? 2 : 1) : 0;
+  run.twoflipLeft = isOn('twoflip') ? B.twoflipUses[gOf('twoflip')] : 0;
   return opts;
 }
 
@@ -191,17 +170,17 @@ export function begin(state: GameState, magicShield: number, magicPatch: { noPib
   // AI: 금강 방패·현무 거북·황금 배수·방망이 도깨비
   {
     let aiShield = 0; const ap: { noPibak?: boolean; noGwangbak?: boolean; double?: boolean } = {};
-    if (onP(AI, 'shield')) { const g = gP(AI, 'shield'); aiShield += T.shield[g]; if (g >= 5) ap.noPibak = true; if (g >= 8) ap.noGwangbak = true; }
+    if (onP(AI, 'shield')) { const g = gP(AI, 'shield'); aiShield += T.shield[g]; if (g >= B.shieldPibak) ap.noPibak = true; if (g >= B.shieldGwangbak) ap.noGwangbak = true; }
     if (onP(AI, 'turtle')) aiShield += T.turtle[gP(AI, 'turtle')];
     if (onP(AI, 'double')) ap.double = true;
     aiShield = Math.min(SHIELD_CAP, aiShield);
     if (aiShield || ap.noPibak || ap.noGwangbak || ap.double) s = setMagicState(s, AI, { shield: aiShield, ...ap });
     if (onP(AI, 'dokkaebi')) { const r = magicTake(s, AI, 'floor', T.dokkaebi[gP(AI, 'dokkaebi')]); s = r.state; if (r.taken.length) notes.push(`상대 방망이 도깨비 · 바닥 피 ${r.taken.length}장`); }
   }
-  if (isOn('turtle')) notes.push(`현무 거북 · 피 지킴 ${T.turtle[gOf('turtle')]}회${gOf('turtle') >= 6 ? ' · 피박 기준 4장' : ''}`);
+  if (isOn('turtle')) notes.push(`현무 거북 · 피 지킴 ${T.turtle[gOf('turtle')]}회${gOf('turtle') >= B.turtlePibak ? ' · 피박 기준 4장' : ''}`);
   if (evOn('pifest')) {
     s = setGukjin(s, ME, 'pi'); s = setGukjin(s, AI, 'pi');
-    notes.push(`쌍피 축제 · 국진은 쌍피${evG('pifest') >= 4 ? ' · 쌍피=3피' : ''}${evG('pifest') >= 8 ? ' · 보너스 패 +1' : ''}`);
+    notes.push(`쌍피 축제 · 국진은 쌍피${evG('pifest') >= B.pifestBoost ? ' · 쌍피=3피' : ''}${evG('pifest') >= B.pifestBonus ? ' · 보너스 패 +1' : ''}`);
   }
   if (evOn('quake')) notes.push(`땅울림 · 첫 흔들기·폭탄 ×${T.quake[evG('quake')]}`);
   if (isOn('dokkaebi')) {
@@ -269,10 +248,10 @@ function pointsFor(s: GameState, p: PlayerId): ExtraPoint[] {
   // 판 이벤트권 (모두에게)
   if (evOn('gwangday')) {
     const d = scoreOf(s, p).details.find((x) => x.key === 'gwang');
-    if (d) add('gwangday', '광의 날', T.gwangday[evG('gwangday')] + (evG('gwangday') >= 7 && d.label.includes('비광') ? 1 : 0));
+    if (d) add('gwangday', '광의 날', T.gwangday[evG('gwangday')] + (evG('gwangday') >= B.gwangdayBi && d.label.includes('비광') ? 1 : 0));
   }
   if (evOn('fullmoon')) add('fullmoon', '보름달 밤', Math.min(cnt((c) => c.month === 8) * T.moon[evG('fullmoon')], T.moonCap[evG('fullmoon')]));
-  if (evOn('goday')) add('goday', '북소리의 날', Math.min(s.goCount[p], 3) * (evG('goday') >= 5 ? 2 : 1));
+  if (evOn('goday')) add('goday', '북소리의 날', Math.min(s.goCount[p], 3) * (evG('goday') >= B.godayStrong ? 2 : 1));
   // 한 사람당 +8 상한
   let left = ITEM_CAP;
   return out.map((x) => { const v = Math.min(x.points, left); left -= v; return { ...x, points: v }; }).filter((x) => x.points > 0);
@@ -347,16 +326,16 @@ export function lossAfterGuard(lostScore: number, loserGoCount: number, loser: P
     const v = Math.min(loserGoCount * T.insureEach[gP(loser, 'goinsure')], T.insureCap[gP(loser, 'goinsure')]);
     cut += v; why.push(`${pre}고 보험 -${v}점`);
   }
-  cut = Math.min(cut, lostScore * 0.5, lostScore - 1);
+  cut = Math.min(cut, lostScore * B.lossCutCap, lostScore - 1);
   cut = Math.max(0, Math.floor(cut));
   return { lost: lostScore - cut, saved: cut, why };
 }
 /** 복주머니: 봇전 아이템 획득 확률 보정(%p) */
 export const dropBonus = () => (has('pouch') ? T.pouch[gOf('pouch')] : 0);
 /** 호리병: 주문 발동 확률 보정(%p) */
-export const spellBonus = () => (has('gourd') ? (gOf('gourd') + 1) * 3 : 0);
+export const spellBonus = () => (has('gourd') ? B.gourd[gOf('gourd')] : 0);
 /** 호리병 SS 이상: 사용 횟수 1회인 주문 1장 +1 */
-export const gourdExtraUse = () => has('gourd') && gOf('gourd') >= 7;
+export const gourdExtraUse = () => has('gourd') && gOf('gourd') >= B.gourdExtraUse;
 export const shieldBaseFor = (g: number) => T.shield[g];
 export const lanternGrade = () => (has('lantern') ? gOf('lantern') : -1);
 export const cosmetic = (id: string) => (has(id) ? gOf(id) : -1);
