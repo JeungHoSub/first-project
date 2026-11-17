@@ -3,7 +3,7 @@
 // 연출: 뽑기권이 날아와 빛나며 찢어짐 → 화투 뒷면이 사선 축으로 빨라지며 회전(잔상) + 빛 입자가 빨려 듦
 //      (높은 등급이면 화면 흔들림·번개) → 충격파와 함께 폭발 → 카드가 3D로 뒤집히며 공개.
 //      10회는 카드 10장이 깔린 뒤 한 장씩 뒤집히고, S 이상은 마지막에 따로 크게 뒤집힌다. 화면을 누르면 건너뛴다.
-import { TICKETS, GRADES, GRADE_COLOR, drawWithTicket, priceOf, itemArt, CATEGORY_LABEL, type Ticket, type Drop } from './collection';
+import { ITEMS, bestGrade, TICKETS, GRADES, GRADE_COLOR, drawWithTicket, priceOf, itemArt, CATEGORY_LABEL, type Ticket, type Drop } from './collection';
 import { copyOf } from './item-copy';
 import { ALL_CARDS, type Card } from '../engine';
 import { cardArt } from './art';
@@ -33,6 +33,7 @@ function addLog(t: number, ds: Drop[]) {
   try { localStorage.setItem('mg-gacha-log', JSON.stringify(log)); } catch { /* 무시 */ }
 }
 let sel = 0;
+let txTab: 'odds' | 'items' | 'log' = 'odds';
 try { sel = Math.max(0, Math.min(4, +(localStorage.getItem('mg-ticket') ?? 0) || 0)); } catch { /* 무시 */ }
 
 export function initGacha(changed: () => void) {
@@ -106,7 +107,11 @@ function renderTickets() {
   const hero = $('tx-hero');
   hero.style.setProperty('--tc', t.hue);
   hero.dataset.tier = String(sel);
-  hero.innerHTML = `<div class="tx-hero-card">${ticketArt(t, sel)}<i class="tx-foil" aria-hidden="true"></i><i class="tx-shine" aria-hidden="true"></i></div>`;
+  hero.innerHTML = `<div class="tx-hero-card">${ticketArt(t, sel)}<i class="tx-foil" aria-hidden="true"></i><i class="tx-shine" aria-hidden="true"></i></div>
+    <div class="tx-altar" aria-hidden="true"></div>
+    <i class="chorong l" aria-hidden="true"><b>福</b></i><i class="chorong r" aria-hidden="true"><b>運</b></i>
+    <div class="tx-petals" aria-hidden="true">${Array.from({ length: 12 }, (_, i) => `<i style="--x:${(i * 37) % 100}%;--d:${(i * 0.83) % 6}s;--s:${0.6 + ((i * 7) % 5) / 6};--dur:${6 + (i % 4)}s"></i>`).join('')}</div>
+    <div class="tx-hero-info"><b>${t.name}</b><span>${t.minGrade ? `${t.minGrade} 등급 이상 보장` : '보장 없음'} · S 이상 ${Math.round(GRADES.reduce((a, g, gi) => a + (gi >= S_INDEX ? t.rates[g] : 0), 0) * 100) / 100}%</span></div>`;
   const card = hero.firstElementChild as HTMLElement;
   const tilt = (x: number, y: number) => { card.style.setProperty('--rx', `${(0.5 - y) * 16}deg`); card.style.setProperty('--ry', `${(x - 0.5) * 22}deg`); card.style.setProperty('--mx', `${x * 100}%`); card.style.setProperty('--my', `${y * 100}%`); };
   hero.onpointermove = (e) => { const r = card.getBoundingClientRect(); tilt((e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height); card.classList.add('tilting'); };
@@ -134,19 +139,26 @@ function renderTickets() {
   const mine = log.filter((x) => x.t === sel);
   const bestRow = mine.reduce<LogRow | null>((a, x) => (!a || x.gi > a.gi ? x : a), null);
   const recent = log.slice(-14).reverse();
-  $('tx-odds').innerHTML = `<ol class="tx-ladder">${ladder}</ol>
-    <div class="tx-stats">
+  const stats = `<div class="tx-stats">
       <div><small>최소 보장</small><b>${t.minGrade ? `${t.minGrade} 이상` : '없음'}</b></div>
       <div><small>S 이상</small><b>${r2(sum(S_INDEX))}</b></div>
       <div><small>SSS 이상</small><b>${r2(sum(8))}</b></div>
-    </div>
-    <div class="tx-rec">
-      <div class="tx-rec-head"><b>뽑기 기록</b><span>${t.name} ${mine.length}회${bestRow ? ` · 최고 ${badge(bestRow.gi)}` : ''}</span></div>
-      <div class="tx-rec-row">${recent.length ? recent.map((x) => `<i title="${GRADES[x.gi]}">${badge(x.gi)}</i>`).join('') : '<small>아직 기록이 없습니다</small>'}</div>
-    </div>
-    <details class="tx-all"><summary>뽑기권 5단계 확률 비교</summary><table><thead><tr><th></th>${TICKETS.map((x, i) => `<th class="${i === sel ? 'cur' : ''}" style="--tc:${x.hue}">${x.name.replace('권', '')}</th>`).join('')}</tr></thead><tbody>${
+    </div>`;
+  const compare = `<details class="tx-all"><summary>뽑기권 5단계 확률 비교</summary><table><thead><tr><th></th>${TICKETS.map((x, i) => `<th class="${i === sel ? 'cur' : ''}" style="--tc:${x.hue}">${x.name.replace('권', '')}</th>`).join('')}</tr></thead><tbody>${
       GRADES.map((g, gi) => `<tr><td>${badge(gi)}</td>${TICKETS.map((x, i) => `<td class="${i === sel ? 'cur' : ''}">${x.rates[g] ? `${x.rates[g]}%` : '<span class="nil">–</span>'}</td>`).join('')}</tr>`).join('')
     }</tbody></table></details>`;
+  const totalW = ITEMS.reduce((a, x) => a + x.weight, 0);
+  const itemsPanel = `<p class="tx-sub">어떤 아이템이 나올지는 아래 확률, 등급은 위 확률표를 따로 따릅니다. 모은 것은 최고 등급이 표시됩니다.</p>
+    <div class="tx-items">${ITEMS.map((it) => { const g = bestGrade(it.id); return `<div class="tx-it${g < 0 ? ' no' : ''}" title="${it.name}"><span>${itemArt(it, Math.max(g, 0), g < 0)}</span><b>${g < 0 ? '???' : it.name}</b><small>${Math.round((it.weight / totalW) * 1000) / 10}%</small>${g >= 0 ? badge(g) : ''}</div>`; }).join('')}</div>`;
+  const allLog = log.slice(-40).reverse();
+  const logPanel = `<div class="tx-rec">
+      <div class="tx-rec-head"><b>${t.name}</b><span>${mine.length}회${bestRow ? ` · 최고 ${badge(bestRow.gi)}` : ''}</span></div>
+      <div class="tx-rec-row">${recent.length ? recent.map((x) => `<i title="${GRADES[x.gi]}">${badge(x.gi)}</i>`).join('') : '<small>아직 기록이 없습니다</small>'}</div>
+    </div>
+    <ul class="tx-loglist">${allLog.map((x) => { const it = ITEMS.find((y) => y.id === x.id); return it ? `<li>${badge(x.gi)}<b>${it.name}</b><small>${TICKETS[x.t]?.name ?? ''}</small></li>` : ''; }).join('')}</ul>`;
+  const panel = txTab === 'odds' ? `${stats}<ol class="tx-ladder">${ladder}</ol>${compare}` : txTab === 'items' ? itemsPanel : logPanel;
+  $('tx-odds').innerHTML = `<div class="tx-tabs" role="tablist">${([['odds', '확률'], ['items', '구성품'], ['log', '기록']] as const).map(([k, l]) => `<button type="button" role="tab" class="tab${txTab === k ? ' cur' : ''}" data-k="${k}">${l}</button>`).join('')}</div><div class="tx-panel">${panel}</div>`;
+  $('tx-odds').querySelectorAll<HTMLButtonElement>('.tx-tabs .tab').forEach((b) => b.addEventListener('click', () => { txTab = b.dataset.k as typeof txTab; sfx.click(); renderTickets(); }));
 
   $('tx-actions').innerHTML = [1, 10].map((n) => {
     const p = priceOf(t, n);
@@ -260,7 +272,64 @@ function hexA(hex: string, a: number) {
 
 // ---------- 뽑기 연출 ----------
 let running = false;
+/** SSS · SSS+ 전용 절정 연출.
+ *  SSS: 화면이 꺼지고 심장 박동 → 붉은 금빛 기둥이 내려꽂힘 → 화면이 갈라짐
+ *  SSS+: 화면이 꺼지고 별이 뜸 → 오방색 다섯 빛기둥이 솟음 → "천하제일" 붓글씨 → 무지개 물결 */
+async function climax(stage: HTMLElement, gi: number) {
+  const fxLayer = document.createElement('div');
+  fxLayer.className = `gx-climax ${gi >= 9 ? 'c9' : 'c8'}`;
+  stage.append(fxLayer);
+  stage.classList.add('blackout');
+  for (let k = 0; k < 2; k++) { sfx.heartbeat(); await wait(430); }
+  if (gi >= 9) {
+    fxLayer.innerHTML = `<div class="stars"></div>${['#1f6f8b', '#b3261e', '#e8b84a', '#f3ead8', '#2e7d4f'].map((c, i) => `<i class="beam" style="--c:${c};--x:${10 + i * 20}%;--d:${i * 110}ms"></i>`).join('')}
+      <div class="banner"><span>천하제일</span></div>`;
+    await wait(120);
+    fxLayer.classList.add('go'); sfx.chime(9);
+    for (let k = 0; k < 5; k++) setTimeout(() => sfx.chime(5 + k), 110 * k);
+    await wait(1250);
+    sfx.win();
+    spawnOut(160, '#ffd23a', true, center(), 1.1);
+    await wait(900);
+  } else {
+    fxLayer.innerHTML = `<i class="pillar"></i><svg class="crack" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M50 0 L46 18 L55 30 L44 47 L57 62 L47 78 L53 100" /><path d="M46 18 L30 26 M55 30 L72 36 M44 47 L24 55 M57 62 L80 70 M47 78 L34 92" /></svg>`;
+    await wait(80);
+    fxLayer.classList.add('go'); sfx.bomb();
+    await wait(650);
+    fxLayer.classList.add('crack-on'); sfx.slap(1); sfx.buzz([60, 40, 90]);
+    stage.classList.add('shake');
+    await wait(600);
+  }
+  stage.classList.remove('blackout', 'shake');
+  fxLayer.classList.add('out');
+  setTimeout(() => fxLayer.remove(), 900);
+}
+
+/** 공개된 카드에 마우스를 올리거나(누르면) 어떤 아이템인지 설명을 띄운다 */
+function wireTips(box: HTMLElement) {
+  const tip = $('gx-tip');
+  const show = (el: HTMLElement) => {
+    const gi = +el.dataset.gi!;
+    tip.innerHTML = `<div class="tp-head"><b>${el.dataset.name}</b>${badge(gi)}</div><div class="tp-cat">${el.dataset.cat}</div><p>${el.dataset.one}</p><p class="tp-eff">${el.dataset.eff}</p>`;
+    tip.style.setProperty('--gc', gcol(gi));
+    tip.hidden = false;
+    const r = el.getBoundingClientRect(); const tw = tip.offsetWidth; const th = tip.offsetHeight;
+    let x = r.left + r.width / 2 - tw / 2; x = Math.max(8, Math.min(innerWidth - tw - 8, x));
+    let y = r.top - th - 10; if (y < 8) y = Math.min(innerHeight - th - 8, r.bottom + 10);
+    tip.style.left = `${x}px`; tip.style.top = `${y}px`;
+  };
+  const hide = () => { tip.hidden = true; };
+  box.querySelectorAll<HTMLElement>('.gf').forEach((el) => {
+    el.addEventListener('mouseenter', () => show(el));
+    el.addEventListener('mouseleave', hide);
+    el.addEventListener('focus', () => show(el));
+    el.addEventListener('blur', hide);
+    el.addEventListener('click', (e) => { e.stopPropagation(); if (tip.hidden) show(el); else hide(); });
+  });
+}
+
 function closeRun() {
+  $('gx-tip').hidden = true;
   $('gacha-run').hidden = true; fxStop(); running = false;
   $('gacha-run').querySelectorAll('.gx-fly, .gx-seal').forEach((e) => e.remove());
 }
@@ -308,7 +377,9 @@ function seal(stage: HTMLElement, gi: number) {
 
 function cardFlip(d: Drop, i: number, big = false) {
   const cp = copyOf(d.item.id);
-  return `<div class="gf${big ? ' big' : ''}" style="--i:${i};--gc:${gcol(d.gi)}" data-gi="${d.gi}" data-rb="${isRainbow(d.gi) ? 1 : 0}">
+  const esc = (x: string) => x.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+  return `<div class="gf${big ? ' big' : ''}${d.gi >= 8 ? ' legend' : ''}" tabindex="0" style="--i:${i};--gc:${gcol(d.gi)}" data-gi="${d.gi}" data-rb="${isRainbow(d.gi) ? 1 : 0}"
+    data-name="${esc(d.item.name)}" data-cat="${esc(CATEGORY_LABEL[d.item.category as keyof typeof CATEGORY_LABEL] ?? '')}" data-one="${esc(cp.one)}" data-eff="${esc(d.item.effect(d.gi))}">
     <div class="gf-in"><div class="gf-back"></div><div class="gf-front">${itemArt(d.item, d.gi)}</div></div>
     <div class="gf-cap"><b>${d.item.name}</b>${badge(d.gi)}${d.isNewBest ? '<em>NEW</em>' : ''}</div>
     ${big ? `<div class="gf-detail"><span>${CATEGORY_LABEL[d.item.category as keyof typeof CATEGORY_LABEL] ?? ''}</span><p>${cp.one}</p><p class="gf-eff">${d.item.effect(d.gi)}</p></div>` : ''}
@@ -387,6 +458,7 @@ async function run(t: Ticket, tier: number, n: number) {
     for (let i = 0; i < (best.gi >= 7 ? 7 : 3); i++) bolt();
     await wait(520);
   }
+  if (best.gi >= 8 && !skipping) await climax(stage, best.gi);
   void streamEnd;
 
   // 폭발: 섬광 + 충격파 + 입자 (SSS 이상은 연속 폭죽)
@@ -422,12 +494,13 @@ async function run(t: Ticket, tier: number, n: number) {
     res.hidden = false;
     const els = [...res.children] as HTMLElement[];
     await wait(80 * n + 300);
-    // 낮은 등급부터 순서대로, S 이상은 마지막에 하나씩 크게
-    const order = els.map((el, i) => ({ el, gi: drops[i].gi })).sort((a, b) => (a.gi >= S_INDEX ? 1 : 0) - (b.gi >= S_INDEX ? 1 : 0));
+    // 낮은 등급부터 높은 등급 순서로 하나씩 뒤집는다 (같은 등급이면 놓인 순서대로)
+    const order = els.map((el, i) => ({ el, gi: drops[i].gi, i })).sort((a, b) => a.gi - b.gi || a.i - b.i);
     for (const { el, gi } of order) {
       if (gi >= S_INDEX) {
         el.classList.add('tease'); sfx.shake();
-        await wait(520);
+        await wait(gi >= 8 ? 900 : 520);
+        if (gi >= 8) { sfx.heartbeat(); stage.classList.add('dim'); await wait(450); stage.classList.remove('dim'); }
       }
       el.classList.add('open', 'stamp'); sfx.flip();
       if (gi >= S_INDEX) {
@@ -444,6 +517,7 @@ async function run(t: Ticket, tier: number, n: number) {
     if (high) spawnFloat(50, gcol(best.gi), rainbow);
     seal(stage, best.gi);
   }
+  wireTips(res);
   $('gr-close').hidden = false;
   running = false;
   onChange();

@@ -175,7 +175,7 @@ export function buzz(ms: number | number[]) {
   try { navigator.vibrate?.(ms); } catch { /* 무시 */ }
 }
 
-// ---------- 배경음악: 국악 5음(궁상각치우) 뜯는 소리 + 낮은 지속음, 합성으로 무한 반복 ----------
+// ---------- 배경음악: 자진모리 장단(장구·꽹과리) + 태평소 + 가야금, 합성으로 무한 반복 ----------
 let bgmOn = true;
 try { bgmOn = localStorage.getItem('mg-bgm') !== '0'; } catch { /* 무시 */ }
 let bgmTimer: number | null = null;
@@ -185,21 +185,25 @@ let step = 0;
 // 평조(솔라도레미) 음계. 0=황(G3) …
 const SCALE = [196.0, 220.0, 261.6, 293.7, 329.6, 392.0, 440.0, 523.3, 587.3, 659.3, 784.0];
 // 굿거리 장단: 한 마디 12칸(3칸씩 4박). 덩=양편, 쿵=북편, 덕=채편, 기=채편 약, 더러러=굴림
-const JANGGU = ['덩', '', '', '기', '덕', '', '쿵', '', '', '더', '러', '러'];
-const JANGGU2 = ['덩', '', '', '기', '덕', '', '쿵', '', '', '쿵', '', ''];
+// 자진모리 장단(빠르고 신나는): 한 마디 12칸
+const JANGGU = ['덩', '', '덕', '쿵', '', '덕', '쿵', '', '덕', '더', '러', '러'];
+const JANGGU2 = ['덩', '', '덕', '쿵', '', '덕', '쿵', '', '덕', '쿵', '', '덕'];
+// 꽹과리: 박마다 "갱", 사이 "개"
+const KKWAENG = ['갱', '', '개', '갱', '', '개', '갱', '', '개', '갱', '개', '개'];
 // 대금 선율: [음, 길이(칸)] 8마디 = 96칸. -1 쉼
+// 태평소 선율(신나게): [음, 길이(칸)] 8마디 = 96칸. -1 쉼
 const DAEGEUM: [number, number][] = [
-  [7, 6], [6, 3], [7, 3], [8, 9], [7, 3],
-  [6, 6], [5, 3], [6, 3], [4, 12],
-  [5, 3], [6, 3], [7, 6], [8, 6], [9, 6],
-  [8, 6], [7, 3], [6, 3], [7, 12],
-  [9, 6], [8, 3], [9, 3], [10, 9], [9, 3],
-  [8, 6], [7, 3], [8, 3], [6, 12],
-  [5, 3], [6, 3], [7, 3], [6, 3], [5, 6], [4, 6],
-  [5, 12], [-1, 12],
+  [7, 3], [8, 2], [7, 1], [6, 3], [5, 3],
+  [6, 2], [7, 1], [8, 3], [9, 6],
+  [8, 2], [7, 1], [6, 2], [5, 1], [6, 3], [7, 3],
+  [8, 3], [7, 3], [5, 6],
+  [9, 2], [10, 1], [9, 3], [8, 2], [7, 1], [8, 3],
+  [9, 3], [8, 2], [7, 1], [6, 6],
+  [5, 2], [6, 1], [7, 2], [8, 1], [9, 2], [8, 1], [7, 3],
+  [6, 3], [5, 3], [5, 6],
 ];
 // 가야금 반주: 마디마다 근음 [음]
-const GAYA_ROOT = [2, 2, 4, 2, 5, 4, 2, 0];
+const GAYA_ROOT = [2, 4, 2, 5, 4, 2, 4, 2];
 
 export function isBgmOn() { return bgmOn; }
 /** 가야금: 뜯는 소리 + 농현(살짝 흔들며 끌어올림) */
@@ -217,9 +221,11 @@ function pluck(t: number, f: number, vol: number) {
 /** 대금: 숨소리 섞인 긴 소리 + 점점 깊어지는 떨림 */
 function daegeum(t: number, f: number, dur: number, vol: number) {
   const c = ctx!;
-  const o = c.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(f, t);
-  const o2 = c.createOscillator(); o2.type = 'triangle'; o2.frequency.setValueAtTime(f * 2, t);
-  const lfo = c.createOscillator(); lfo.frequency.value = 5.2;
+  // 태평소: 겹리드 특유의 코맹맹한 소리(톱니파를 좁은 대역으로 거름)
+  const o = c.createOscillator(); o.type = 'sawtooth'; o.frequency.setValueAtTime(f, t);
+  const o2 = c.createOscillator(); o2.type = 'square'; o2.frequency.setValueAtTime(f, t);
+  const bpf = c.createBiquadFilter(); bpf.type = 'bandpass'; bpf.frequency.value = Math.min(3200, f * 3.2); bpf.Q.value = 1.4;
+  const lfo = c.createOscillator(); lfo.frequency.value = 6.2;
   const lg = c.createGain(); lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(f * 0.012, t + dur * 0.8);
   lfo.connect(lg); lg.connect(o.frequency); lg.connect(o2.frequency);
   // 꺾는 소리: 앞머리를 아래에서 밀어 올림
@@ -227,7 +233,7 @@ function daegeum(t: number, f: number, dur: number, vol: number) {
   const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.18);
   g.gain.setValueAtTime(vol, t + dur * 0.75); g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.25);
   const g2 = c.createGain(); g2.gain.value = 0.12;
-  o.connect(g); o2.connect(g2).connect(g); g.connect(bgmGain!);
+  o.connect(bpf); o2.connect(g2).connect(bpf); bpf.connect(g); g.connect(bgmGain!);
   // 숨소리
   const n = c.createBufferSource(); n.buffer = noiseBuffer(dur + 0.3);
   const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f * 2.5; bp.Q.value = 2;
@@ -259,28 +265,40 @@ function janggu(t: number, hit: string) {
   else if (hit === '더') high(0.12);
   else if (hit === '러') high(0.07);
 }
+/** 꽹과리: 쇳소리 (갱=세게, 개=약하게) */
+function kkwaeng(t: number, hit: string) {
+  const c = ctx!;
+  const vol = hit === '갱' ? 0.07 : 0.035;
+  [1, 1.47, 2.13].forEach((m) => {
+    const o = c.createOscillator(); o.type = 'square'; o.frequency.setValueAtTime(1180 * m, t);
+    const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 3600; bp.Q.value = 1.2;
+    const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.002); g.gain.exponentialRampToValueAtTime(0.0001, t + (hit === '갱' ? 0.28 : 0.1));
+    o.connect(bp).connect(g).connect(bgmGain!); o.start(t); o.stop(t + 0.3);
+  });
+}
 let melIdx = 0; let melLeft = 0;
 function scheduler() {
   if (!ctx || !bgmGain) return;
-  const spb = 60 / 66 / 3; // 한 칸 = 점4분의 1/3 (굿거리 느린 장단)
+  const spb = 60 / 104 / 3; // 한 칸 = 점4분의 1/3 (자진모리, 신나게)
   while (nextT < ctx.currentTime + 0.5) {
     const bar = Math.floor(step / 12);
     const k = step % 12;
     // 장구 (4마디마다 굴림 넣기)
     const jp = bar % 4 === 3 ? JANGGU : JANGGU2;
     if (jp[k]) janggu(nextT, jp[k]);
+    if (KKWAENG[k] && bar % 8 !== 7) kkwaeng(nextT, KKWAENG[k]);
     // 대금 선율
     if (melLeft <= 0) {
       const [n, len] = DAEGEUM[melIdx % DAEGEUM.length];
-      if (n >= 0) daegeum(nextT, SCALE[n], len * spb, 0.07);
+      if (n >= 0) daegeum(nextT, SCALE[n], len * spb * 0.92, 0.055);
       melLeft = len; melIdx++;
     }
     melLeft--;
     // 가야금: 박마다 근음·5도·옥타브 뜯기
     const root = GAYA_ROOT[bar % GAYA_ROOT.length];
-    if (k % 3 === 0) {
-      const pat = [root, root + 2, root + 4, root + 2][k / 3];
-      pluck(nextT, SCALE[Math.min(SCALE.length - 1, pat)] / 2, k === 0 ? 0.13 : 0.08);
+    if (k % 3 !== 1) {
+      const pat = [root, -1, root + 2, root + 4, -1, root + 2, root + 1, -1, root + 3, root + 4, -1, root + 2][k];
+      if (pat >= 0) pluck(nextT, SCALE[Math.min(SCALE.length - 1, pat)] / 2, k === 0 ? 0.12 : 0.07);
     }
     nextT += spb; step++;
   }
@@ -300,6 +318,13 @@ export function setBgm(v: boolean) {
   bgmOn = v;
   try { localStorage.setItem('mg-bgm', v ? '1' : '0'); } catch { /* 무시 */ }
   if (v) startBgm(); else stopBgm();
+}
+/** 심장 박동 (두근) */
+export function heartbeat() {
+  if (!ready()) return;
+  const t = now();
+  tone(t, 0.18, 'sine', 70, 45, 0.5);
+  tone(t + 0.2, 0.22, 'sine', 62, 40, 0.38);
 }
 /** 뽑기 등급 상승 알림: 등급이 높을수록 높은 음, 여러 겹 */
 export function chime(level: number) {
