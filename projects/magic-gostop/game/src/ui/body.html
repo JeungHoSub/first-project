@@ -94,6 +94,7 @@
     <div class="sheet-title" id="res-title"></div>
     <div class="formula" id="res-formula"></div>
     <div class="res-badges" id="res-badges"></div>
+    <div class="res-coins" id="res-coins" hidden></div>
     <div class="res-grid" id="res-grid"></div>
     <button class="big go-btn" id="btn-new" type="button">새 판</button>
     <button class="text-btn" id="btn-res-home" type="button">처음 화면으로</button>
@@ -128,12 +129,13 @@
 </div>
 
 <div class="home" id="home">
+  <div class="coin-chip home-coin"><i class="coin-ico" aria-hidden="true"></i><span class="coin-amt">0</span></div>
   <div class="home-inner">
     <div class="home-fan" id="home-fan" aria-hidden="true"></div>
     <h1 class="home-title">매직고스톱</h1>
     <p class="home-sub">한국 화투로 즐기는 맞고 · 아이템 수집</p>
     <button class="big go-btn home-start" id="btn-start" type="button">게임 시작<small>상대: <span id="home-level">쉬움</span></small></button>
-    <button class="big gacha-btn" id="btn-gacha" type="button">뽑기<small>뽑기권 5단계 · 테스트 무료</small></button>
+    <button class="big gacha-btn" id="btn-gacha" type="button">뽑기<small>엽전으로 뽑기권 사용</small></button>
     <div class="home-row">
       <span class="home-label">난이도</span>
       <div class="seg" id="seg-level" role="radiogroup" aria-label="상대 난이도"></div>
@@ -216,12 +218,13 @@
 
 <div class="sheet" id="gacha" hidden>
   <div class="sheet-card gacha-card">
-    <div class="sheet-kicker">뽑기 · 테스트 (무료)</div>
-    <div class="sheet-title">뽑기권</div>
-    <p class="sheet-sub">단계가 높은 뽑기권일수록 높은 등급이 잘 나옵니다. 확률은 아래에 그대로 공개합니다.</p>
+    <div class="gacha-head"><div><div class="sheet-kicker">뽑기</div><div class="sheet-title">뽑기권</div></div>
+      <div class="coin-chip"><i class="coin-ico" aria-hidden="true"></i><span class="coin-amt">0</span></div></div>
+    <p class="sheet-sub">높은 단계일수록 높은 등급이 잘 나옵니다.</p>
     <div class="ticket-list" id="ticket-list"></div>
-    <p class="dt-note">정식 버전에서는 뽑기권을 게임 보상으로 얻습니다. 유료 판매 시 확률 공개 의무를 지킵니다. 아이템은 현금 가치가 없습니다.</p>
-    <button class="big stop-btn" id="btn-gacha-close" type="button">닫기</button>
+    <p class="dt-note">엽전은 판에서 이기면 얻습니다(점수 1점당 100엽전). 현금으로 사거나 바꿀 수 없습니다. 10회 뽑기는 9회 값입니다.</p>
+    <button class="text-btn" id="btn-coin-test" type="button">테스트: 엽전 +10,000</button>
+    <button class="tk-close" id="btn-gacha-close" type="button">닫기</button>
   </div>
 </div>
 

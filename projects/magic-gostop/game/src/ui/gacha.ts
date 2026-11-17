@@ -1,6 +1,7 @@
 // 뽑기 화면 + 뽑기 연출: 화투 뒷면이 사선 축으로 돌며 빛을 모으다가 등급 색으로 번쩍 → 아이템 공개.
-import { TICKETS, GRADES, GRADE_COLOR, drawWithTicket, itemArt, CATEGORY_LABEL, type Ticket, type Drop } from './collection';
+import { TICKETS, GRADES, GRADE_COLOR, drawWithTicket, priceOf, itemArt, CATEGORY_LABEL, type Ticket, type Drop } from './collection';
 import * as sfx from './sound';
+import { coins, spend, earn, fmt, onCoins, COIN } from './wallet';
 
 const $ = (id: string) => document.getElementById(id)!;
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -17,6 +18,8 @@ export function initGacha(changed: () => void) {
   onChange = changed;
   $('btn-gacha-close').addEventListener('click', () => { $('gacha').hidden = true; });
   $('gr-close').addEventListener('click', () => { $('gacha-run').hidden = true; renderTickets(); });
+  $('btn-coin-test').addEventListener('click', () => { earn(10000); sfx.bonus(); renderTickets(); });
+  onCoins(() => syncCoins());
 }
 
 export function openGacha() {
@@ -24,22 +27,45 @@ export function openGacha() {
   $('gacha').hidden = false;
 }
 
+function ticketIcon(t: Ticket, i: number) {
+  return `<svg viewBox="0 0 64 40" aria-hidden="true"><defs><linearGradient id="tk-${t.id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".45" stop-color="${t.hue}"/><stop offset="1" stop-color="${t.hue}" stop-opacity=".7"/></linearGradient></defs>
+    <path d="M4 4h56v10a6 6 0 0 0 0 12v10H4V26a6 6 0 0 0 0-12z" fill="url(#tk-${t.id})"/>
+    <path d="M44 7v26" stroke="rgba(0,0,0,.35)" stroke-width="1.2" stroke-dasharray="2 2.5"/>
+    <text x="24" y="27" text-anchor="middle" font-size="17" font-weight="800" fill="rgba(20,12,4,.82)">${['Ⅰ', 'Ⅱ', 'Ⅲ', 'Ⅳ', 'Ⅴ'][i] ?? i + 1}</text></svg>`;
+}
+
+function syncCoins() {
+  document.querySelectorAll('.coin-amt').forEach((e) => { e.textContent = fmt(coins()); });
+}
+
 function renderTickets() {
+  syncCoins();
   const box = $('ticket-list'); box.innerHTML = '';
   TICKETS.forEach((t, i) => {
     const el = document.createElement('div');
     el.className = 'ticket';
     el.style.setProperty('--tc', t.hue);
-    const top = GRADES.map((g, gi) => ({ g, gi, p: t.rates[g] })).filter((x) => x.p > 0);
-    const hi = top.filter((x) => x.gi >= 6).reduce((a, x) => a + x.p, 0);
-    el.innerHTML = `<div class="tk-face"><span class="tk-tier">${'★'.repeat(i + 1)}</span><b>${t.name}</b><small>${t.desc}</small></div>
-      <div class="tk-rates">${top.map((x) => `<span>${badge(x.gi)} ${x.p}%</span>`).join('')}</div>
-      <div class="tk-meta">S 이상 ${Math.round(hi * 100) / 100}%${t.minGrade ? ` · ${t.minGrade} 이상 보장` : ''}</div>
-      <div class="tk-btns"><button type="button" class="big go-btn tk-1">1회 뽑기</button><button type="button" class="big stop-btn tk-5">5회 뽑기</button></div>`;
-    el.querySelector('.tk-1')!.addEventListener('click', () => run(t, 1));
-    el.querySelector('.tk-5')!.addEventListener('click', () => run(t, 5));
+    const hi = GRADES.reduce((a, g, gi) => a + (gi >= 6 ? t.rates[g] : 0), 0);
+    const bar = GRADES.map((g, gi) => (t.rates[g] > 0 ? `<i style="flex:${t.rates[g]};background:${gcol(gi)}"></i>` : '')).join('');
+    const sub = [t.minGrade ? `${t.minGrade} 이상 보장` : t.desc, hi < 100 ? `S↑ ${Math.round(hi * 100) / 100}%` : ''].filter(Boolean).join(' · ');
+    el.innerHTML = `<div class="tk-icon">${ticketIcon(t, i)}</div>
+      <div class="tk-info"><b>${t.name}</b><small>${sub}</small><div class="tk-bar" title="등급 분포">${bar}</div></div>
+      <div class="tk-btns">${[1, 10].map((n) => {
+        const p = priceOf(t, n);
+        return `<button type="button" class="tk-btn tk-${n}${n === 10 ? ' primary' : ''}" data-n="${n}" ${coins() < p ? 'disabled' : ''}><span>${n}회</span><em>${fmt(p)}</em></button>`;
+      }).join('')}</div>`;
+    el.querySelectorAll<HTMLButtonElement>('.tk-btn').forEach((b) => b.addEventListener('click', () => {
+      const n = +b.dataset.n!;
+      if (!spend(priceOf(t, n))) { sfx.buzz([40]); return; }
+      run(t, n);
+    }));
     box.append(el);
   });
+  // 확률표 (확률 공개): 등급 × 뽑기권
+  const table = `<details class="tk-odds"><summary>등급별 확률표</summary><table><thead><tr><th></th>${TICKETS.map((t) => `<th style="--tc:${t.hue}">${t.name.replace(' 뽑기권', '')}</th>`).join('')}</tr></thead><tbody>${
+    GRADES.map((g, gi) => `<tr><td>${badge(gi)}</td>${TICKETS.map((t) => `<td>${t.rates[g] ? `${t.rates[g]}%` : '<span class="nil">–</span>'}</td>`).join('')}</tr>`).join('')
+  }</tbody></table></details>`;
+  box.insertAdjacentHTML('beforeend', table);
 }
 
 /** 뽑기 연출 */

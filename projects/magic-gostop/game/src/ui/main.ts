@@ -4,6 +4,7 @@ import { chooseAction, AI_LEVELS, type AiLevel } from '../ai/simple';
 import { cardArt } from './art';
 import * as sfx from './sound';
 import { initGacha, openGacha } from './gacha';
+import { earn, coins, fmt, COIN_PER_POINT } from './wallet';
 import { ITEMS, GRADES, GRADE_RATE, CATEGORY_LABEL, DROP_RATE, itemArt, gradeFill, ownedOf, bestGrade, ownedKinds, rollDrop, type Drop, type ItemDef, type Category, MAGIC_IDS, magicParams, grantTestMagic, type MagicId } from './collection';
 
 // 화면 = 엔진 상태를 그리기만 한다. 규칙 판단은 전부 엔진(getLegalActions/applyAction)에 맡긴다.
@@ -923,6 +924,12 @@ function showResult() {
     grid.append(col);
   });
   $('btn-new').textContent = carry > 1 ? `새 판 (×${carry})` : '새 판';
+  // 가상머니: 이긴 판 점수 × 100 엽전
+  const rc = $('res-coins');
+  if (r.type === 'win' && r.winner === ME) {
+    const got = r.finalScore * COIN_PER_POINT; earn(got);
+    rc.innerHTML = `<i class="coin-ico" aria-hidden="true"></i> +${fmt(got)} 엽전 <small>보유 ${fmt(coins())}</small>`; rc.hidden = false;
+  } else rc.hidden = true;
   // 매직 카드(수집품) 획득 판정 — 테스트용 봇전 드롭
   const outcome = r.type === 'nagari' ? 'nagari' : r.winner === ME ? 'win' : 'lose';
   const drop = rollDrop(outcome, level);
@@ -992,6 +999,7 @@ function showItem(it: ItemDef) {
 
 // ---------- 처음 화면 ----------
 function syncHome() {
+  document.querySelectorAll('.coin-amt').forEach((e) => { e.textContent = fmt(coins()); });
   const label = AI_LEVELS.find((l) => l.id === level)!.label;
   $('home-level').textContent = label;
   $('home-coll').textContent = `${ownedKinds()} / ${ITEMS.length}`;

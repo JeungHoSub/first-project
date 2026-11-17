@@ -649,27 +649,36 @@ body.selecting #hand.locked .card { filter: none; }
 @media (min-width: 700px) { .hand { padding-top: 20px; } .app { gap: 6px; } }
 
 /* ===== 뽑기 ===== */
-.gacha-btn { width: 100%; background: linear-gradient(135deg, #5b2fa8, #b678e8 50%, #f0c35a); color: #fff; font-size: 1.3rem; padding: 12px;
-  box-shadow: 0 4px 0 rgba(0,0,0,.45), 0 0 18px rgba(182,120,232,.45); }
-.gacha-btn small { color: #fff3d6; }
+.gacha-btn { width: 100%; background: rgba(255,255,255,.06); color: #f4efe2; font-size: 1.15rem; padding: 11px;
+  border: 1px solid rgba(240,195,90,.45); box-shadow: 0 3px 0 rgba(0,0,0,.35); }
+.gacha-btn small { color: var(--gold); }
 #gacha { z-index: 41; }
 .gacha-card { max-width: 560px; }
-.ticket-list { display: grid; gap: 10px; }
-.ticket { position: relative; display: grid; gap: 6px; padding: 12px 12px 12px 18px; border-radius: 14px; overflow: hidden;
-  background: linear-gradient(110deg, color-mix(in srgb, var(--tc) 28%, #102720), #0d1f19 70%); border: 1px solid color-mix(in srgb, var(--tc) 55%, transparent); }
-.ticket::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--tc); box-shadow: 0 0 12px var(--tc); }
-.ticket::after { content: ""; position: absolute; right: 86px; top: -6px; bottom: -6px; border-left: 2px dashed rgba(255,255,255,.15); }
-.tk-face { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
-.tk-face b { font-family: var(--font-display); font-weight: 400; font-size: 1.25rem; color: #fff6dc; }
-.tk-face small { color: var(--muted); font-size: .76rem; }
-.tk-tier { color: var(--tc); letter-spacing: 1px; font-size: .8rem; text-shadow: 0 0 6px var(--tc); }
-.tk-rates { display: flex; flex-wrap: wrap; gap: 3px 8px; font-size: .7rem; font-variant-numeric: tabular-nums; }
-.tk-rates span { display: inline-flex; gap: 3px; align-items: center; }
-.tk-rates .gbadge { font-size: .64rem; }
-.tk-meta { font-size: .7rem; color: var(--gold); }
-.tk-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; position: relative; z-index: 1; }
-.tk-btns .big { font-size: 1rem; padding: 9px; }
-
+.ticket-list { display: grid; gap: 8px; }
+.ticket { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 10px 12px;
+  border-radius: 12px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); transition: background .15s, border-color .15s; }
+.ticket:hover { background: rgba(255,255,255,.07); border-color: color-mix(in srgb, var(--tc) 45%, transparent); }
+.tk-icon svg { display: block; width: 52px; height: auto; filter: drop-shadow(0 2px 4px rgba(0,0,0,.4)); }
+.tk-info { display: grid; gap: 3px; min-width: 0; }
+.tk-info b { font-weight: 700; font-size: .98rem; color: #f4efe2; }
+.tk-info small { font-size: .74rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tk-bar { display: flex; height: 4px; border-radius: 2px; overflow: hidden; background: rgba(255,255,255,.06); margin-top: 3px; }
+.tk-bar i { display: block; min-width: 1.5px; }
+.tk-btns { display: flex; gap: 6px; }
+.tk-btn { min-width: 48px; padding: 8px 10px; border-radius: 9px; font: inherit; font-size: .85rem; font-weight: 700; cursor: pointer;
+  color: #f4efe2; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.14); transition: transform .1s, background .15s; }
+.tk-btn:hover { background: rgba(255,255,255,.13); }
+.tk-btn:active { transform: scale(.95); }
+.tk-btn.primary { color: #1c1406; background: var(--tc); border-color: transparent; }
+.tk-btn.primary:hover { filter: brightness(1.1); }
+.tk-odds { margin-top: 4px; font-size: .78rem; }
+.tk-odds summary { cursor: pointer; color: var(--muted); padding: 6px 2px; }
+.tk-odds table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.tk-odds th { font-weight: 600; font-size: .72rem; color: color-mix(in srgb, var(--tc) 70%, #fff); padding: 4px 2px; }
+.tk-odds td { text-align: center; padding: 3px 2px; border-top: 1px solid rgba(255,255,255,.06); color: #d6e2dc; }
+.tk-odds td:first-child { text-align: left; }
+.tk-odds .nil { color: rgba(255,255,255,.25); }
+.tk-odds .gbadge { font-size: .62rem; }
 /* 뽑기 연출 */
 .gacha-run { position: fixed; inset: 0; z-index: 46; display: grid; place-content: center; justify-items: center; gap: 14px; padding: 16px; overflow-y: auto;
   background: radial-gradient(60% 45% at 50% 45%, color-mix(in srgb, var(--tc) 30%, #120a2a), #04040a 80%); }
@@ -724,3 +733,39 @@ body.selecting #hand.locked .card { filter: none; }
   .gr-results:not([data-n="1"]) .gr-desc { font-size: .64rem; }
   .gr-results:not([data-n="1"]) .gr-name { font-size: .8rem; }
 }
+
+.tk-info small { white-space: normal; }
+.tk-close { width: 100%; padding: 11px; border-radius: 10px; font: inherit; font-weight: 700; cursor: pointer; color: #f4efe2;
+  background: transparent; border: 1px solid rgba(255,255,255,.18); }
+.tk-close:hover { background: rgba(255,255,255,.06); }
+@media (max-width: 420px) { .ticket { grid-template-columns: 44px minmax(0, 1fr) auto; gap: 10px; padding: 9px 10px; } .tk-icon svg { width: 44px; } .tk-btn { min-width: 42px; padding: 8px; } }
+
+/* 가상머니(엽전) */
+.coin-ico { display: inline-block; width: 16px; height: 16px; border-radius: 50%; flex: none; vertical-align: -3px;
+  background: radial-gradient(circle at 35% 30%, #fff3c4, #f0c35a 45%, #b8862a); box-shadow: inset 0 0 0 1.5px rgba(90,60,10,.55); position: relative; }
+.coin-ico::after { content: ""; position: absolute; inset: 5px; border-radius: 1px; background: rgba(90,60,10,.7); }
+.coin-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; font-weight: 700; font-size: .9rem;
+  background: rgba(0,0,0,.35); border: 1px solid rgba(240,195,90,.35); color: #fff3d6; font-variant-numeric: tabular-nums; }
+.home-coin { position: absolute; top: max(12px, env(safe-area-inset-top)); right: 14px; z-index: 2; }
+.home { position: relative; }
+.gacha-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.tk-btn { display: grid; justify-items: center; gap: 1px; line-height: 1.15; min-width: 58px; }
+.tk-btn em { font-style: normal; font-size: .66rem; font-weight: 600; opacity: .8; font-variant-numeric: tabular-nums; }
+.tk-btn em::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #f0c35a; margin-right: 3px; vertical-align: 0; }
+.tk-btn.primary em::before { background: rgba(28,20,6,.7); }
+.tk-btn:disabled { opacity: .35; cursor: not-allowed; transform: none; filter: grayscale(.6); }
+#btn-coin-test { display: block; margin: 0 auto 6px; font-size: .78rem; }
+.res-coins { display: flex; justify-content: center; align-items: center; gap: 6px; font-weight: 800; color: #ffd76a; font-size: 1.05rem; margin: 2px 0 8px; }
+.res-coins small { font-weight: 500; color: var(--muted); font-size: .76rem; }
+.gr-results[data-n="10"] { grid-template-columns: repeat(5, minmax(0, 1fr)); max-width: 820px; }
+.gr-results[data-n="10"] .gr-art { width: 72px; }
+.gr-results[data-n="10"] .gr-desc { display: none; }
+@media (max-width: 520px) {
+  .gr-results[data-n="10"] { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; }
+  .gr-results[data-n="10"] .gr-item { padding: 6px 2px; }
+  .gr-results[data-n="10"] .gr-art { width: 100%; max-width: 56px; }
+  .gr-results[data-n="10"] .gr-name { font-size: .64rem; }
+  .gr-results[data-n="10"] .gr-cat { display: none; }
+  .tk-btn { min-width: 50px; padding: 6px 7px; }
+}
+.gr-results[data-n="10"] .gr-name, .gr-results[data-n="10"] .gr-cat { display: none; }

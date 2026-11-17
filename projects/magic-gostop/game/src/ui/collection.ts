@@ -173,7 +173,10 @@ export function grantTestMagic(rng = Math.random) {
 }
 
 // ---------- 뽑기권 (테스트: 무료) ----------
-export interface Ticket { id: string; name: string; desc: string; hue: string; rates: Record<Grade, number>; minGrade?: Grade }
+export interface Ticket { id: string; name: string; desc: string; hue: string; rates: Record<Grade, number>; minGrade?: Grade; price?: number }
+/** 뽑기권 1장 가격(엽전). 10회는 9장 값 */
+export const TICKET_PRICE: Record<string, number> = { copper: 100, silver: 300, gold: 1000, jade: 3000, dragon: 10000 };
+export const priceOf = (t: Ticket, n: number) => (t.price ?? TICKET_PRICE[t.id] ?? 1000) * (n >= 10 ? 9 : n);
 /** 기본 뽑기권 5단계 (items-data.ts의 TICKETS가 있으면 그걸 씀) */
 export let TICKETS: Ticket[] = [
   { id: 'copper', name: '동전 뽑기권', desc: '가볍게 한 번', hue: '#c07a3d', rates: { F: 38, E: 26, D: 17, C: 10, B: 5, A: 2.5, S: 1, SS: 0.4, SSS: 0.08, 'SSS+': 0.02 } },
