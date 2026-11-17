@@ -1,5 +1,6 @@
 import { applyAction, createGame, getLegalActions, score, scoreOf, setGukjin, setMagicState, magicSwap, magicSweep, magicExtraFlip, PI_VALUE } from '../engine';
 import * as items from './items-runtime';
+import { copyOf, USE_LABEL } from './item-copy';
 import type { Action, Card, GameEvent, GameState, PlayerId } from '../engine';
 import { chooseAction, AI_LEVELS, type AiLevel } from '../ai/simple';
 import { cardArt } from './art';
@@ -352,40 +353,54 @@ items.setLookup((id) => allCards.get(id));
 
 function ownedMagic() { return MAGIC_IDS.filter((id) => bestGrade(id) >= 0); }
 
+let pickTab: Category | null = null;
 function openMagicPick() {
   picked = items.sanitize(picked);
+  const cats = (Object.keys(CATEGORY_LABEL) as Category[]).filter((c) => ITEMS.some((it) => it.category === c && bestGrade(it.id) >= 0));
+  $('mp-empty').hidden = cats.length > 0;
+  if (!pickTab || !cats.includes(pickTab)) pickTab = cats[0] ?? null;
+  // 장착 슬롯 요약
+  $('mp-slots').innerHTML = (Object.keys(CATEGORY_LABEL) as Category[]).map((c) => {
+    const on = picked.filter((id) => items.catOf(id) === c);
+    const cap = EQUIP_LIMITS[c];
+    const cells = Array.from({ length: c === 'cosmetic' ? Math.max(on.length, 1) : cap }, (_, i) => on[i]
+      ? `<i class="sl-fill" title="${itemOf(on[i]).name}">${itemArt(itemOf(on[i]), bestGrade(on[i]))}</i>` : '<i class="sl-empty"></i>').join('');
+    return `<button type="button" class="slot-grp${pickTab === c ? ' cur' : ''}${cats.includes(c) ? '' : ' none'}" data-cat="${c}"><span>${CATEGORY_LABEL[c].replace('판 ', '')}</span><div>${cells}</div></button>`;
+  }).join('');
+  $('mp-slots').querySelectorAll<HTMLButtonElement>('.slot-grp').forEach((b) => b.addEventListener('click', () => {
+    const c = b.dataset.cat as Category; if (!cats.includes(c)) return; pickTab = c; sfx.click(); openMagicPick();
+  }));
   const box = $('mp-grid'); box.innerHTML = '';
-  const ownAny = ITEMS.some((it) => bestGrade(it.id) >= 0);
-  $('mp-empty').hidden = ownAny;
-  for (const cat of Object.keys(CATEGORY_LABEL) as Category[]) {
-    const own = ITEMS.filter((it) => it.category === cat && bestGrade(it.id) >= 0);
-    if (!own.length) continue;
-    const n = picked.filter((id) => items.catOf(id) === cat).length;
-    const head = document.createElement('div'); head.className = 'mp-cat';
-    head.innerHTML = `<b>${CATEGORY_LABEL[cat]}</b><span>${n} / ${EQUIP_LIMITS[cat]}</span>`;
-    box.append(head);
-    for (const it of own) {
-      const id = it.id; const g = bestGrade(id);
-      const b = document.createElement('button');
-      b.type = 'button'; b.className = 'mp-item' + (picked.includes(id) ? ' on' : '');
-      b.innerHTML = `<div class="mp-card">${itemArt(it, g)}</div><div class="mp-name">${it.name} ${gradeBadge(g)}</div><div class="mp-desc">${it.effect(g)}</div>`;
-      b.addEventListener('click', () => {
+  if (pickTab) {
+    const cap = EQUIP_LIMITS[pickTab];
+    const n = picked.filter((id) => items.catOf(id) === pickTab).length;
+    $('mp-tabinfo').innerHTML = `<b>${CATEGORY_LABEL[pickTab]}</b> <span>${pickTab === 'cosmetic' ? '종류별 1개씩' : `${n} / ${cap} 장착`}</span>`;
+    for (const it of ITEMS.filter((x) => x.category === pickTab && bestGrade(x.id) >= 0)) {
+      const id = it.id; const g = bestGrade(id); const on = picked.includes(id);
+      const cp = copyOf(id);
+      const row = document.createElement('button');
+      row.type = 'button'; row.className = 'inv-row' + (on ? ' on' : '');
+      row.innerHTML = `<span class="inv-art">${itemArt(it, g)}</span>
+        <span class="inv-body"><span class="inv-name">${it.name} ${gradeBadge(g)}</span><span class="inv-one">${cp.one}</span><span class="inv-eff">${it.effect(g)}</span></span>
+        <span class="inv-check" aria-hidden="true">${on ? '✓' : ''}</span>`;
+      row.setAttribute('aria-pressed', String(on));
+      row.addEventListener('click', () => {
         sfx.click();
         if (picked.includes(id)) picked = picked.filter((x) => x !== id);
         else {
           const why = items.canAdd(picked, id);
           if (why) {
-            // 같은 분류가 꽉 찼으면(한도 1) 바꿔 끼운다
-            if (EQUIP_LIMITS[cat] === 1 && !why.includes('배수')) picked = [...picked.filter((x) => items.catOf(x) !== cat), id];
+            if (EQUIP_LIMITS[it.category] === 1 && !why.includes('배수')) picked = [...picked.filter((x) => items.catOf(x) !== it.category), id];
             else { banner(why); return; }
           } else picked = [...picked, id];
         }
         openMagicPick();
       });
-      box.append(b);
+      box.append(row);
     }
-  }
-  $('mp-count').textContent = `${picked.length}개 장착`;
+  } else $('mp-tabinfo').innerHTML = '';
+  $('mp-count').textContent = picked.length ? `${picked.length}개` : '';
+  $('btn-mp-go').textContent = picked.length ? `시작 · ${picked.length}개 장착` : '시작';
   $('magic-pick').hidden = false;
 }
 
@@ -1087,45 +1102,55 @@ function showReward(d: Drop) {
   syncHome();
 }
 
+let collTab: Category | 'all' = 'all';
 function renderCollection() {
-  $('coll-count').textContent = `${ownedKinds()} / ${ITEMS.length}`;
+  const own = ownedKinds();
+  $('coll-count').textContent = `${own} / ${ITEMS.length}`;
+  ($('coll-bar') as HTMLElement).style.setProperty('--p', String(own / ITEMS.length));
+  const tabs = $('coll-tabs');
+  const all: (Category | 'all')[] = ['all', ...(Object.keys(CATEGORY_LABEL) as Category[])];
+  tabs.innerHTML = all.map((c) => {
+    const list = ITEMS.filter((x) => c === 'all' || x.category === c);
+    const got = list.filter((x) => bestGrade(x.id) >= 0).length;
+    return `<button type="button" class="tab${collTab === c ? ' cur' : ''}" data-c="${c}">${c === 'all' ? '전체' : CATEGORY_LABEL[c].replace('판 ', '')} <small>${got}/${list.length}</small></button>`;
+  }).join('');
+  tabs.querySelectorAll<HTMLButtonElement>('.tab').forEach((b) => b.addEventListener('click', () => { collTab = b.dataset.c as Category | 'all'; sfx.click(); renderCollection(); }));
   const grid = $('coll-grid'); grid.innerHTML = '';
-  const total = ITEMS.reduce((a, m) => a + m.weight, 0);
-  for (const cat of Object.keys(CATEGORY_LABEL) as Category[]) {
-    const head = document.createElement('div'); head.className = 'coll-cat'; head.textContent = CATEGORY_LABEL[cat];
-    grid.append(head);
-    const row = document.createElement('div'); row.className = 'coll-row';
-    for (const it of ITEMS.filter((x) => x.category === cat)) {
-      const gi = bestGrade(it.id);
-      const n = Object.values(ownedOf(it.id)).reduce((a, v) => a + (v ?? 0), 0);
-      const b = document.createElement('button');
-      b.type = 'button'; b.className = 'coll-item' + (gi < 0 ? ' locked' : '');
-      b.innerHTML = `<div class="coll-card">${itemArt(it, gi, gi < 0)}</div><div class="coll-name">${gi < 0 ? '???' : it.name}</div><div class="coll-meta">${gi < 0 ? `${Math.round((it.weight / total) * 1000) / 10}%` : `${gradeBadge(gi)} ×${n}`}</div>`;
-      b.addEventListener('click', () => { sfx.click(); showItem(it); });
-      row.append(b);
-    }
-    grid.append(row);
+  for (const it of ITEMS.filter((x) => collTab === 'all' || x.category === collTab)) {
+    const gi = bestGrade(it.id);
+    const n = Object.values(ownedOf(it.id)).reduce((a, v) => a + (v ?? 0), 0);
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'cl-item' + (gi < 0 ? ' locked' : '');
+    b.innerHTML = `<span class="cl-art">${itemArt(it, Math.max(gi, 0), gi < 0)}</span><span class="cl-name">${gi < 0 ? '???' : it.name}</span>${gi < 0 ? '' : `<span class="cl-meta">${gradeBadge(gi)}${n > 1 ? `<small>×${n}</small>` : ''}</span>`}`;
+    b.addEventListener('click', () => { sfx.click(); showItem(it); });
+    grid.append(b);
   }
   const rows = (['win', 'lose', 'nagari'] as const).map((o) => {
     const label = o === 'win' ? '이겼을 때' : o === 'lose' ? '졌을 때' : '나가리';
-    return `<div class="dt-row"><span>${label}</span><span>쉬움 ${DROP_RATE[o].easy}%</span><span>보통 ${DROP_RATE[o].normal}%</span><span>어려움 ${DROP_RATE[o].hard}%</span></div>`;
+    return `<tr><td>${label}</td><td>${DROP_RATE[o].easy}%</td><td>${DROP_RATE[o].normal}%</td><td>${DROP_RATE[o].hard}%</td></tr>`;
   });
   const grades = GRADES.map((g, i) => `<span class="gr">${gradeBadge(i)} ${GRADE_RATE[g]}%</span>`).join('');
-  $('drop-rates').innerHTML = `${rows.join('')}<div class="dt-sub">등급 확률</div><div class="gr-row">${grades}</div><div class="dt-sub">항목 확률은 각 카드 아래(미보유 시)·카드를 누르면 보입니다</div>`;
+  $('drop-rates').innerHTML = `<table class="dr-table"><thead><tr><th>봇전 판 결과</th><th>쉬움</th><th>보통</th><th>어려움</th></tr></thead><tbody>${rows.join('')}</tbody></table>
+    <div class="dt-sub">봇전에서 얻을 때 등급 확률</div><div class="gr-row">${grades}</div><div class="dt-sub">뽑기권 확률은 뽑기 화면에 따로 있습니다.</div>`;
 }
 
 function showItem(it: ItemDef) {
   const total = ITEMS.reduce((a, m) => a + m.weight, 0);
   const own = ownedOf(it.id);
   const gi = bestGrade(it.id);
+  const cp = copyOf(it.id);
   $('id-card').innerHTML = itemArt(it, Math.max(gi, 0), gi < 0);
-  $('id-kicker').textContent = `${CATEGORY_LABEL[it.category]} · 항목 확률 ${Math.round((it.weight / total) * 1000) / 10}%`;
+  $('id-chips').innerHTML = `<span class="chip">${CATEGORY_LABEL[it.category]}</span><span class="chip use-${cp.use}">${USE_LABEL[cp.use]}</span>`;
   $('id-title').textContent = gi < 0 ? '아직 못 얻은 아이템' : it.name;
-  $('id-list').innerHTML = GRADES.map((g, i) => {
-    const n = own[g] ?? 0;
-    return `<li class="${n ? 'have' : ''}">${gradeBadge(i)}<span>${gi < 0 && i > 0 ? '???' : it.effect(i)}</span><b>${n ? `×${n}` : ''}</b></li>`;
-  }).join('');
-  $('id-stack').textContent = it.stack ? `중첩 규칙 · ${it.stack}` : '';
+  $('id-one').textContent = gi < 0 ? '뽑기나 봇전에서 얻을 수 있어요.' : cp.one;
+  const cur = $('id-cur');
+  if (gi < 0) cur.innerHTML = `<div class="ic-head">F 등급일 때</div><div class="ic-eff">${it.effect(0)}</div>`;
+  else cur.innerHTML = `<div class="ic-head">내 등급 ${gradeBadge(gi)}</div><div class="ic-eff">${it.effect(gi)}</div>${gi < 9 ? `<div class="ic-next"><span>다음 ${gradeBadge(gi + 1)}</span>${it.effect(gi + 1)}</div>` : '<div class="ic-next"><span>최고 등급</span>더 오를 등급이 없습니다</div>'}`;
+  const have = GRADES.map((g, i) => ({ g, i, n: own[g] ?? 0 })).filter((x) => x.n > 0);
+  $('id-own').innerHTML = have.length ? `<span class="io-label">보유</span>${have.map((x) => `<span class="io">${gradeBadge(x.i)}×${x.n}</span>`).join('')}` : '';
+  $('id-stack').innerHTML = it.stack ? `<b>함께 쓸 때</b>${it.stack}` : '';
+  $('id-list').innerHTML = GRADES.map((g, i) => `<li class="${(own[g] ?? 0) ? 'have' : ''}${i === gi ? ' cur' : ''}">${gradeBadge(i)}<span>${it.effect(i)}</span></li>`).join('');
+  $('id-rate').textContent = `이 아이템이 나올 확률 ${Math.round((it.weight / total) * 1000) / 10}% (모든 아이템 중)`;
   $('item-detail').hidden = false;
 }
 
@@ -1269,6 +1294,7 @@ $('btn-home').addEventListener('click', () => { sfx.click(); showHome(); });
 $('btn-collection').addEventListener('click', () => { sfx.click(); renderCollection(); $('collection').hidden = false; });
 $('btn-id-close').addEventListener('click', () => { $('item-detail').hidden = true; });
 $('btn-coll-close').addEventListener('click', () => { $('collection').hidden = true; });
+$('btn-coll-x').addEventListener('click', () => { $('collection').hidden = true; });
 $('btn-home-rules').addEventListener('click', () => { sfx.click(); $('info').hidden = false; });
 $('btn-bgm').addEventListener('click', () => { sfx.unlock(); sfx.setBgm(!sfx.isBgmOn()); syncHome(); });
 $('btn-sfx').addEventListener('click', () => { sfx.unlock(); sfx.setMuted(!sfx.isMuted()); syncSoundBtn(); syncHome(); sfx.click(); });

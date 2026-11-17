@@ -152,16 +152,17 @@
 </div>
 
 <div class="sheet" id="collection" hidden>
-  <div class="sheet-card">
-    <div class="sheet-kicker">아이템 도감 · 테스트</div>
-    <div class="sheet-title">모은 아이템 <span id="coll-count"></span></div>
-    <div class="coll-grid" id="coll-grid"></div>
-    <div class="drop-table">
-      <div class="dt-title">획득 확률 (봇전 테스트)</div>
+  <div class="sheet-card inv-card">
+    <div class="inv-head"><div><div class="sheet-kicker">아이템 도감</div><div class="sheet-title">모은 아이템 <span id="coll-count"></span></div></div>
+      <button class="x-btn" id="btn-coll-x" type="button" aria-label="닫기">✕</button></div>
+    <div class="coll-bar" id="coll-bar"><i></i></div>
+    <div class="tabs" id="coll-tabs" role="tablist"></div>
+    <div class="cl-grid" id="coll-grid"></div>
+    <details class="drop-table"><summary>얻는 방법과 확률</summary>
       <div id="drop-rates"></div>
-      <p class="dt-note">정식 버전에서는 뽑기권·사용자 대전으로 얻습니다. 지금 모은 카드는 이 기기 브라우저에만 저장됩니다.</p>
-    </div>
-    <button class="big stop-btn" id="btn-coll-close" type="button">닫기</button>
+      <p class="dt-note">아이템은 이 기기 브라우저에 저장됩니다. 현금 가치가 없습니다.</p>
+    </details>
+    <button class="tk-close" id="btn-coll-close" type="button">닫기</button>
   </div>
 </div>
 
@@ -183,12 +184,17 @@
 </div>
 
 <div class="sheet" id="item-detail" hidden>
-  <div class="sheet-card">
-    <div class="id-top"><div class="id-card" id="id-card"></div><div><div class="sheet-kicker" id="id-kicker"></div><div class="sheet-title" id="id-title"></div></div></div>
-    <ul class="id-list" id="id-list"></ul>
+  <div class="sheet-card inv-card">
+    <div class="id-hero">
+      <div class="id-card" id="id-card"></div>
+      <div class="id-info"><div class="id-chips" id="id-chips"></div><div class="sheet-title" id="id-title"></div><p class="id-one" id="id-one"></p></div>
+    </div>
+    <div class="id-cur" id="id-cur"></div>
+    <div class="id-own" id="id-own"></div>
     <p class="id-stack" id="id-stack"></p>
-    <p class="dt-note">효과는 아직 판에 적용되지 않는 설계안입니다. 등급이 높을수록 강해집니다.</p>
-    <button class="big stop-btn" id="btn-id-close" type="button">닫기</button>
+    <details class="id-all"><summary>등급별 효과 전체 보기</summary><ul class="id-list" id="id-list"></ul></details>
+    <p class="dt-note" id="id-rate"></p>
+    <button class="tk-close" id="btn-id-close" type="button">닫기</button>
   </div>
 </div>
 
@@ -205,12 +211,13 @@
 </div>
 
 <div class="sheet" id="magic-pick" hidden>
-  <div class="sheet-card">
-    <div class="sheet-kicker">판 시작 · 아이템 장착</div>
-    <div class="sheet-title">가져갈 아이템 <span id="mp-count"></span></div>
-    <p class="sheet-sub">주문 2 · 부적 1 · 수호 정령 1 · 판 이벤트권 1 · 마법 도구 1 · 꾸미기 종류별 1. 배수 아이템(황금 배수·땅울림)은 하나만.</p>
-    <p class="sheet-sub" id="mp-empty">아직 아이템이 없습니다. 뽑기나 봇전에서 얻거나, 테스트용으로 바로 받아 보세요.</p>
-    <div class="mp-grid" id="mp-grid"></div>
+  <div class="sheet-card inv-card">
+    <div class="inv-head"><div><div class="sheet-kicker">판 시작</div><div class="sheet-title">아이템 장착 <span id="mp-count"></span></div></div></div>
+    <div class="mp-slots" id="mp-slots"></div>
+    <p class="sheet-sub" id="mp-empty">아직 아이템이 없습니다. 뽑기에서 얻거나 아래 테스트 버튼으로 받아 보세요.</p>
+    <div class="mp-tabinfo" id="mp-tabinfo"></div>
+    <div class="inv-list" id="mp-grid"></div>
+    <p class="dt-note">위 칸을 눌러 종류를 바꿉니다. 같은 종류가 꽉 차면 새로 고른 것으로 바꿔 끼웁니다. 배수 아이템(황금 배수·땅울림)은 하나만.</p>
     <button class="text-btn" id="btn-mp-test" type="button">테스트: 아이템 35종 받기(무작위 등급)</button>
     <div class="gs-btns">
       <button class="big stop-btn" id="btn-mp-none" type="button">아이템 없이</button>
@@ -220,20 +227,26 @@
 </div>
 
 <div class="sheet" id="gacha" hidden>
-  <div class="sheet-card gacha-card">
+  <div class="sheet-card tx-card">
     <div class="gacha-head"><div><div class="sheet-kicker">뽑기</div><div class="sheet-title">뽑기권</div></div>
       <div class="coin-chip"><i class="coin-ico" aria-hidden="true"></i><span class="coin-amt">0</span></div></div>
-    <p class="sheet-sub">높은 단계일수록 높은 등급이 잘 나옵니다.</p>
-    <div class="ticket-list" id="ticket-list"></div>
-    <p class="dt-note">판에서 이기면 점수×100 엽전을 얻고, 지면 그만큼 잃습니다(0 밑으로는 안 내려감). 첫뻑은 +300. 현금으로 사거나 바꿀 수 없습니다. 10회 뽑기는 9회 값입니다.</p>
+    <div class="tx-hero" id="tx-hero"></div>
+    <div class="tx-tiers" id="tx-tiers"></div>
+    <div class="tx-odds" id="tx-odds"></div>
+    <div class="tx-actions" id="tx-actions"></div>
+    <p class="dt-note">엽전은 판에서 이기면 얻습니다. 현금으로 사거나 바꿀 수 없습니다.</p>
     <button class="text-btn" id="btn-coin-test" type="button">테스트: 엽전 +10,000</button>
     <button class="tk-close" id="btn-gacha-close" type="button">닫기</button>
   </div>
 </div>
 
-<div class="gacha-run" id="gacha-run" hidden>
-  <div class="gr-rays" aria-hidden="true"></div>
-  <div class="gr-spin" id="gr-spin" aria-hidden="true"></div>
-  <div class="gr-results" id="gr-results" hidden></div>
-  <button class="big go-btn gr-close" id="gr-close" type="button" hidden>확인</button>
+<div class="gx-run" id="gacha-run" hidden>
+  <canvas class="gx-fx" id="gr-fx" aria-hidden="true"></canvas>
+  <div class="gx-rays" aria-hidden="true"></div>
+  <div class="gx-shock" aria-hidden="true"></div>
+  <div class="gx-spin" id="gr-spin" aria-hidden="true"></div>
+  <div id="gr-results" hidden></div>
+  <div class="gx-summary" id="gr-summary" hidden></div>
+  <button class="big go-btn gx-close" id="gr-close" type="button" hidden>확인</button>
+  <div class="gx-skip" aria-hidden="true">화면을 누르면 건너뜁니다</div>
 </div>

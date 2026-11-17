@@ -120,8 +120,9 @@ export function gradeFill(gi: number) {
   return GRADE_COLOR[g];
 }
 
+let artSeq = 0;
 export function itemArt(it: ItemDef, gi: number, locked = false): string {
-  const id = `it-${it.id}-${gi}${locked ? 'l' : ''}`;
+  const id = `it-${it.id}-${gi}${locked ? 'l' : ''}-${(artSeq = (artSeq + 1) % 1e9)}`; // 매번 고유 id: 숨겨진 사본의 그라데이션을 참조하면 안 그려짐
   const gc = gi < 0 ? '#3a4a43' : gradeFill(gi);
   const frame = gc === 'rainbow'
     ? `<linearGradient id="${id}-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff5a5f"/><stop offset=".25" stop-color="#ffd23a"/><stop offset=".5" stop-color="#5bbf6a"/><stop offset=".75" stop-color="#4fb4ff"/><stop offset="1" stop-color="#b678e8"/></linearGradient>`
