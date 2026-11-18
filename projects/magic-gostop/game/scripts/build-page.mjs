@@ -1,7 +1,7 @@
 // 화면을 한 파일(HTML)로 묶는다: dist/magic-gostop.html
 // 휴대폰에서 링크 하나로 열어 보기 위한 미리보기용. (앱 포장은 이후 단계)
 import { build } from 'esbuild';
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, readdirSync, copyFileSync } from 'node:fs';
 
 const r = await build({ entryPoints: ['src/ui/main.ts'], bundle: true, format: 'iife', minify: true, write: false, target: 'es2020' });
 const js = r.outputFiles[0].text.replace(/<\/script/gi, '<\\/script');
@@ -17,4 +17,7 @@ ${body}
 `;
 mkdirSync('dist', { recursive: true });
 writeFileSync('dist/magic-gostop.html', page);
+// 배경음악(녹음 음원)은 페이지 옆 bgm/ 폴더로 (미리보기에서는 같은 폴더에 두고 함께 올린다)
+mkdirSync('dist/bgm', { recursive: true });
+for (const f of readdirSync('assets/bgm')) if (f.endsWith('.mp3')) copyFileSync(`assets/bgm/${f}`, `dist/bgm/${f}`);
 console.log('dist/magic-gostop.html', (page.length / 1024).toFixed(1) + 'KB');

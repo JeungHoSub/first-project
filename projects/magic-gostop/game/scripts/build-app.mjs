@@ -49,6 +49,7 @@ const sw = `const C='mg-${version}';const CORE=['./','index.html','manifest.webm
 self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
 self.addEventListener('fetch',e=>{const u=new URL(e.request.url);if(e.request.method!=='GET')return;
+if(u.pathname.includes('/bgm/'))return;
 if(u.origin===location.origin){e.respondWith(fetch(e.request).then(r=>{const cp=r.clone();caches.open(C).then(c=>c.put(e.request,cp));return r;}).catch(()=>caches.match(e.request)));return;}
 if(/fonts\\.(googleapis|gstatic)\\.com/.test(u.host)){e.respondWith(caches.match(e.request).then(m=>m||fetch(e.request).then(r=>{const cp=r.clone();caches.open(C).then(c=>c.put(e.request,cp));return r;})));}});
 `;
@@ -56,5 +57,7 @@ mkdirSync(`${OUT}/icons`, { recursive: true });
 writeFileSync(`${OUT}/index.html`, html);
 writeFileSync(`${OUT}/manifest.webmanifest`, JSON.stringify(manifest, null, 2));
 writeFileSync(`${OUT}/sw.js`, sw);
+mkdirSync(`${OUT}/bgm`, { recursive: true });
+for (const f of readdirSync('assets/bgm')) if (f.endsWith('.mp3')) copyFileSync(`assets/bgm/${f}`, `${OUT}/bgm/${f}`);
 for (const f of readdirSync('../app/icons')) if (f.endsWith('.png')) copyFileSync(`../app/icons/${f}`, `${OUT}/icons/${f}`);
 console.log(`${OUT}/index.html`, (html.length / 1024).toFixed(1) + 'KB', 'version', version);

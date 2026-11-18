@@ -1734,3 +1734,7 @@ body[data-frame=""] .seat.me .pname, body[data-cb=""] .back { }
 .gx-vessel .gx-box-body { filter: drop-shadow(0 14px 18px rgba(0,0,0,.6)); }
 .gx-run[data-tk="1"] .gx-boxlight { filter: grayscale(.6) brightness(1.2); }
 .gx-run[data-tk="3"] .gx-boxlight, .gx-run[data-tk="4"] .gx-boxlight { filter: hue-rotate(90deg) saturate(.8); }
+
+.mu-credit { font-size: .72rem; color: #a9a291; } .mu-credit summary { cursor: pointer; color: #c9ad74; }
+.mu-credit ul { margin: 6px 0; padding-left: 16px; display: grid; gap: 3px; } .mu-credit b { color: #e8e1d2; font-weight: 700; } .mu-credit a { color: #c9ad74; }
+.mu-credit p { margin: 4px 0 0; }

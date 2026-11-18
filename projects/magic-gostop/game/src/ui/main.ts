@@ -1217,6 +1217,7 @@ function showItem(it: ItemDef) {
 function renderMusic() {
   $('mu-voice').textContent = sfx.isVoiceOn() ? '효과 음성 켜짐' : '효과 음성 꺼짐'; $('mu-voice').classList.toggle('off', !sfx.isVoiceOn());
   $('mu-speed').querySelectorAll<HTMLButtonElement>('button').forEach((b) => b.setAttribute('aria-checked', String((b.dataset.v === 'fast') === (speed < 1))));
+  $('mu-credits').innerHTML = sfx.BGM_CREDITS.map((c) => `<li><b>${c.name}</b> — ${c.credit} · <a href="${c.url}" target="_blank" rel="noopener">공유마당</a></li>`).join('');
   const on = sfx.isBgmOn();
   const onoff = $('mu-onoff');
   onoff.textContent = on ? '음악 켜짐' : '음악 꺼짐'; onoff.classList.toggle('off', !on);

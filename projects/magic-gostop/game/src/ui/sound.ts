@@ -635,15 +635,28 @@ const TRACKS: Track[] = [
       const m = D5.get(Math.floor(i * 16 / 12)); if (m && (i * 16) % 12 === 0) dae(t, mf(m[0]), m[1] * sp * 0.75, 0.07);
     } },
 ];
-export const BGM_TRACKS = TRACKS.map(({ id, name, desc }) => ({ id, name, desc }));
+// ===== 녹음된 국악 음원 (한국저작권위원회 공유마당, CC BY — 출처 표시하면 상업적 이용 가능) =====
+// 합성음은 소리 자체가 싸게 들리는 한계가 있어(사용자 피드백 여러 번), 실제 연주 녹음으로 바꿨다. 합성 곡(TRACKS)은 남겨만 둔다.
+export interface RecTrack { id: string; name: string; desc: string; src: string; credit: string; url: string }
+export const REC: RecTrack[] = [
+  { id: 'r-korea', name: '뷰티플 코리아', desc: '밝고 경쾌한 국악 — 판 진행용', src: 'bgm/beautiful-korea.mp3', credit: '윤영현 「Beautiful Korea(뷰티플 코리아)」', url: 'https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13048827&menuNo=200020' },
+  { id: 'r-sori', name: '우리네 소리를 듣다', desc: '힘 있는 타악과 국악기 — 웅장하게', src: 'bgm/urine-sori.mp3', credit: '임다솔 「우리네 소리를 듣다」', url: 'https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13048780&menuNo=200020' },
+  { id: 'r-blackbox', name: '블랙박스 - 사우스 코리아', desc: '가야금과 전자음의 세련된 퓨전', src: 'bgm/black-box.mp3', credit: '이지빈 「BLACK BOX - South Korea」', url: 'https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13288291&menuNo=200020' },
+  { id: 'r-love', name: '러브 테마', desc: '상큼하게 차오르는 국악 테마', src: 'bgm/love-theme.mp3', credit: '김정식 「러브 테마(Love Theme)」', url: 'https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13048804&menuNo=200020' },
+  { id: 'r-sad', name: '새드니스', desc: '느리고 애잔한 국악 드라마풍', src: 'bgm/sadness.mp3', credit: '김정식 「새드니스(Sadness)」', url: 'https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13048808&menuNo=200020' },
+  { id: 'r-jindo', name: '진도아리랑', desc: '국악 합주로 듣는 민요', src: 'bgm/jindo-arirang.mp3', credit: '한국저작권위원회 「국악연주곡_진도아리랑」', url: 'https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13263061&menuNo=200020' },
+  { id: 'r-biga', name: '비가', desc: '애절한 선율의 국악 창작곡', src: 'bgm/biga.mp3', credit: '조성욱 「비가(悲歌)」', url: 'https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?wrtSn=13211114&menuNo=200020' },
+];
+export const BGM_TRACKS = REC.map(({ id, name, desc }) => ({ id, name, desc }));
+export const BGM_CREDITS = REC.map(({ name, credit, url }) => ({ name, credit, url }));
 
 // 선택·좋아요·재생 방식 (이 기기에 저장)
-let trackId = 'march';
+let trackId = REC[0].id;
 let favs: string[] = [];
 let mode: 'one' | 'favs' = 'one';
 try {
-  const tId = localStorage.getItem('mg-bgm-track'); if (tId && TRACKS.some((x) => x.id === tId)) trackId = tId;
-  const f = JSON.parse(localStorage.getItem('mg-bgm-favs') || '[]'); if (Array.isArray(f)) favs = f.filter((x) => TRACKS.some((t) => t.id === x));
+  const tId = localStorage.getItem('mg-bgm-track'); if (tId && REC.some((x) => x.id === tId)) trackId = tId;
+  const f = JSON.parse(localStorage.getItem('mg-bgm-favs') || '[]'); if (Array.isArray(f)) favs = f.filter((x) => REC.some((t) => t.id === x));
   if (localStorage.getItem('mg-bgm-mode') === 'favs') mode = 'favs';
 } catch { /* 무시 */ }
 const saveBgmPrefs = () => { try { localStorage.setItem('mg-bgm-track', trackId); localStorage.setItem('mg-bgm-favs', JSON.stringify(favs)); localStorage.setItem('mg-bgm-mode', mode); } catch { /* 무시 */ } };
@@ -654,55 +667,53 @@ let onTrackChange: (id: string) => void = () => {};
 export function onBgmTrack(f: (id: string) => void) { onTrackChange = f; }
 /** 곡 고르기: 바로 그 곡으로 바꿔 튼다 */
 export function setBgmTrack(id: string) {
-  if (!TRACKS.some((x) => x.id === id)) return;
+  if (!REC.some((x) => x.id === id)) return;
   trackId = id; saveBgmPrefs(); onTrackChange(id);
-  if (bgmOn) { stopBgm(); setTimeout(() => startBgm(), 350); }
+  if (bgmOn) { stopBgm(true); startBgm(); }
 }
 export function toggleFav(id: string) { favs = favs.includes(id) ? favs.filter((x) => x !== id) : [...favs, id]; saveBgmPrefs(); return favs.includes(id); }
-export function setBgmMode(m: 'one' | 'favs') { mode = m; saveBgmPrefs(); }
+export function setBgmMode(m: 'one' | 'favs') { mode = m; saveBgmPrefs(); if (audio) audio.loop = !(m === 'favs' && favs.length > 1); }
 
-function scheduler() {
-  if (!ctx || !bgmGain || !bgmBus) return;
-  const tr = TRACKS.find((x) => x.id === trackId) ?? TRACKS[0];
-  const st = tr.steps ?? 16; const sp = 60 / tr.bpm / (st / 4); const loopSteps = tr.bars * st;
-  while (nextT < ctx.currentTime + 0.4) {
-    // 좋아요 목록 돌아가며 듣기: 4바퀴마다 다음 곡으로
-    if (mode === 'favs' && favs.length > 1 && step > 0 && step % (loopSteps * 4) === 0) {
-      const k = favs.indexOf(trackId);
-      trackId = favs[(k + 1) % favs.length]; saveBgmPrefs(); onTrackChange(trackId);
-      step = 0; return;
-    }
-    const i = step % loopSteps; const bar = Math.floor(i / st); const s = i % st;
-    tr.play(s, bar, nextT + (s % 2 === 1 ? tr.swing * sp : 0), sp, i);
-    nextT += sp; step++;
-  }
+const BGM_VOL = 0.42; // 효과음보다 작게
+let audio: HTMLAudioElement | null = null;
+let fadeT: number | null = null;
+function fadeTo(a: HTMLAudioElement, to: number, ms: number, done?: () => void) {
+  if (fadeT !== null) clearInterval(fadeT);
+  const from = a.volume; const t0 = performance.now();
+  fadeT = window.setInterval(() => {
+    const k = Math.min(1, (performance.now() - t0) / ms);
+    a.volume = Math.max(0, Math.min(1, from + (to - from) * k));
+    if (k >= 1) { clearInterval(fadeT!); fadeT = null; done?.(); }
+  }, 40);
 }
 export function startBgm() {
-  if (!ctx || !master || !bgmOn || bgmTimer !== null) return;
-  // 음량: 휴대폰 스피커에서도 들리게 압축 후 키운다 (효과음보다는 작게)
-  const comp = ctx.createDynamicsCompressor();
-  comp.threshold.value = -30; comp.knee.value = 12; comp.ratio.value = 4; comp.attack.value = 0.01; comp.release.value = 0.3;
-  const makeup = ctx.createGain(); makeup.gain.value = 0.42; // 압축기가 자체 보정 이득을 주므로 조금만
-  bgmGain = ctx.createGain(); bgmGain.gain.setValueAtTime(0.0001, ctx.currentTime);
-  bgmGain.connect(comp).connect(makeup).connect(ctx.destination); // 효과음 끄기와 따로
-  bgmGain.gain.exponentialRampToValueAtTime(1, ctx.currentTime + 1.5);
-  bgmBus = ctx.createGain();
-  const dry = ctx.createGain(); dry.gain.value = 0.75;
-  const wet = ctx.createGain(); wet.gain.value = 0.45;
-  const rv = makeReverb(ctx);
-  bgmBus.connect(dry).connect(bgmGain); bgmBus.connect(rv).connect(wet).connect(bgmGain);
-  nextT = ctx.currentTime + 0.1; step = 0;
-  bgmTimer = window.setInterval(scheduler, 100);
+  if (!bgmOn || audio) return;
+  const tr = REC.find((x) => x.id === trackId) ?? REC[0];
+  const a = new Audio(tr.src);
+  a.loop = !(mode === 'favs' && favs.length > 1);
+  a.volume = 0;
+  a.addEventListener('ended', () => { // 좋아요 돌아가며 듣기: 다음 곡
+    if (audio !== a) return;
+    const k = favs.indexOf(trackId); trackId = favs[(k + 1) % favs.length] ?? trackId; saveBgmPrefs(); onTrackChange(trackId);
+    audio = null; startBgm();
+  });
+  audio = a;
+  a.play().then(() => fadeTo(a, BGM_VOL, 1200)).catch(() => { if (audio === a) audio = null; });
 }
-export function stopBgm() {
-  if (bgmTimer !== null) { clearInterval(bgmTimer); bgmTimer = null; }
-  if (bgmGain && ctx) { const g = bgmGain; g.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.3); setTimeout(() => g.disconnect(), 1500); bgmGain = null; }
+export function stopBgm(now = false) {
+  const a = audio; audio = null;
+  if (!a) return;
+  if (now) { a.pause(); return; }
+  fadeTo(a, 0, 600, () => a.pause());
 }
 export function setBgm(v: boolean) {
   bgmOn = v;
   try { localStorage.setItem('mg-bgm', v ? '1' : '0'); } catch { /* 무시 */ }
   if (v) startBgm(); else stopBgm();
 }
+// 앱이 뒤로 가면 멈추고, 돌아오면 다시
+if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (!audio) return; if (document.hidden) audio.pause(); else audio.play().catch(() => {}); });
+
 /** 심장 박동 (두근) */
 export function heartbeat() {
   if (!ready()) return;
