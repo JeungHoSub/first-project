@@ -17,7 +17,7 @@
 | 음악 업로드 | [음악 업로드] music-video-upload | project/music-video-upload |
 | 입찰 플랫폼 | [입찰 플랫폼] g2b-bid-platform | project/g2b-bid-platform |
 | 클로드 강의 | [클로드 강의] claude-lecture | project/claude-lecture |
-| 수익화 아이디어 | (예약 작업이 하루 3회 새 세션 생성) | claude/dazzling-feynman-13uash |
+| 수익화 아이디어 | 총괄 세션에 예약 브리핑 6회 도착 | claude/dazzling-feynman-13uash |
 
 ## 새 세션 시작할 때 첫 메시지 (세션을 새로 열어야 할 때 복사해서 사용)
 
@@ -49,7 +49,7 @@
 | 수익화 저녁 브리핑 | 매일 20:52 | 하루 정리 + 선택지 |
 | 수익화 속보 10시·15시·17시 | 매일 09:52·14:52·16:52 | 쓸 만한 것이 있을 때만 알림 |
 
-각 회차는 새 세션으로 열리고 휴대폰 알림이 온다. 그 세션에서 바로 답하면 `feedback.md`에 기록된다.
+2026-11-18부터 모든 회차가 **총괄 세션 하나(이 저장소 시스템을 만든 "dazzling-feynman" 세션)로 들어온다.** 따로 새 세션이 생기지 않으니 어느 기기에서든 그 세션만 열면 된다. 답도 그 세션에서 하면 `feedback.md`에 기록된다.
 
 ## 휴대폰·집 컴퓨터에서 확인
 - **휴대폰**: Claude 앱 → Code에서 세션 확인/답장. 파일은 GitHub 앱 → `jeunghosub/first-project` → 브랜치 선택.
