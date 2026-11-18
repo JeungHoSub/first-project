@@ -8,7 +8,7 @@ import * as sfx from './sound';
 import { initGacha, openGacha } from './gacha';
 import { initEconomy, record as missionRecord, missionReady, syncCurrencies } from './economy';
 import * as chars from './characters';
-import { earn, lose, coins, fmt, COIN_PER_POINT, FIRST_PPEOK_COINS } from './wallet';
+import { earn, lose, coins, fmt, COIN_PER_POINT, FIRST_PPEOK_COINS, add as addCur } from './wallet';
 import { ITEMS, GRADES, GRADE_RATE, CATEGORY_LABEL, EQUIP_LIMITS, DROP_RATE, itemArt, gradeFill, ownedOf, bestGrade, ownedKinds, rollDrop, type Drop, type ItemDef, type Category, MAGIC_IDS, magicParams, grantTestMagic, type MagicId } from './collection';
 
 // 화면 = 엔진 상태를 그리기만 한다. 규칙 판단은 전부 엔진(getLegalActions/applyAction)에 맡긴다.
@@ -1121,6 +1121,19 @@ function showResult() {
     const lost = lose(Math.round(guard.lost * COIN_PER_POINT * (1 - cg / 100)));
     rc.innerHTML = `<i class="coin-ico" aria-hidden="true"></i> -${fmt(lost)} 엽전 <small>${cg ? `${chars.current().def.name} -${cg}% · ` : ''}${guard.saved ? `${guard.why.join(' · ')} → ${guard.saved}점 덜 잃음 · ` : ''}보유 ${fmt(coins())}</small>`; rc.hidden = false; rc.classList.add('minus');
   } else rc.hidden = true;
+  // 겹친 아이템 효과 → 엽전, 금은 보따리 → 은화·금화
+  if (firstTime) {
+    const extra: string[] = [];
+    const ov = items.overflowCoins();
+    if (ov.coins > 0) { earn(ov.coins); extra.push(`아이템 겹침 보너스 +${fmt(ov.coins)} 엽전 <small>(${ov.why.join(' · ')})</small>`); }
+    if (r.type === 'win' && r.winner === ME) {
+      const tr = items.treasureRoll();
+      if (tr.eun) { addCur('eun', tr.eun); extra.push(`금은 보따리 · 은화 +${tr.eun}`); }
+      if (tr.geum) { addCur('geum', tr.geum); extra.push(`금은 보따리 · 금화 +${tr.geum}`); }
+      if (tr.eun || tr.geum) sfx.bonus();
+    }
+    if (extra.length) { rc.hidden = false; rc.innerHTML += extra.map((x) => `<div class="rc-extra">${x}</div>`).join(''); syncCurrencies(); }
+  }
   // 매직 카드(수집품) 획득 판정 — 테스트용 봇전 드롭
   const outcome = r.type === 'nagari' ? 'nagari' : r.winner === ME ? 'win' : 'lose';
   const drop = firstTime ? rollDrop(outcome, level, Math.random, items.dropBonus()) : null;
@@ -1268,6 +1281,7 @@ async function newGame() {
   busy = false;
   const seed = Math.floor(Math.random() * 1e9).toString(36);
   const aiSlots = items.aiLoadout(level as 'easy' | 'normal' | 'hard');
+  picked = items.ownedAll();
   const itemOpts = items.prepare(picked, aiSlots);
   s = createGame(seed, { carry, ...itemOpts } as Parameters<typeof createGame>[1]);
   for (const c of [...s.hands[0], ...s.hands[1], ...s.floor, ...s.deck]) allCards.set(c.id, c);
@@ -1353,7 +1367,7 @@ $('btn-level').addEventListener('click', () => {
   banner(`상대: ${AI_LEVELS.find((l) => l.id === level)!.label}`);
 });
 $('sp-cancel').addEventListener('click', () => { $('special').hidden = true; });
-$('btn-start').addEventListener('click', () => { sfx.unlock(); sfx.click(); sfx.startBgm(); openMagicPick(); });
+$('btn-start').addEventListener('click', () => { sfx.unlock(); sfx.click(); sfx.startBgm(); picked = items.ownedAll(); $('home').hidden = true; newGame(); }); // 장착 없이 가진 아이템 모두 자동 적용
 $('btn-mp-go').addEventListener('click', () => { items.saveLoadout(picked); $('magic-pick').hidden = true; $('home').hidden = true; newGame(); });
 $('btn-mp-none').addEventListener('click', () => { picked = []; $('magic-pick').hidden = true; $('home').hidden = true; newGame(); });
 initGacha(() => syncHome());

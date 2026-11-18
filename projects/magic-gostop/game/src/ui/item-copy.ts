@@ -44,6 +44,7 @@ export const COPY: Record<string, { one: string; use: Use }> = {
   gourd: { one: '장착한 주문 카드가 더 잘 발동합니다', use: 'start' },
   pouch: { one: '봇전에서 아이템을 얻을 확률이 오릅니다', use: 'auto' },
   lantern: { one: '아직 안 보인 패를 월별로 세어 보여 줍니다', use: 'start' },
+  treasure: { one: '이긴 판에 낮은 확률로 은화·금화가 나옵니다', use: 'auto' },
   // 꾸미기
   cardback: { one: '화투 뒷면 무늬가 바뀝니다', use: 'look' },
   theme: { one: '판(담요) 색과 분위기가 바뀝니다', use: 'look' },
@@ -88,6 +89,7 @@ export const EFFECT: Record<string, (g: number) => string> = {
   goday: (g) => `이번 판 고를 부를 때마다 +${pt(g >= B.godayStrong ? 2 : 1)} (모두, 3고까지) · ${pc(g)}로 켜짐`,
   gourd: (g) => `장착한 주문 카드의 성공 확률 +${B.gourd[g]}%${g >= B.gourdExtraUse ? ' · 1번만 쓰는 주문 하나를 2번 쓸 수 있음' : ''}`,
   pouch: (g) => `봇전에서 아이템을 얻을 확률 +${B.pouch[g]}% (뽑기권 확률은 그대로)`,
+  treasure: (g) => `판을 이기면 ${B.treasureEun[g]}% 확률로 은화 1개, ${B.treasureGeum[g]}% 확률로 금화 1개`,
 };
 /** 함께 쓸 때 규칙(쉬운 말) */
-export const STACK_RULE = `아이템 보너스 점수는 한 판에 최대 ${B.itemCap}점(부적은 ${B.talismanCap}점)까지 · 피 지키기는 모두 합쳐 ${B.shieldCap}번까지 · 졌을 때 덜 잃기는 모두 합쳐 ${Math.round(B.lossCutCap * 100)}%까지 · 점수 배수 아이템(황금 배수·땅울림)은 하나만 · 보너스 점수는 7점(고/스톱 기준)에는 들어가지 않고 끝난 뒤 정산에만 더해집니다`;
+export const STACK_RULE = `가진 아이템은 장착 없이 판마다 모두 자동으로 굴려 적용됩니다 · 겹쳐서 아래 한도를 넘는 만큼은 엽전으로 돌려받습니다 · 아이템 보너스 점수는 한 판에 최대 ${B.itemCap}점(부적은 ${B.talismanCap}점)까지 · 피 지키기는 모두 합쳐 ${B.shieldCap}번까지 · 졌을 때 덜 잃기는 모두 합쳐 ${Math.round(B.lossCutCap * 100)}%까지 · 점수 배수 아이템(황금 배수·땅울림)은 하나만 · 보너스 점수는 7점(고/스톱 기준)에는 들어가지 않고 끝난 뒤 정산에만 더해집니다`;

@@ -1623,3 +1623,5 @@ body[data-frame=""] .seat.me .pname, body[data-cb=""] .back { }
 .floor-month .card { box-shadow: 0 2px 4px rgba(0,0,0,.45); }
 .deck .back:nth-child(3) { box-shadow: 0 4px 10px rgba(0,0,0,.5); }
 .deck-n { background: rgba(0,0,0,.6); color: #f4ecdc; box-shadow: none; border: 1px solid rgba(255,255,255,.18); font-weight: 700; }
+
+.rc-extra { margin-top: 4px; font-size: .78rem; color: #f3d27a; } .rc-extra small { color: #b9b2a2; font-size: .7rem; }

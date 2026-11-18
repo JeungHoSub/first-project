@@ -86,6 +86,10 @@ export interface RunState {
   seen: number;
   /** 캐릭터(장군): 고 할 때 피 뺏기 남은 횟수 */
   charGoLeft: number;
+  /** 겹쳐서 한도를 넘은 효과 → 엽전 (판 시작 때 정해지는 것) */
+  over: { label: string; coins: number }[];
+  /** 점수 한도를 넘은 아이템 점수 (끝날 때 엽전으로) */
+  overPts: number;
 }
 let run: RunState | null = null;
 export const current = () => run;
@@ -123,25 +127,27 @@ export function aiLoadout(level: 'easy' | 'normal' | 'hard', rng = Math.random):
   return ids.map((id) => ({ id, g: lo + Math.floor(rng() * (hi - lo + 1)) }));
 }
 
+/** 가진 아이템 전부 (장착 없이 모두 자동 적용) */
+export const ownedAll = () => ITEMS.filter((x) => bestGrade(x.id) >= 0).map((x) => x.id);
 /** 판 만들기 전: 엔진 규칙 옵션에 들어갈 변화(쌍피 축제·땅울림·현무 거북)와 발동 판정 */
 export function prepare(ids: string[], aiSlots: Slot[] = []): Partial<RuleOptions> {
-  const slots: Slot[] = sanitize(ids).map((id) => ({ id, g: bestGrade(id) }));
+  const slots: Slot[] = [...new Set(ids)].filter((id) => ITEMS.some((x) => x.id === id) && bestGrade(id) >= 0).map((id) => ({ id, g: bestGrade(id) }));
   const g: Record<string, number> = {}; slots.forEach((x) => { g[x.id] = x.g; });
-  run = { ai: { slots: aiSlots, on: {}, g: {} }, aiGumihoLeft: 0, aiMirrorLeft: 0, slots, on: {}, g, notes: [], fogHidden: new Set(), fogPeeked: new Set(), seerCards: [], gumihoLeft: 0, mirrorLeft: 0, twoflipLeft: 0, myTurns: 0, extraFlippedThisTurn: false, seen: 0, charGoLeft: 0 };
+  run = { ai: { slots: aiSlots, on: {}, g: {} }, aiGumihoLeft: 0, aiMirrorLeft: 0, slots, on: {}, g, notes: [], fogHidden: new Set(), fogPeeked: new Set(), seerCards: [], gumihoLeft: 0, mirrorLeft: 0, twoflipLeft: 0, myTurns: 0, extraFlippedThisTurn: false, seen: 0, charGoLeft: 0, over: [], overPts: 0 };
   const gourd = (has('gourd') ? B.gourd[gOf('gourd')] : 0) + chars.ability('spell');
   { const c = chars.current(); if (c.def.ability === 'goSteal') run.charGoLeft = chars.goStealCap(c.lv); }
   const opts: Partial<RuleOptions> = {};
   for (const sl of slots) {
     const it = ITEMS.find((x) => x.id === sl.id)!;
-    // 부적·도구·꾸미기는 늘 켜짐. 정령·이벤트권·주문(지속형)은 발동 확률을 굴린다(호리병은 주문에만 보정)
-    const always = it.category === 'talisman' || it.category === 'tool' || it.category === 'cosmetic';
+    // 장착 없이 가진 것 모두 적용. 꾸미기·금은 보따리(자체가 확률)만 늘 켜지고, 나머지는 등급별 확률로 굴린다(호리병은 주문에만 보정)
+    const always = it.category === 'cosmetic' || it.category === 'spell' || sl.id === 'treasure'; // 주문은 쓸 때 성공 확률을 굴린다
     const bonus = it.category === 'spell' ? gourd : 0;
     const ok = always || roll(sl.g, bonus);
     run.on[sl.id] = ok;
-    if (it.category === 'spirit' || it.category === 'event' || ['mirror', 'goinsure'].includes(sl.id)) {
-      if (!ok) run.notes.push(`${it.name} 불발`);
-    }
   }
+  // 점수 배수는 하나만: 황금 배수와 땅울림이 같이 켜지면 땅울림은 엽전으로
+  if (run.on.quake && has('double')) { run.on.quake = false; run.over.push({ label: '땅울림(배수 겹침)', coins: B.overMult }); }
+  // 피 지키기·덜 잃기·주문 보정이 겹치는 것은 정산 때 엽전으로 (begin·lossAfterGuard·recompute)
   // AI 아이템 발동 판정 (부적은 늘 켜짐)
   const ai = run.ai;
   for (const sl of aiSlots) { ai.g[sl.id] = sl.g; ai.on[sl.id] = catOf(sl.id) === 'talisman' || roll(sl.g); }
@@ -169,6 +175,7 @@ export function begin(state: GameState, magicShield: number, magicPatch: { noPib
   // 피 뺏김 막기: 금강 방패 + 현무 거북 합산, 6회 상한
   let shield = magicShield;
   if (isOn('turtle')) shield += T.turtle[gOf('turtle')];
+  if (shield > SHIELD_CAP) run.over.push({ label: `피 지키기 ${shield - SHIELD_CAP}회 초과`, coins: (shield - SHIELD_CAP) * B.overShield });
   shield = Math.min(SHIELD_CAP, shield);
   if (shield || magicPatch.noPibak || magicPatch.noGwangbak || magicPatch.double) s = setMagicState(s, ME, { shield, ...magicPatch });
   // AI: 금강 방패·현무 거북·황금 배수·방망이 도깨비
@@ -233,9 +240,10 @@ function pointsFor(s: GameState, p: PlayerId): ExtraPoint[] {
   const caps = capturedBy(s, p).map((id) => lookup(id)).filter((c): c is Card => !!c);
   const cnt = (f: (c: Card) => boolean) => caps.filter(f).length;
   const evCount = (t: string) => s.events.filter((e) => e.type === t && (e as { player?: PlayerId }).player === p).length;
-  const H = (id: string) => hasP(p, id);
+  const H = (id: string) => onP(p, id); // 장착 없이 모두 적용: 발동한 것만 센다
   const G = (id: string) => gP(p, id);
   const O = (id: string) => onP(p, id);
+  let overRaw = 0;
   // 부적 (부적 합계 +6)
   {
     let tal = 0;
@@ -254,7 +262,8 @@ function pointsFor(s: GameState, p: PlayerId): ExtraPoint[] {
     if (H('jjok')) tal += Math.min((evCount('jjok') + evCount('ttadak')) * T.jjok[G('jjok')], T.jjokCap[G('jjok')]);
     if (H('fang')) tal += Math.min(s.goCount[p] * T.fang[G('fang')], T.fangCap[G('fang')]);
     const talItem = side(p)!.slots.find((x) => catOf(x.id) === 'talisman' && x.id !== 'haetae');
-    if (talItem && tal > 0) add('talisman', ITEMS.find((x) => x.id === talItem.id)!.name, Math.min(tal, TALISMAN_CAP));
+    if (tal > TALISMAN_CAP) overRaw += tal - TALISMAN_CAP;
+    if (talItem && tal > 0) add('talisman', side(p)!.slots.filter((x) => catOf(x.id) === 'talisman' && x.id !== 'haetae').length > 1 ? '부적' : ITEMS.find((x) => x.id === talItem.id)!.name, Math.min(tal, TALISMAN_CAP));
     // 정령
     if (O('collector')) add('collector', '달빛 수집가', Math.min(cnt((c) => c.kind === 'G') * T.spiritEach[G('collector')], T.spiritCap[G('collector')]));
     if (O('samjogo')) add('samjogo', '삼족오', Math.min(cnt((c) => c.kind === 'Y') * T.spiritEach[G('samjogo')], T.spiritCap[G('samjogo')]));
@@ -268,7 +277,9 @@ function pointsFor(s: GameState, p: PlayerId): ExtraPoint[] {
   if (evOn('goday')) add('goday', '북소리의 날', Math.min(s.goCount[p], 3) * (evG('goday') >= B.godayStrong ? 2 : 1));
   // 한 사람당 +8 상한
   let left = ITEM_CAP;
-  return out.map((x) => { const v = Math.min(x.points, left); left -= v; return { ...x, points: v }; }).filter((x) => x.points > 0);
+  const capped = out.map((x) => { const v = Math.min(x.points, left); left -= v; return { ...x, points: v }; });
+  if (p === ME) run.overPts = Math.round((overRaw + out.reduce((a, x) => a + x.points, 0) - capped.reduce((a, x) => a + x.points, 0)) * 100) / 100;
+  return capped.filter((x) => x.points > 0);
 }
 
 export function recompute(s: GameState): GameState {
@@ -334,26 +345,44 @@ export function markExtraFlip() { if (run) { run.twoflipLeft--; run.extraFlipped
 export const twoflipInfo = () => (run ? { left: run.twoflipLeft, from: T.twoflipFrom[Math.max(0, gOf('twoflip'))], turn: run.myTurns + 1 } : null);
 
 // ---------- 정산 보조 ----------
+let lossOver = 0;
+/** 겹쳐서 한도를 넘은 효과를 엽전으로 (판 끝에 한 번) */
+export function overflowCoins(): { coins: number; why: string[] } {
+  if (!run) return { coins: 0, why: [] };
+  const list = [...run.over];
+  if (run.overPts > 0) list.push({ label: `아이템 점수 ${run.overPts}점 초과`, coins: Math.round(run.overPts * B.overPt) });
+  if (lossOver > 0) list.push({ label: `덜 잃기 ${lossOver}점 초과`, coins: lossOver * B.overPt });
+  lossOver = 0;
+  return { coins: list.reduce((a, x) => a + x.coins, 0), why: list.map((x) => x.label) };
+}
+/** 금은 보따리: 이긴 판에 은화·금화 */
+export function treasureRoll(): { eun: number; geum: number } {
+  if (!run || !isOn('treasure')) return { eun: 0, geum: 0 };
+  const g = gOf('treasure');
+  return { eun: Math.random() * 100 < B.treasureEun[g] ? 1 : 0, geum: Math.random() * 100 < B.treasureGeum[g] ? 1 : 0 };
+}
 /** 내가 졌을 때 잃는 점수 감면 (해태 부적 + 고 보험 우산, 합쳐 50%까지, 최소 1점) */
 export function lossAfterGuard(lostScore: number, loserGoCount: number, loser: PlayerId = ME): { lost: number; saved: number; why: string[] } {
   if (!run || lostScore <= 0) return { lost: lostScore, saved: 0, why: [] };
   let cut = 0; const why: string[] = [];
   const pre = loser === ME ? '' : '상대 ';
-  if (hasP(loser, 'haetae')) { const v = lostScore * T.haetae[gP(loser, 'haetae')] / 100; cut += v; why.push(`${pre}해태 부적 -${T.haetae[gP(loser, 'haetae')]}%`); }
+  if (onP(loser, 'haetae')) { const v = lostScore * T.haetae[gP(loser, 'haetae')] / 100; cut += v; why.push(`${pre}해태 부적 -${T.haetae[gP(loser, 'haetae')]}%`); }
   if (onP(loser, 'goinsure') && loserGoCount > 0) {
     const v = Math.min(loserGoCount * T.insureEach[gP(loser, 'goinsure')], T.insureCap[gP(loser, 'goinsure')]);
     cut += v; why.push(`${pre}고 보험 -${v}점`);
   }
-  cut = Math.min(cut, lostScore * B.lossCutCap, lostScore - 1);
+  const capCut = Math.min(cut, lostScore * B.lossCutCap, lostScore - 1);
+  if (loser === ME && cut > capCut && run) lossOver = Math.floor(cut - Math.max(0, capCut));
+  cut = capCut;
   cut = Math.max(0, Math.floor(cut));
   return { lost: lostScore - cut, saved: cut, why };
 }
 /** 복주머니: 봇전 아이템 획득 확률 보정(%p) */
-export const dropBonus = () => (has('pouch') ? T.pouch[gOf('pouch')] : 0);
+export const dropBonus = () => (isOn('pouch') ? T.pouch[gOf('pouch')] : 0);
 /** 호리병: 주문 발동 확률 보정(%p) */
-export const spellBonus = () => (has('gourd') ? B.gourd[gOf('gourd')] : 0) + chars.ability('spell');
+export const spellBonus = () => (isOn('gourd') ? B.gourd[gOf('gourd')] : 0) + chars.ability('spell');
 /** 호리병 SS 이상: 사용 횟수 1회인 주문 1장 +1 */
-export const gourdExtraUse = () => has('gourd') && gOf('gourd') >= B.gourdExtraUse;
+export const gourdExtraUse = () => isOn('gourd') && gOf('gourd') >= B.gourdExtraUse;
 export const shieldBaseFor = (g: number) => T.shield[g];
-export const lanternGrade = () => (has('lantern') ? gOf('lantern') : -1);
+export const lanternGrade = () => (isOn('lantern') ? gOf('lantern') : -1);
 export const cosmetic = (id: string) => (has(id) ? gOf(id) : -1);

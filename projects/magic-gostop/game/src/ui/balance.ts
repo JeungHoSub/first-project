@@ -36,6 +36,9 @@ export const B = {
   // 도구
   gourd: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], gourdExtraUse: 9,
   pouch: [1, 1, 2, 2, 3, 4, 5, 6, 7, 8],
+  treasureEun: [5, 6, 8, 10, 12, 14, 17, 20, 25, 30], treasureGeum: [0.5, 0.6, 0.8, 1, 1.2, 1.5, 2, 2.5, 3.5, 5],
+  /** 겹친 효과가 상한을 넘으면 넘친 만큼 엽전으로 */
+  overPt: 100, overShield: 150, overMult: 400,
   // 한도
   itemCap: 5, talismanCap: 4, shieldCap: 3, lossCutCap: 0.3,
 };

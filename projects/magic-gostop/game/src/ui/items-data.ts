@@ -134,6 +134,9 @@ export const ITEM_SPECS: ItemSpec[] = [
   { id: 'pouch', name: '복주머니', category: 'tool', icon: 'pouch', hue: '#e8553d', weight: W_NORMAL,
     stack: '중첩 불가(도구 슬롯 1개) · 획득 확률 보정은 +15%p 상한 · 유료 뽑기권 확률에는 적용 안 됨',
     effects: E((g) => `봇전 결과로 아이템을 얻을 확률 +${[2, 3, 5, 6, 8, 9, 11, 12, 14, 15][g]}%p (뽑기권 확률은 변하지 않음)`) },
+  { id: 'treasure', name: '금은 보따리', category: 'tool', icon: 'treasure', hue: '#e0b84a', weight: W_RARE,
+    stack: '판을 이겼을 때만 · 은화와 금화는 따로 굴림 · 한 판에 각각 1개',
+    effects: E((g) => `판을 이기면 ${[5, 6, 8, 10, 12, 14, 17, 20, 25, 30][g]}% 확률로 은화 1개, ${[0.5, 0.6, 0.8, 1, 1.2, 1.5, 2, 2.5, 3.5, 5][g]}% 확률로 금화 1개`) },
   { id: 'lantern', name: '도깨비불 등롱', category: 'tool', icon: 'lantern', hue: '#7fe3c1', weight: W_RARE,
     stack: '중첩 불가(도구 슬롯 1개) · 상대 손패는 알려 주지 않음(내가 못 본 패 전체의 장수·종류만, 규칙상 누구나 셀 수 있는 정보)',
     effects: [
