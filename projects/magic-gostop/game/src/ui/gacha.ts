@@ -3,12 +3,13 @@
 // 연출: 뽑기권이 날아와 빛나며 찢어짐 → 화투 뒷면이 사선 축으로 빨라지며 회전(잔상) + 빛 입자가 빨려 듦
 //      (높은 등급이면 화면 흔들림·번개) → 충격파와 함께 폭발 → 카드가 3D로 뒤집히며 공개.
 //      10회는 카드 10장이 깔린 뒤 한 장씩 뒤집히고, S 이상은 마지막에 따로 크게 뒤집힌다. 화면을 누르면 건너뛴다.
-import { ITEMS, bestGrade, TICKETS, GRADES, GRADE_COLOR, drawWithTicket, priceOf, itemArt, CATEGORY_LABEL, type Ticket, type Drop } from './collection';
+import { ITEMS, bestGrade, TICKETS, GRADES, GRADE_COLOR, drawWithTicket, priceOf, curOf, itemArt, CATEGORY_LABEL, type Ticket, type Drop } from './collection';
 import { copyOf } from './item-copy';
 import { ALL_CARDS, type Card } from '../engine';
 import { cardArt } from './art';
 import * as sfx from './sound';
-import { bal, pay, add, fmt, onCoins } from './wallet';
+import { bal, pay, add, fmt, onCoins, curIco, CUR_NAME } from './wallet';
+import { EFFECT } from './item-copy';
 
 const $ = (id: string) => document.getElementById(id)!;
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -40,7 +41,8 @@ export function initGacha(changed: () => void) {
   onChange = changed;
   $('btn-gacha-close').addEventListener('click', () => { $('gacha').hidden = true; });
   $('gr-close').addEventListener('click', () => { closeRun(); renderTickets(); });
-  $('btn-coin-test').addEventListener('click', () => { add('geum', 50); sfx.bonus(); renderTickets(); });
+  document.body.append($('gx-tip')); // 뽑기 연출 밖(구성품 탭)에서도 보이게
+  $('btn-coin-test').addEventListener('click', () => { add('yeop', 10000); add('eun', 20); add('geum', 50); sfx.bonus(); renderTickets(); });
   $('gacha-run').addEventListener('click', (e) => {
     if ((e.target as HTMLElement).closest('#gr-close')) return;
     if (running) skipping = true;
@@ -54,13 +56,14 @@ export function openGacha() {
 }
 
 function syncCoins() {
-  document.querySelectorAll('.coin-amt').forEach((e) => { e.textContent = fmt(bal('geum')); });
+  document.querySelectorAll('.coin-amt').forEach((e) => { e.textContent = fmt(bal(curOf(TICKETS[sel]))); });
+  document.querySelectorAll<HTMLElement>('.gacha-head .coin-chip > i').forEach((e) => { e.className = `cur-ico ${curOf(TICKETS[sel])}`; });
 }
 
 // ---------- 뽑기권 그림 ----------
 let tkSeq = 0;
 function ticketArt(t: Ticket, i: number, mini = false): string {
-  // 재질 그대로: 동전(동) · 은전(은) · 금전(금) · 옥패(옥) · 용옥(옥 + 금빛 용). 어두운 옻칠 바탕에 물건 하나만 — 깔끔하게.
+  // 재질 그대로: 엽전(동, 네모 구멍) · 은화(은, 매화) · 금화(금, 해와 구름) · 옥패(옥) · 용옥패(옥 + 금빛 용). 어두운 옻칠 바탕에 물건 하나만 — 깔끔하게.
   const id = `tk${++tkSeq}`;
   const M = [
     { a: '#5a3218', b: '#c98a56', c: '#f0c49a', d: '#7a4524', ink: '#3a1e0c', name: '#e8b48a' },  // 동
@@ -75,7 +78,7 @@ function ticketArt(t: Ticket, i: number, mini = false): string {
     <linearGradient id="${id}g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff2c0"/><stop offset=".5" stop-color="#d6a640"/><stop offset="1" stop-color="#8a6420"/></linearGradient>
     <radialGradient id="${id}bg" cx="25%" cy="50%" r="80%"><stop offset="0" stop-color="${M.b}" stop-opacity=".22"/><stop offset="1" stop-color="#0d1015" stop-opacity="0"/></radialGradient>`;
   let obj = '';
-  if (i <= 2) {
+  if (i === 0) {
     // 엽전: 둥근 몸통 + 네모 구멍 + 테두리 + 네 글자
     const words = ['복', '록', '수', '강'];
     const pos = [[0, -30], [30, 0], [0, 30], [-30, 0]];
@@ -85,11 +88,30 @@ function ticketArt(t: Ticket, i: number, mini = false): string {
       <circle r="54" fill="none" stroke="${M.a}" stroke-width="2"/>
       <circle r="46" fill="none" stroke="${M.ink}" stroke-opacity=".55" stroke-width="2.2"/>
       <circle r="44.5" fill="none" stroke="${M.c}" stroke-opacity=".5" stroke-width="1"/>
-      ${i === 2 ? Array.from({ length: 24 }, (_, k) => { const an = (k / 24) * Math.PI * 2; return `<circle cx="${(50 * Math.cos(an)).toFixed(1)}" cy="${(50 * Math.sin(an)).toFixed(1)}" r="1.3" fill="${M.c}" opacity=".8"/>`; }).join('') : ''}
       <rect x="-13" y="-13" width="26" height="26" fill="#0b0d12"/>
       <rect x="-17" y="-17" width="34" height="34" fill="none" stroke="${M.ink}" stroke-opacity=".6" stroke-width="2.4"/>
       <rect x="-16" y="-16" width="32" height="32" fill="none" stroke="${M.c}" stroke-opacity=".45" stroke-width="1"/>
       ${words.map((w, k) => `<text x="${pos[k][0]}" y="${pos[k][1] + 6}" text-anchor="middle" font-size="16" font-weight="800" fill="${M.ink}" fill-opacity=".72" font-family="Nanum Myeongjo, Noto Serif KR, serif">${w}</text>`).join('')}
+      <circle r="54" fill="url(#${id}h)"/>
+    </g>`;
+  } else if (i <= 2) {
+    // 은화: 매화 돋을새김 / 금화: 해와 구름 돋을새김 — 구멍 없는 주화, 구슬 테
+    const beads = Array.from({ length: 36 }, (_, k) => { const an = (k / 36) * Math.PI * 2; return `<circle cx="${(48.5 * Math.cos(an)).toFixed(1)}" cy="${(48.5 * Math.sin(an)).toFixed(1)}" r="1.5" fill="${M.c}" opacity=".85"/>`; }).join('');
+    const emb = i === 1
+      ? `<g fill="${M.d}" stroke="${M.ink}" stroke-opacity=".35" stroke-width="1">${[0, 72, 144, 216, 288].map((a) => `<ellipse cx="0" cy="-13" rx="9.5" ry="12" transform="rotate(${a})"/>`).join('')}</g>
+         <circle r="6" fill="${M.c}" stroke="${M.ink}" stroke-opacity=".4"/>${[0, 72, 144, 216, 288].map((a) => `<circle cx="0" cy="-9" r="1.4" fill="${M.ink}" opacity=".5" transform="rotate(${a + 36})"/>`).join('')}
+         <path d="M-26 22 q8 -10 18 -6 M26 22 q-8 -10 -18 -6" stroke="${M.ink}" stroke-opacity=".4" stroke-width="2" fill="none"/>`
+      : `<circle r="13" fill="${M.c}" stroke="${M.ink}" stroke-opacity=".45" stroke-width="1.4"/>
+         <g stroke="${M.ink}" stroke-opacity=".45" stroke-width="2" stroke-linecap="round">${Array.from({ length: 12 }, (_, k) => `<path d="M0 -17 V-23" transform="rotate(${k * 30})"/>`).join('')}</g>
+         <path d="M-30 20 c4 -8 12 -8 14 -2 c3 -6 12 -5 13 2 c6 -1 8 4 4 6 h-28 c-6 0 -6 -4 -3 -6z M6 26 c3 -6 10 -6 11 -1 c3 -4 10 -3 10 2 c4 0 5 4 2 5 h-21 c-4 0 -4 -4 -2 -6z" fill="${M.d}" stroke="${M.ink}" stroke-opacity=".35" stroke-width="1"/>`;
+    obj = `<g transform="translate(${cx} ${cy})">
+      <circle r="55" fill="#000" opacity=".35" transform="translate(3 5)"/>
+      <circle r="54" fill="url(#${id}m)"/>
+      <circle r="54" fill="none" stroke="${M.a}" stroke-width="2"/>
+      ${beads}
+      <circle r="43" fill="none" stroke="${M.ink}" stroke-opacity=".5" stroke-width="1.6"/>
+      <circle r="41.5" fill="none" stroke="${M.c}" stroke-opacity=".5" stroke-width="1"/>
+      ${emb}
       <circle r="54" fill="url(#${id}h)"/>
     </g>`;
   } else {
@@ -180,26 +202,35 @@ function renderTickets() {
       GRADES.map((g, gi) => `<tr><td>${badge(gi)}</td>${TICKETS.map((x, i) => `<td class="${i === sel ? 'cur' : ''}">${x.rates[g] ? `${x.rates[g]}%` : '<span class="nil">–</span>'}</td>`).join('')}</tr>`).join('')
     }</tbody></table></details>`;
   const totalW = ITEMS.reduce((a, x) => a + x.weight, 0);
-  const itemsPanel = `<p class="tx-sub">어떤 아이템이 나올지는 아래 확률, 등급은 위 확률표를 따로 따릅니다. 모은 것은 최고 등급이 표시됩니다.</p>
-    <div class="tx-items">${ITEMS.map((it) => { const g = bestGrade(it.id); return `<div class="tx-it${g < 0 ? ' no' : ''}" title="${it.name}"><span>${itemArt(it, Math.max(g, 0), g < 0)}</span><b>${g < 0 ? '???' : it.name}</b><small>${Math.round((it.weight / totalW) * 1000) / 10}%</small>${g >= 0 ? badge(g) : ''}</div>`; }).join('')}</div>`;
+  const esc = (x: string) => x.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+  const cats = [...new Set(ITEMS.map((x) => x.category))];
+  const itemsPanel = `<p class="tx-sub">아이템 종류 확률과 등급 확률은 따로 굴립니다. 아이템을 누르거나 올려 보면 성능이 나옵니다.</p>
+    ${cats.map((c) => `<div class="tx-cat"><div class="tx-cat-h">${CATEGORY_LABEL[c as keyof typeof CATEGORY_LABEL] ?? c}</div><div class="tx-items">${ITEMS.filter((it) => it.category === c).map((it) => {
+      const g = bestGrade(it.id); const cp = copyOf(it.id); const gi = Math.max(g, 0);
+      const eff = EFFECT[it.id] ? EFFECT[it.id](gi) : it.effect(gi);
+      return `<div class="tx-it gf${g < 0 ? ' no' : ''}" tabindex="0" data-gi="${gi}" data-name="${esc(it.name)}" data-cat="${esc(`${CATEGORY_LABEL[it.category as keyof typeof CATEGORY_LABEL] ?? ''} · 나올 확률 ${Math.round((it.weight / totalW) * 1000) / 10}%`)}" data-one="${esc(cp.one)}" data-eff="${esc(`${g < 0 ? '미보유 · F 등급 기준: ' : `내 최고 ${GRADES[g]} 등급: `}${eff}`)}">
+        <span>${itemArt(it, gi)}</span><b>${it.name}</b><small>${Math.round((it.weight / totalW) * 1000) / 10}%</small></div>`;
+    }).join('')}</div></div>`).join('')}`;
   const allLog = log.slice(-40).reverse();
   const logPanel = `<div class="tx-rec">
       <div class="tx-rec-head"><b>${t.name}</b><span>${mine.length}회${bestRow ? ` · 최고 ${badge(bestRow.gi)}` : ''}</span></div>
       <div class="tx-rec-row">${recent.length ? recent.map((x) => `<i title="${GRADES[x.gi]}">${badge(x.gi)}</i>`).join('') : '<small>아직 기록이 없습니다</small>'}</div>
     </div>
-    <ul class="tx-loglist">${allLog.map((x) => { const it = ITEMS.find((y) => y.id === x.id); return it ? `<li>${badge(x.gi)}<b>${it.name}</b><small>${TICKETS[x.t]?.name ?? ''}</small></li>` : ''; }).join('')}</ul>`;
+    ${allLog.length ? `<ul class="tx-loglist">${allLog.map((x) => { const it = ITEMS.find((y) => y.id === x.id); return it ? `<li><span class="lg-art">${itemArt(it, x.gi)}</span><b>${it.name}</b>${badge(x.gi)}<small>${TICKETS[x.t]?.name ?? ''}</small></li>` : ''; }).join('')}</ul>` : '<p class="tx-empty">아직 뽑은 기록이 없습니다</p>'}`;
   const panel = txTab === 'odds' ? `${stats}<ol class="tx-ladder">${ladder}</ol>${compare}` : txTab === 'items' ? itemsPanel : logPanel;
   $('tx-odds').innerHTML = `<div class="tx-tabs" role="tablist">${([['odds', '확률'], ['items', '구성품'], ['log', '기록']] as const).map(([k, l]) => `<button type="button" role="tab" class="tab${txTab === k ? ' cur' : ''}" data-k="${k}">${l}</button>`).join('')}</div><div class="tx-panel">${panel}</div>`;
   $('tx-odds').querySelectorAll<HTMLButtonElement>('.tx-tabs .tab').forEach((b) => b.addEventListener('click', () => { txTab = b.dataset.k as typeof txTab; sfx.click(); renderTickets(); }));
+  if (txTab === 'items') wireTips($('tx-odds'));
 
   $('tx-actions').innerHTML = [1, 10].map((n) => {
     const p = priceOf(t, n);
-    return `<button type="button" class="tx-go${n === 10 ? ' ten' : ''}" data-n="${n}" ${bal('geum') < p ? 'disabled' : ''} style="--tc:${t.hue}">
-      <b>${n}회 뽑기</b><span><i class="cur-ico geum" aria-hidden="true"></i>금화 ${fmt(p)}</span>${n === 10 ? '<em>1회분 덤</em>' : ''}</button>`;
+    const cu = curOf(t);
+    return `<button type="button" class="tx-go${n === 10 ? ' ten' : ''}" data-n="${n}" ${bal(cu) < p ? 'disabled' : ''} style="--tc:${t.hue}">
+      <b>${n}회 뽑기</b><span>${curIco(cu)}${CUR_NAME[cu]} ${fmt(p)}</span>${n === 10 ? '<em>1회분 덤</em>' : ''}</button>`;
   }).join('');
   $('tx-actions').querySelectorAll<HTMLButtonElement>('.tx-go').forEach((b) => b.addEventListener('click', () => {
     const n = +b.dataset.n!;
-    if (!pay('geum', priceOf(t, n))) { sfx.buzz([40]); return; }
+    if (!pay(curOf(t), priceOf(t, n))) { sfx.buzz([40]); return; }
     run(t, sel, n);
   }));
 }

@@ -221,8 +221,11 @@ export function grantTestMagic(rng = Math.random) {
 // ---------- 뽑기권 (엽전으로 사용) ----------
 export interface Ticket { id: string; name: string; desc: string; hue: string; rates: Record<Grade, number>; minGrade?: Grade; price?: number }
 /** 뽑기권 1장 가격(엽전). 10회는 9장 값 */
-/** 뽑기권 가격(금화). 10회는 9장 값 */
-export const TICKET_PRICE: Record<string, number> = { copper: 1, silver: 3, gold: 8, jade: 20, dragon: 50 };
+/** 뽑기권 가격(각 뽑기권의 재화 기준). 10회는 9장 값 */
+export const TICKET_PRICE: Record<string, number> = { copper: 1000, silver: 5, gold: 8, jade: 20, dragon: 50 };
+/** 뽑기권별 재화: 엽전권=엽전, 은화권=은화, 금화권 이상=금화 */
+export const TICKET_CUR: Record<string, 'yeop' | 'eun' | 'geum'> = { copper: 'yeop', silver: 'eun', gold: 'geum', jade: 'geum', dragon: 'geum' };
+export const curOf = (t: Ticket) => TICKET_CUR[t.id] ?? 'geum';
 export const priceOf = (t: Ticket, n: number) => (t.price ?? TICKET_PRICE[t.id] ?? 8) * (n >= 10 ? 9 : n);
 /** 뽑기권 5단계 (확률표는 items-data.ts / outputs/items.md 6절) */
 export let TICKETS: Ticket[] = TICKET_SPECS.map((t) => ({ ...t, minGrade: t.minGrade as Grade | undefined }));

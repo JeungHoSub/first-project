@@ -183,15 +183,15 @@ export interface TicketSpec {
   minGrade?: string;
 }
 export const TICKETS: TicketSpec[] = [
-  { id: 'copper', name: '동전권', desc: '누구나 쉽게 모으는 기본 뽑기권. 최소 보장 없음.', hue: '#c98a5a',
+  { id: 'copper', name: '엽전권', desc: '엽전으로 사는 기본 뽑기권. 최소 보장 없음.', hue: '#c98a5a',
     rates: { F: 34, E: 24, D: 17, C: 11, B: 7, A: 4, S: 2, SS: 0.7, SSS: 0.25, 'SSS+': 0.05 } },
-  { id: 'silver', name: '은전권', desc: '낮은 등급(F)이 줄고 중간 등급이 늘어난다.', hue: '#c9d1d8',
+  { id: 'silver', name: '은화권', desc: '은화로 사는 뽑기권. 낮은 등급이 줄고 중간 등급이 늘어난다.', hue: '#c9d1d8',
     rates: { F: 20, E: 24, D: 20, C: 14, B: 10, A: 6, S: 3.5, SS: 1.8, SSS: 0.6, 'SSS+': 0.1 } },
-  { id: 'gold', name: '금전권', desc: 'C~A 등급이 중심. S 이상도 눈에 띄게 늘어난다.', hue: '#f0c35a',
+  { id: 'gold', name: '금화권', desc: 'C~A 등급이 중심. S 이상도 눈에 띄게 늘어난다.', hue: '#f0c35a',
     rates: { F: 8, E: 14, D: 20, C: 20, B: 16, A: 11, S: 6.5, SS: 3, SSS: 1.2, 'SSS+': 0.3 } },
   { id: 'jade', name: '옥패권', desc: 'F·E는 나오지 않는다. 최소 D 보장.', hue: '#5bd1a0',
     rates: { F: 0, E: 0, D: 8, C: 24, B: 28, A: 20, S: 11, SS: 6, SSS: 2.4, 'SSS+': 0.6 }, minGrade: 'D' },
-  { id: 'dragon', name: '용옥권', desc: '가장 높은 단계. 최소 B 보장.', hue: '#3f9a78',
+  { id: 'dragon', name: '용옥패권', desc: '가장 높은 단계. 최소 B 보장.', hue: '#3f9a78',
     rates: { F: 0, E: 0, D: 0, C: 0, B: 40, A: 30, S: 18, SS: 8, SSS: 3.2, 'SSS+': 0.8 }, minGrade: 'B' },
 ];
 
