@@ -735,3 +735,47 @@ export function say(text: string, excited = false) {
     speechSynthesis.speak(u);
   } catch { /* 무시 */ }
 }
+
+// ---------- 뽑기 재화별 소리 ----------
+/** 동전 "팅": 높은 쇳소리 */
+export function coin(bright = 1) {
+  if (!ready()) return;
+  const t = now();
+  tone(t, 0.5, 'sine', 3150 * bright, 3120 * bright, 0.09, 0.001);
+  tone(t, 0.35, 'sine', 4720 * bright, 4700 * bright, 0.05, 0.001);
+  tone(t, 0.25, 'sine', 2080 * bright, 2070 * bright, 0.06, 0.001);
+  noise(t, 0.01, 'highpass', 5000, 0.1);
+}
+/** 동전을 튕겨 올리는 소리 */
+export function coinToss() {
+  if (!ready()) return;
+  const t = now();
+  coin(1.05);
+  noise(t + 0.02, 0.5, 'bandpass', 900, 0.05, 1.2, 3200);
+}
+/** 은 주발이 울리는 "띵—" */
+export function ring() {
+  if (!ready()) return;
+  const t = now();
+  [[660, .11], [663, .08], [1012, .06], [1650, .035], [2420, .02]].forEach(([f, v], i) => tone(t, 2.6 - i * 0.3, 'sine', f, f * 0.998, v, 0.002));
+}
+/** 금화가 우수수 쏟아지는 소리 */
+export function coinRain(ms = 1100) {
+  if (!ready()) return;
+  for (let i = 0; i < 22; i++) { const d = Math.random() * ms; setTimeout(() => coin(0.85 + Math.random() * 0.35), d); }
+}
+/** 옥 노리개·풍경 소리 */
+export function windchime() {
+  if (!ready()) return;
+  const t = now();
+  [2093, 2349, 2637, 3136, 3520].forEach((f, i) => { const d = i * 0.13 + Math.random() * 0.05; tone(t + d, 1.6, 'sine', f, f, 0.05, 0.002); tone(t + d, 0.8, 'sine', f * 2.76, f * 2.76, 0.012, 0.002); });
+}
+/** 용의 포효: 낮게 울리는 숨 + 북 */
+export function roar() {
+  if (!ready()) return;
+  const t = now();
+  noise(t, 1.4, 'lowpass', 420, 0.25, 1.4, 90);
+  tone(t, 1.3, 'sawtooth', 70, 46, 0.09, 0.15);
+  tone(t, 1.1, 'sawtooth', 105, 70, 0.05, 0.2);
+  [0, 0.2, 0.4, 0.55, 0.7].forEach((d, i) => tone(t + d, 0.4, 'sine', 95, 50, 0.18 + i * 0.03, 0.003));
+}

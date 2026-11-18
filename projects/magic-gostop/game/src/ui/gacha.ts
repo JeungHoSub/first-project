@@ -398,6 +398,82 @@ function closeRun() {
 }
 
 /** 나전칠기 함: 옻칠 바탕에 자개(무지갯빛 조개) 구름·학 무늬, 금속 장식 */
+/** 재화별 등장 연출 */
+async function introFor(tier: number, t: Ticket, spin: HTMLElement, stage: HTMLElement) {
+  const obj = `<div class="gx-obj">${ticketArt(t, tier, true)}</div>`;
+  if (tier === 0) { // 엽전: 엄지로 튕겨 공중에서 돌다 "팅" 하고 떨어짐
+    spin.innerHTML = obj;
+    stage.classList.add('toss'); sfx.coinToss();
+    await wait(1000);
+    stage.classList.add('land'); sfx.coin(0.95); sfx.slap(0.5);
+    spawnOut(40, '#d49a64', false, center(), 0.35);
+    await wait(380);
+  } else if (tier === 1) { // 은화: 위에서 천천히 돌며 내려와 "띵" — 은빛 물결
+    spin.innerHTML = `${obj}<i class="gx-ripple"></i><i class="gx-ripple"></i><i class="gx-ripple"></i>`;
+    stage.classList.add('drop');
+    await wait(900);
+    stage.classList.add('land'); sfx.ring();
+    spawnOut(50, '#e6ecf2', false, center(), 0.35);
+    await wait(700);
+  } else if (tier === 2) { // 금화: 금화가 우수수 쏟아지고 큰 금화 하나가 가운데 자리 잡음
+    spin.innerHTML = `${obj}${Array.from({ length: 18 }, (_, i) => `<i class="gx-drop" style="--x:${Math.round(Math.random() * 260 - 130)}px;--d:${Math.round(Math.random() * 700)}ms;--r:${Math.round(Math.random() * 720 - 360)}deg;--s:${(0.5 + Math.random() * 0.5).toFixed(2)}">${i % 3 ? '' : ''}</i>`).join('')}`;
+    stage.classList.add('rain'); sfx.coinRain(1000);
+    await wait(1150);
+    stage.classList.add('land'); sfx.coin(0.9); sfx.slap(0.7);
+    spawnOut(60, '#f3d27a', false, center(), 0.4);
+    await wait(420);
+  } else if (tier === 3) { // 옥패: 노리개가 바람에 흔들리며 옥빛이 차오름
+    spin.innerHTML = `${obj}<i class="gx-mist"></i>`;
+    stage.classList.add('swing'); sfx.windchime();
+    await wait(1300);
+    stage.classList.add('land'); sfx.chime(5);
+    spawnOut(60, '#8fe0bc', false, center(), 0.4);
+    await wait(420);
+  } else { // 용옥패: 화면이 어두워지고 금빛 용이 옥패를 휘감은 뒤 포효
+    spin.innerHTML = `${obj}<svg class="gx-dragon" viewBox="-150 -150 300 300" aria-hidden="true">
+      <defs><linearGradient id="gx-dg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff2c0"/><stop offset=".5" stop-color="#e2b445"/><stop offset="1" stop-color="#8a6420"/></linearGradient></defs>
+      <path class="dg-body" d="M-128 70 C-150 -40 -50 -138 40 -118 C138 -96 146 24 84 66 C30 102 -46 86 -56 32 C-64 -8 -14 -44 30 -24 C58 -12 58 22 34 30" fill="none" stroke="url(#gx-dg)" stroke-width="11" stroke-linecap="round"/>
+      <path class="dg-body dg-scale" d="M-128 70 C-150 -40 -50 -138 40 -118 C138 -96 146 24 84 66 C30 102 -46 86 -56 32 C-64 -8 -14 -44 30 -24 C58 -12 58 22 34 30" fill="none" stroke="#5a3a0c" stroke-opacity=".55" stroke-width="3" stroke-dasharray="3 6"/>
+      <g class="dg-head" transform="translate(34 30)"><path d="M0 0 C10 -6 22 -2 22 8 C22 16 10 18 4 12" fill="url(#gx-dg)"/><path d="M14 -2 L22 -16 M8 -4 L10 -18" stroke="#e2b445" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="M20 12 C34 14 40 24 34 32 M16 14 C26 22 22 32 14 34" stroke="#f3d27a" stroke-width="1.6" fill="none"/><circle cx="14" cy="4" r="2.2" fill="#c0302a"/></g>
+      <circle class="dg-pearl" cx="-6" cy="-6" r="9" fill="#fff6d8"/>
+    </svg>`;
+    stage.classList.add('dark');
+    await wait(300);
+    stage.classList.add('coil'); sfx.roar(); sfx.buzz([60, 40, 80]);
+    await wait(1500);
+    bolt(); stage.classList.add('shake'); setTimeout(() => stage.classList.remove('shake'), 500);
+    stage.classList.add('land'); sfx.bomb();
+    spawnOut(90, '#f3d27a', false, center(), 0.55); spawnOut(60, '#8fe0bc', false, center(), 0.45);
+    await wait(520);
+  }
+}
+/** 재화별 그릇 */
+function vesselArt(tier: number): string {
+  if (tier === 2) return boxArt();
+  const art = [
+    // 엽전: 나무 소반
+    `<svg class="gx-box-body" viewBox="0 0 200 110"><defs><linearGradient id="vs0" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a0663a"/><stop offset="1" stop-color="#5a3418"/></linearGradient></defs>
+      <path d="M44 70 L36 106 M156 70 L164 106 M70 74 L66 106 M130 74 L134 106" stroke="#4a2a12" stroke-width="7" stroke-linecap="round"/>
+      <ellipse cx="100" cy="58" rx="92" ry="22" fill="url(#vs0)"/><ellipse cx="100" cy="54" rx="84" ry="16" fill="#b97a48"/><ellipse cx="100" cy="54" rx="84" ry="16" fill="none" stroke="#6a3e1c" stroke-width="2"/>
+      <path d="M30 54 q70 -10 140 0" stroke="#d29a68" stroke-width="1" fill="none" opacity=".6"/></svg>`,
+    // 은화: 은 주발
+    `<svg class="gx-box-body" viewBox="0 0 200 110"><defs><linearGradient id="vs1" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7d868f"/><stop offset=".35" stop-color="#f4f7fa"/><stop offset=".6" stop-color="#c9d1d8"/><stop offset="1" stop-color="#6d767f"/></linearGradient></defs>
+      <path d="M30 30 Q34 96 100 100 Q166 96 170 30Z" fill="url(#vs1)"/><ellipse cx="100" cy="30" rx="70" ry="12" fill="#2a3036"/><ellipse cx="100" cy="30" rx="70" ry="12" fill="none" stroke="#e6ecf2" stroke-width="2.5"/>
+      <path d="M72 100 h56 l6 8 h-68z" fill="#8e98a2"/><path d="M44 50 Q100 64 156 50" stroke="#fff" stroke-opacity=".35" stroke-width="2" fill="none"/></svg>`,
+    '',
+    // 옥패: 옥 연꽃 받침
+    `<svg class="gx-box-body" viewBox="0 0 200 110"><defs><linearGradient id="vs3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c8f0dc"/><stop offset=".5" stop-color="#5fae8c"/><stop offset="1" stop-color="#1d4c3e"/></linearGradient></defs>
+      ${[-70, -42, -14, 14, 42, 70].map((x) => `<path d="M${100 + x} 92 C${86 + x} 70 ${92 + x} 44 ${100 + x} 34 C${108 + x} 44 ${114 + x} 70 ${100 + x} 92Z" fill="url(#vs3)" stroke="#123a2e" stroke-opacity=".4"/>`).join('')}
+      <ellipse cx="100" cy="94" rx="90" ry="12" fill="#1d4c3e"/><ellipse cx="100" cy="92" rx="84" ry="9" fill="#2f6e5a"/></svg>`,
+    // 용옥패: 금빛 구름 받침
+    `<svg class="gx-box-body" viewBox="0 0 200 110"><defs><linearGradient id="vs4" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff2c0"/><stop offset=".5" stop-color="#e2b445"/><stop offset="1" stop-color="#8a6420"/></linearGradient></defs>
+      <path d="M8 96 c6 -22 34 -26 42 -10 c6 -20 40 -22 46 -2 c8 -18 42 -16 46 4 c10 -12 40 -6 50 8 Z" fill="#1f5a48" stroke="url(#vs4)" stroke-width="3"/>
+      <path d="M30 88 c6 -8 16 -8 20 0 M76 84 c8 -10 20 -10 24 0 M124 86 c8 -10 20 -10 24 0" stroke="url(#vs4)" stroke-width="2" fill="none"/></svg>`,
+  ][tier];
+  return `<div class="gx-box gx-vessel v${tier}">${art}</div>`;
+}
+
 function boxArt() {
   const nacre = `<linearGradient id="gx-nacre" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6d8e8"/><stop offset=".3" stop-color="#d8f0ea"/><stop offset=".6" stop-color="#d6def8"/><stop offset="1" stop-color="#f4ecd0"/></linearGradient>`;
   const lac = `<linearGradient id="gx-lac" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a1a14"/><stop offset="1" stop-color="#0b0706"/></linearGradient>`;
@@ -486,28 +562,22 @@ async function run(t: Ticket, tier: number, n: number) {
   stage.hidden = false;
   fxStart();
 
-  // 1) 뽑기권이 놓이고 붉은 낙관이 "쿵" 찍힌 뒤 금가루로 흩어짐
+  // 1) 재화별 등장 연출 (엽전: 튕기기 · 은화: 주발에 떨어짐 · 금화: 금화 비 · 옥패: 노리개 흔들림 · 용옥패: 금빛 용)
   const spin = $('gr-spin');
-  spin.innerHTML = `<div class="gx-ticket">${ticketArt(t, tier)}<div class="gx-stamp"><span>인</span></div></div>`;
-  stage.classList.add('intro');
-  sfx.deal();
-  await wait(620);
-  stage.classList.add('stamp'); sfx.slap(1); sfx.buzz(20);
-  await wait(520);
-  stage.classList.add('dissolve');
-  spawnOut(70, '#e9cf8a', false, center(), 0.35);
-  await wait(480);
+  stage.dataset.tk = String(tier);
+  await introFor(tier, t, spin, stage);
 
-  // 2) 나전칠기 함이 떠오르고 뚜껑이 열리며 빛이 새어 나옴 → 진짜 화투가 함에서 솟아 사선으로 회전
+  // 2) 재화별 그릇(소반·은 주발·나전칠기 함·옥 연꽃 받침·구름 받침)에서 진짜 화투가 솟아 사선으로 회전
   const pool = ALL_CARDS.filter((c) => c.month <= 12);
   const gwang = pool.filter((c) => c.kind === 'G');
   const face: Card = high ? gwang[Math.floor(Math.random() * gwang.length)] : pool[Math.floor(Math.random() * pool.length)];
-  spin.innerHTML = `<div class="gx-boxlight"></div>${boxArt()}<div class="gx-card-wrap">${[3, 2, 1, 0].map((k) => `<div class="gx-card${k ? ' ghost' : ''}" style="--k:${k}"><div class="gx-back"></div><div class="gx-face">${cardArt(face)}</div></div>`).join('')}<div class="gx-glow"></div></div><div class="gx-ring"></div>`;
-  stage.classList.remove('intro', 'stamp', 'dissolve'); void stage.offsetWidth;
+  spin.innerHTML = `<div class="gx-boxlight"></div>${vesselArt(tier)}<div class="gx-card-wrap">${[3, 2, 1, 0].map((k) => `<div class="gx-card${k ? ' ghost' : ''}" style="--k:${k}"><div class="gx-back"></div><div class="gx-face">${cardArt(face)}</div></div>`).join('')}<div class="gx-glow"></div></div><div class="gx-ring"></div>`;
+  stage.classList.remove('intro', 'stamp', 'dissolve', 'toss', 'land', 'drop', 'rain', 'swing', 'coil', 'dark'); void stage.offsetWidth;
   stage.classList.add('box');
   sfx.chime(2);
   await wait(700);
-  stage.classList.add('open'); sfx.flip(); sfx.chime(4);
+  stage.classList.add('open'); sfx.flip();
+  if (tier === 1) sfx.ring(); else if (tier >= 3) sfx.windchime(); else sfx.chime(4);
   await wait(650);
   stage.classList.add('charge');
   // 등급 예고: 빛 색이 C → A → S → SS → SSS → 무지개 순으로 한 단계씩 오른다(실제 등급까지만)

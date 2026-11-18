@@ -1681,3 +1681,56 @@ body[data-frame=""] .seat.me .pname, body[data-cb=""] .back { }
 .tx-rec-head { display: flex; justify-content: space-between; align-items: center; } .tx-rec-head b { font-family: var(--font-myeongjo); color: #f4ecdc; } .tx-rec-head span { font-size: .74rem; color: #a9a291; display: flex; gap: 4px; align-items: center; }
 .tx-rec-row { display: flex; flex-wrap: wrap; gap: 4px; }
 @media (max-width: 380px) { .tx-items { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; } }
+
+/* ===== 재화별 뽑기 연출 ===== */
+.gx-obj { position: absolute; left: -70px; top: -85px; width: 140px; height: 166px; filter: drop-shadow(0 12px 18px rgba(0,0,0,.6)); }
+.gx-obj .tx-svg { width: 100%; height: 100%; display: block; }
+.gx-run.land .gx-obj, .gx-run.box .gx-obj { transition: opacity .35s, transform .35s, filter .35s; }
+/* 엽전: 튕기기 */
+.gx-run.toss .gx-obj { animation: coinToss 1s cubic-bezier(.3,.7,.4,1) both; }
+@keyframes coinToss { 0% { transform: translateY(160px) scale(.6) rotateX(0); } 45% { transform: translateY(-120px) scale(.8) rotateX(1080deg); } 100% { transform: translateY(0) scale(1) rotateX(2160deg); } }
+.gx-run.toss.land .gx-obj { animation: coinLand .38s ease-out both; }
+@keyframes coinLand { 0% { transform: scale(1); filter: brightness(1); } 40% { transform: scale(1.08); filter: brightness(1.6) drop-shadow(0 0 20px #e8a870); } 100% { transform: scale(.4); opacity: 0; filter: brightness(2); } }
+/* 은화: 내려오며 돌다 물결 */
+.gx-run.drop .gx-obj { animation: silverDrop .9s cubic-bezier(.4,0,.3,1) both; }
+@keyframes silverDrop { 0% { transform: translateY(-260px) rotateY(0) scale(.7); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(0) rotateY(720deg) scale(1); } }
+.gx-ripple { position: absolute; left: -60px; top: -60px; width: 120px; height: 120px; border-radius: 50%; border: 2px solid rgba(230,236,242,.8); opacity: 0; pointer-events: none; }
+.gx-run.drop.land .gx-ripple { animation: ripple 1.1s ease-out forwards; }
+.gx-run.drop.land .gx-ripple:nth-of-type(2) { animation-delay: .18s; } .gx-run.drop.land .gx-ripple:nth-of-type(3) { animation-delay: .36s; }
+@keyframes ripple { 0% { transform: scale(.6); opacity: .9; } 100% { transform: scale(3.2); opacity: 0; } }
+.gx-run.drop.land .gx-obj { filter: brightness(1.4) drop-shadow(0 0 24px #e6ecf2); }
+/* 금화: 금화 비 */
+.gx-drop { position: absolute; left: calc(var(--x) - 14px); top: -400px; width: 28px; height: 28px; border-radius: 50%; pointer-events: none; opacity: 0;
+  background: radial-gradient(circle at 35% 30%, #fff6c8, #e2b445 55%, #8a6420); box-shadow: inset 0 0 0 2px rgba(122,84,20,.6), 0 4px 8px rgba(0,0,0,.4); transform: scale(var(--s)); }
+.gx-run.rain .gx-drop { animation: goldFall 1s cubic-bezier(.5,0,.8,.6) var(--d) forwards; }
+@keyframes goldFall { 0% { opacity: 1; transform: translateY(0) rotate(0) scale(var(--s)); } 85% { opacity: 1; } 100% { opacity: 0; transform: translateY(500px) rotate(var(--r)) scale(var(--s)); } }
+.gx-run.rain .gx-obj { animation: goldIn 1.1s cubic-bezier(.2,.9,.3,1.1) .3s both; }
+@keyframes goldIn { 0% { transform: scale(0) rotate(-200deg); opacity: 0; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
+.gx-run.rain.land .gx-obj { animation: coinLand .42s ease-out both; }
+/* 옥패: 흔들림 */
+.gx-run.swing .gx-obj { transform-origin: 50% 0; animation: jadeSwing 1.3s ease-in-out both; }
+@keyframes jadeSwing { 0% { transform: translateY(-200px) rotate(0); opacity: 0; } 20% { transform: translateY(0) rotate(14deg); opacity: 1; } 40% { transform: rotate(-11deg); } 60% { transform: rotate(7deg); } 80% { transform: rotate(-4deg); } 100% { transform: rotate(0); } }
+.gx-mist { position: absolute; left: -160px; top: -160px; width: 320px; height: 320px; border-radius: 50%; pointer-events: none; background: radial-gradient(circle, rgba(143,224,188,.45), transparent 60%); opacity: 0; }
+.gx-run.swing .gx-mist { animation: mist 1.3s ease-in forwards; }
+@keyframes mist { to { opacity: 1; transform: scale(1.2); } }
+.gx-run.swing.land .gx-obj { animation: coinLand .42s ease-out both; }
+/* 용옥패: 어둠 + 용이 휘감음 */
+.gx-run.dark::before { content: ""; position: absolute; inset: 0; background: rgba(0,0,0,.6); z-index: 0; pointer-events: none; animation: tint .3s ease-out; }
+.gx-dragon { position: absolute; left: -170px; top: -170px; width: 340px; height: 340px; overflow: visible; pointer-events: none; filter: drop-shadow(0 0 10px rgba(243,210,122,.8)); }
+.gx-dragon .dg-body { stroke-dasharray: 1200; stroke-dashoffset: 1200; }
+.gx-dragon .dg-scale { stroke-dasharray: 3 6; stroke-dashoffset: 0; opacity: 0; }
+.gx-dragon .dg-head, .gx-dragon .dg-pearl { opacity: 0; }
+.gx-run.coil .gx-dragon .dg-body:not(.dg-scale) { animation: dgDraw 1.3s cubic-bezier(.5,0,.3,1) forwards; }
+.gx-run.coil .gx-dragon .dg-scale { animation: tint .5s ease-out 1s forwards reverse; opacity: 1; }
+.gx-run.coil .gx-dragon .dg-head { animation: dgHead .4s ease-out 1.05s forwards; }
+.gx-run.coil .gx-dragon .dg-pearl { animation: dgHead .4s ease-out .2s forwards, pearl 1.5s ease-in-out .2s infinite; }
+@keyframes dgDraw { to { stroke-dashoffset: 0; } }
+@keyframes dgHead { from { opacity: 0; transform: translate(34px, 30px) scale(.4); } to { opacity: 1; } }
+@keyframes pearl { 50% { filter: drop-shadow(0 0 12px #fff6d8); } }
+.gx-run.coil .gx-obj { animation: jadePulse 1.5s ease-in-out both; }
+@keyframes jadePulse { 0% { transform: scale(.85); filter: brightness(.7); } 100% { transform: scale(1); filter: brightness(1.3) drop-shadow(0 0 22px #8fe0bc); } }
+.gx-run.coil.land .gx-obj, .gx-run.coil.land .gx-dragon { animation: coinLand .5s ease-out both; }
+/* 그릇 */
+.gx-vessel .gx-box-body { filter: drop-shadow(0 14px 18px rgba(0,0,0,.6)); }
+.gx-run[data-tk="1"] .gx-boxlight { filter: grayscale(.6) brightness(1.2); }
+.gx-run[data-tk="3"] .gx-boxlight, .gx-run[data-tk="4"] .gx-boxlight { filter: hue-rotate(90deg) saturate(.8); }
