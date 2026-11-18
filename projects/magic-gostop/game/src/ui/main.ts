@@ -27,7 +27,7 @@ const GO_WORD = ['', '원 고', '투 고', '쓰리 고', '포 고', '파이브 �
 /** 한 수에서 나온 일 중 가장 중요한 것 하나를 음성으로 (상위 맞고 앱의 효과 음성) */
 function announce(evs: GameEvent[]) {
   const pri: [string, (e: GameEvent) => string | null][] = [
-    ['chongtong', () => '총통!'], ['bomb', () => '폭탄!'], ['shake', () => '흔들어!'],
+    ['chongtong', () => '총통!'], ['bomb', () => '폭탄!'],
     ['go', (e) => { const n = (e as { goCount: number }).goCount; return `${GO_WORD[n] ?? `${n} 고`}!`; }], ['stop', () => '스톱!'],
     ['sweep', () => '싹쓸이!'], ['firstPpeok', () => '첫 뻑!'],
     ['ppeokEat', (e) => ((e as { fromPpeok: boolean; self: boolean }).fromPpeok ? ((e as { self: boolean }).self ? '자뻑!' : '뻑 먹었다!') : null)],
