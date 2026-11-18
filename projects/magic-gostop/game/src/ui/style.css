@@ -1610,3 +1610,16 @@ body[data-frame=""] .seat.me .pname, body[data-cb=""] .back { }
   .ch-portrait svg { width: 104px; height: 130px; }
   .ch-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
+
+/* ===== 판 정리 (상위 맞고 앱 벤치마킹): 타원 대신 꽉 찬 담요 · 가지런한 바닥 · 큰 패 ===== */
+:root { --cw-floor: min(13.6vw, 58px); }
+@media (min-height: 780px) { :root { --cw-floor: min(15vw, 66px); } }
+.mat { border-radius: 18px !important; min-height: calc(var(--cw-floor) * 3.6);
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .5 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.45'/%3E%3C/svg%3E"),
+    radial-gradient(90% 80% at 50% 45%, var(--felt-hi) 0%, var(--felt) 60%, var(--felt-lo) 100%) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.06), inset 0 0 40px rgba(0,0,0,.35), 0 6px 18px rgba(0,0,0,.4) !important; }
+.mat::before { inset: 8px !important; border-radius: 12px !important; border: 1px solid rgba(255,255,255,.08) !important; box-shadow: none !important; opacity: 1 !important; }
+.floor-month .card { box-shadow: 0 2px 4px rgba(0,0,0,.45); }
+.deck .back:nth-child(3) { box-shadow: 0 4px 10px rgba(0,0,0,.5); }
+.deck-n { background: rgba(0,0,0,.6); color: #f4ecdc; box-shadow: none; border: 1px solid rgba(255,255,255,.18); font-weight: 700; }

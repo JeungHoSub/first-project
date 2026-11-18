@@ -664,3 +664,37 @@ export function click() {
   if (!ready()) return;
   tone(now(), 0.05, 'triangle', 880, 660, 0.06);
 }
+
+// ---------- 패 섞기·돌리기 소리 ----------
+/** 새 판: 화투를 촤라락 섞고(가볍고 빠른 타격 연속) 탁탁 두 번 정리 */
+export function shuffle() {
+  if (!ready()) return;
+  const t = now();
+  for (let i = 0; i < 16; i++) clack(t + i * 0.028 + Math.random() * 0.006, 0.12 + Math.random() * 0.06, 1.25 + Math.random() * 0.15);
+  clack(t + 0.56, 0.42, 0.95); clack(t + 0.66, 0.5, 0.92);
+}
+
+// ---------- 효과 음성 (고·스톱·뻑·쪽 …) ----------
+// 기기의 한국어 음성 합성(TTS)을 쓴다. 한국어 음성이 없는 기기에서는 조용히 넘어간다.
+let voiceOn = true;
+try { voiceOn = localStorage.getItem('mg-voice') !== '0'; } catch { /* 무시 */ }
+export const isVoiceOn = () => voiceOn;
+export function setVoice(v: boolean) { voiceOn = v; try { localStorage.setItem('mg-voice', v ? '1' : '0'); } catch { /* 무시 */ } }
+let koVoice: SpeechSynthesisVoice | null | undefined;
+function pickVoice() {
+  if (typeof speechSynthesis === 'undefined') return null;
+  const vs = speechSynthesis.getVoices();
+  return vs.find((v) => v.lang === 'ko-KR' && /female|여|yuna|heami|sun/i.test(v.name)) ?? vs.find((v) => v.lang?.startsWith('ko')) ?? null;
+}
+if (typeof speechSynthesis !== 'undefined') speechSynthesis.addEventListener?.('voiceschanged', () => { koVoice = pickVoice(); });
+export function say(text: string, excited = false) {
+  if (!voiceOn || muted || typeof speechSynthesis === 'undefined') return;
+  if (koVoice === undefined) koVoice = pickVoice();
+  if (!koVoice) return;
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.voice = koVoice; u.lang = 'ko-KR'; u.rate = excited ? 1.18 : 1.08; u.pitch = excited ? 1.15 : 1; u.volume = 1;
+    speechSynthesis.speak(u);
+  } catch { /* 무시 */ }
+}

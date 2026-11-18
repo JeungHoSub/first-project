@@ -235,13 +235,20 @@
 
 <div class="sheet" id="music" hidden>
   <div class="sheet-card inv-card">
-    <div class="inv-head"><div><div class="sheet-kicker">배경음악</div><div class="sheet-title">음악 고르기</div></div>
+    <div class="inv-head"><div><div class="sheet-kicker">소리 · 진행</div><div class="sheet-title">소리와 설정</div></div>
       <button class="x-btn" id="btn-music-x" type="button" aria-label="닫기">✕</button></div>
     <div class="mu-ctrl">
       <button type="button" class="mu-onoff" id="mu-onoff"></button>
       <div class="seg mu-mode" id="mu-mode" role="radiogroup" aria-label="재생 방식">
         <button type="button" data-m="one" role="radio">한 곡 반복</button>
         <button type="button" data-m="favs" role="radio">좋아요 돌아가며</button>
+      </div>
+    </div>
+    <div class="mu-ctrl">
+      <button type="button" class="mu-onoff" id="mu-voice"></button>
+      <div class="seg mu-mode" id="mu-speed" role="radiogroup" aria-label="패 속도">
+        <button type="button" data-v="normal" role="radio">패 속도 보통</button>
+        <button type="button" data-v="fast" role="radio">빠르게</button>
       </div>
     </div>
     <ul class="mu-list" id="mu-list"></ul>

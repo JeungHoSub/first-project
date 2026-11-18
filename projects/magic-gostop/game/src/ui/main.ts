@@ -20,7 +20,24 @@ const MOVE = 420; // 카드 한 번 움직이는 시간
 const BEAT = 160; // 장면 사이 쉬는 시간
 const AI_THINK = 550; // 상대가 내기 전 뜸
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const wait = (ms: number) => new Promise((r) => setTimeout(r, reduced ? 0 : ms));
+let speed = 1; // 패 속도: 1 보통 · 0.6 빠르게
+try { if (localStorage.getItem('mg-speed') === 'fast') speed = 0.6; } catch { /* 무시 */ }
+const wait = (ms: number) => new Promise((r) => setTimeout(r, reduced ? 0 : ms * speed));
+const GO_WORD = ['', '원 고', '투 고', '쓰리 고', '포 고', '파이브 고', '식스 고'];
+/** 한 수에서 나온 일 중 가장 중요한 것 하나를 음성으로 (상위 맞고 앱의 효과 음성) */
+function announce(evs: GameEvent[]) {
+  const pri: [string, (e: GameEvent) => string | null][] = [
+    ['chongtong', () => '총통!'], ['bomb', () => '폭탄!'], ['shake', () => '흔들어!'],
+    ['go', (e) => { const n = (e as { goCount: number }).goCount; return `${GO_WORD[n] ?? `${n} 고`}!`; }], ['stop', () => '스톱!'],
+    ['sweep', () => '싹쓸이!'], ['firstPpeok', () => '첫 뻑!'],
+    ['ppeokEat', (e) => ((e as { fromPpeok: boolean; self: boolean }).fromPpeok ? ((e as { self: boolean }).self ? '자뻑!' : '뻑 먹었다!') : null)],
+    ['ttadak', () => '따닥!'], ['jjok', () => '쪽!'], ['ppeok', () => '뻑!'],
+  ];
+  for (const [t, f] of pri) {
+    const e = evs.find((x) => x.type === t);
+    if (e) { const w = f(e); if (w) { sfx.say(w, t !== 'stop'); return; } }
+  }
+}
 
 const FLOWER = ['', '송학', '매조', '벚꽃', '흑싸리', '난초', '모란', '홍싸리', '공산', '국화', '단풍', '오동', '비', '보너스'];
 const KIND_LABEL: Record<Card['kind'], string> = { G: '광', Y: '열끗', T: '띠', P: '피', D: '쌍피', B2: '보너스 2피', B3: '보너스 3피' };
@@ -33,10 +50,10 @@ let gameNo = 0; // 새 판을 누르면 진행 중인 연출을 끊기 위한 �
 
 // 바닥 자리 12곳: 가운데 더미를 둘러싸게 위 4 / 왼쪽 2 / 오른쪽 2 / 아래 4.
 const SLOTS: [number, number][] = [
-  [12, 25], [31, 25], [69, 25], [88, 25], // 0~3 위 줄
-  [12, 75], [31, 75], [69, 75], [88, 75], // 4~7 아래 줄
-  [50, 18], [50, 82], // 8~9 더미 바로 위·아래 (마지막에 사용)
-  [6, 50], [94, 50], // 10~11 양 끝 가운데 (거의 안 씀)
+  [13, 24], [33, 24], [67, 24], [87, 24], // 0~3 위 줄
+  [13, 76], [33, 76], [67, 76], [87, 76], // 4~7 아래 줄
+  [50, 22], [50, 78], // 8~9 더미 바로 위·아래 (마지막에 사용)
+  [13, 50], [87, 50], // 10~11 양 끝 가운데
 ];
 const SLOT_ORDER = [1, 2, 5, 6, 0, 3, 4, 7, 8, 9, 10, 11]; // 더미 둘레 위·아래 두 줄부터 고르게
 const slotOf = new Map<number, number>();
@@ -215,9 +232,9 @@ function render(view: GameState) {
     const grp = document.createElement('div');
     grp.className = 'floor-month';
     if (floorCards.some((f) => f.month === m && pickable.has(f.id))) grp.classList.add('choosing');
-    grp.style.left = `${x + ((j % 5) - 2) * 0.5}%`;
-    grp.style.top = `${y + (((j >> 3) % 5) - 2) * 0.6}%`;
-    grp.style.setProperty('--rot', `${(j % 11) - 5}deg`);
+    grp.style.left = `${x}%`;
+    grp.style.top = `${y}%`;
+    grp.style.setProperty('--rot', `${((j % 5) - 2) * 0.6}deg`); // 아주 살짝만 — 가지런하게
     for (const c of floorCards.filter((f) => f.month === m)) {
       if (pickable.has(c.id)) {
         const el = cardEl(c); el.classList.add('pick');
@@ -771,14 +788,14 @@ async function show(view: GameState, from: { deck?: Set<string>; opp?: Set<strin
       flipIn
         ? [{ transform: `translate(${dx}px, ${dy}px) scale(${sc}) rotateY(90deg)` }, { transform: `translate(${dx * 0.5}px, ${dy * 0.5}px) scale(1.15) rotateY(0deg)`, offset: 0.45 }, { transform: 'none' }]
         : [{ transform: `translate(${dx}px, ${dy}px) scale(${sc})` }, { transform: `translate(${dx * 0.08}px, ${dy * 0.08 - 10}px) scale(1.08)`, offset: 0.7 }, { transform: 'none' }],
-      { duration: MOVE, easing: 'cubic-bezier(.2,.7,.2,1)' },
+      { duration: MOVE * speed, easing: 'cubic-bezier(.2,.7,.2,1)' },
     );
   });
   await wait(settle);
 }
 
 /** 카드가 바닥에 "탁" 닿는 순간: 눌림 + 퍼지는 고리 + 소리 + 진동 */
-function slamAt(ids: string[], power = 0.7, delay = MOVE * 0.78) {
+function slamAt(ids: string[], power = 0.7, delay = MOVE * 0.78 * speed) {
   if (reduced) return;
   setTimeout(() => {
     for (const id of ids) {
@@ -895,6 +912,7 @@ async function perform(a: Action) {
   const ia = items.after(prev, applyAction(prev, a));
   const next = ia.state;
   const evs = next.events.slice(prev.events.length);
+  announce(evs);
   const T = (e: GameEvent) => e.type as string; // 엔진에 새 이벤트가 붙어도 화면이 안전하게 읽도록
   const who = prev.turn;
   const fromOpp = who === AI ? new Set<string>() : undefined;
@@ -917,7 +935,7 @@ async function perform(a: Action) {
       const ids = e.type === 'play' ? [e.card] : e.cards;
       v = structuredClone(v); moveToFloor(v, ids, who);
       ids.forEach((id) => fromOpp?.add(id));
-      if (e.type === 'bomb') setTimeout(() => explodeAt(ids), MOVE * 0.75);
+      if (e.type === 'bomb') setTimeout(() => explodeAt(ids), MOVE * 0.75 * speed);
       else slamAt(ids, 0.75);
       await show(v, { opp: fromOpp }, e.type === 'bomb' ? MOVE + 650 : MOVE + BEAT);
     } else if (e.type === 'dummy') {
@@ -927,7 +945,7 @@ async function perform(a: Action) {
       const i = v.deck.findIndex((c) => c.id === e.card);
       if (i >= 0) v.floor.push(v.deck.splice(i, 1)[0]);
       lastFlip = e.card;
-      sfx.flip(); slamAt([e.card], 0.55, MOVE * 0.8);
+      sfx.flip(); slamAt([e.card], 0.55, MOVE * 0.8 * speed);
       await show(v, { deck: new Set([e.card]) }, MOVE + BEAT + 160);
     } else if (T(e) === 'bonus' && ev.card) {
       // 보너스 패: 바로 내 피 칸으로
@@ -1184,6 +1202,8 @@ function showItem(it: ItemDef) {
 // ---------- 처음 화면 ----------
 /** 배경음악 고르기 화면 */
 function renderMusic() {
+  $('mu-voice').textContent = sfx.isVoiceOn() ? '효과 음성 켜짐' : '효과 음성 꺼짐'; $('mu-voice').classList.toggle('off', !sfx.isVoiceOn());
+  $('mu-speed').querySelectorAll<HTMLButtonElement>('button').forEach((b) => b.setAttribute('aria-checked', String((b.dataset.v === 'fast') === (speed < 1))));
   const on = sfx.isBgmOn();
   const onoff = $('mu-onoff');
   onoff.textContent = on ? '음악 켜짐' : '음악 꺼짐'; onoff.classList.toggle('off', !on);
@@ -1254,6 +1274,7 @@ async function newGame() {
   const magicNotes = equipForGame();
   slotOf.clear();
   for (const c of [...s.hands[0], ...s.hands[1], ...s.floor, ...s.deck, ...s.captured[0], ...s.captured[1]]) allCards.set(c.id, c);
+  sfx.shuffle();
   const redeal = s.events.some((e) => (e.type as string) === 'redeal');
   $('feed').innerHTML = `새 판 · 내가 선입니다${carry > 1 ? ` · <b>나가리 이월 ×${carry}</b>` : ''}${redeal ? ' · 바닥 같은 월 4장이라 다시 섞음' : ''}`;
   $('result').hidden = true;
@@ -1353,6 +1374,10 @@ $('btn-home-rules').addEventListener('click', () => { sfx.click(); $('info').hid
 $('btn-bgm').addEventListener('click', () => { sfx.unlock(); sfx.click(); renderMusic(); $('music').hidden = false; });
 $('btn-music-x').addEventListener('click', () => { $('music').hidden = true; syncHome(); });
 $('btn-music-close').addEventListener('click', () => { $('music').hidden = true; syncHome(); });
+$('mu-voice').addEventListener('click', () => { sfx.setVoice(!sfx.isVoiceOn()); renderMusic(); if (sfx.isVoiceOn()) sfx.say('고!', true); });
+$('mu-speed').querySelectorAll<HTMLButtonElement>('button').forEach((b) => b.addEventListener('click', () => {
+  speed = b.dataset.v === 'fast' ? 0.6 : 1; try { localStorage.setItem('mg-speed', b.dataset.v!); } catch { /* 무시 */ } sfx.click(); renderMusic();
+}));
 $('mu-onoff').addEventListener('click', () => { sfx.unlock(); sfx.setBgm(!sfx.isBgmOn()); renderMusic(); syncHome(); });
 $('mu-mode').querySelectorAll<HTMLButtonElement>('button').forEach((b) => b.addEventListener('click', () => { sfx.setBgmMode(b.dataset.m as 'one' | 'favs'); sfx.click(); renderMusic(); }));
 sfx.onBgmTrack(() => { if (!$('music').hidden) renderMusic(); syncHome(); });
