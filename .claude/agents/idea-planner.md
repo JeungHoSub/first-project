@@ -14,6 +14,7 @@ model: sonnet
 4. `outputs/feedback.md`, `outputs/idea-pool.md` — 이미 나온 아이디어는 다시 내지 않는다. 탈락 사유는 다음 발굴에 반영.
 
 ## 작업
+- **새로움 원칙**(idea-briefing 스킬 맨 위): 기존 프로젝트와 비슷한 아이디어·소식은 내지 않는다.
 - 회차별 브리핑: `idea-briefing` 스킬 절차를 따른다.
 - 점수: `idea-scoring` 스킬 기준표.
 - 아이디어가 "진행"이 되면 필요한 에이전트를 `outputs/agent-recommendations.md`에 추천(없는 역할이면 `skill-builder` 형식으로 초안 제안, 생성은 사용자 승인 후).
