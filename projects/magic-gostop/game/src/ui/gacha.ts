@@ -60,37 +60,75 @@ function syncCoins() {
 // ---------- 뽑기권 그림 ----------
 let tkSeq = 0;
 function ticketArt(t: Ticket, i: number, mini = false): string {
-  // 한지 바탕 위에 단계 색 띠 + 얇은 금선 + 붉은 낙관. 화려함보다 절제된 고급감.
+  // 재질 그대로: 동전(동) · 은전(은) · 금전(금) · 옥패(옥) · 용옥(옥 + 금빛 용). 어두운 옻칠 바탕에 물건 하나만 — 깔끔하게.
   const id = `tk${++tkSeq}`;
-  const band = ['#9a6a45', '#8e98a2', '#b8923e', '#5f8f7e', '#7a2e33'][i];
-  const word = ['동', '은', '금', '옥', '용'][i];
-  const motif = [
-    `<g fill="none" stroke="${band}" stroke-opacity=".22" stroke-width="1.4">${[70, 130, 190].map((x) => `<circle cx="${x}" cy="74" r="20"/><rect x="${x - 6}" y="68" width="12" height="12"/>`).join('')}</g>`,
-    `<g fill="none" stroke="${band}" stroke-opacity=".25" stroke-width="1.4">${[[80, 60], [170, 92]].map(([x, y]) => `<path d="M${x - 30} ${y} c8 -12 20 -12 24 -2 c6 -10 20 -8 22 4 c12 -2 16 8 8 12 c-18 4 -40 4 -54 -2 z"/>`).join('')}</g>`,
-    `<g fill="none" stroke="${band}" stroke-opacity=".22" stroke-width="1.2">${[50, 74, 98].map((y) => `<path d="M30 ${y} q20 -10 40 0 t40 0 t40 0 t40 0 t40 0"/>`).join('')}</g>`,
-    `<g fill="${band}" fill-opacity=".2">${[[90, 60], [180, 96]].map(([x, y]) => [0, 72, 144, 216, 288].map((a) => `<circle cx="${x + 8 * Math.cos((a * Math.PI) / 180)}" cy="${y + 8 * Math.sin((a * Math.PI) / 180)}" r="5"/>`).join('')).join('')}</g>`,
-    `<g fill="none" stroke="${band}" stroke-opacity=".22" stroke-width="1.2">${Array.from({ length: 4 }, (_, r) => Array.from({ length: 8 }, (_, c) => `<path d="M${30 + c * 26 + (r % 2) * 13} ${30 + r * 24} a13 13 0 0 1 26 0"/>`).join('')).join('')}</g>`,
+  const M = [
+    { a: '#5a3218', b: '#c98a56', c: '#f0c49a', d: '#7a4524', ink: '#3a1e0c', name: '#e8b48a' },  // 동
+    { a: '#5d656e', b: '#c9d1d8', c: '#ffffff', d: '#7d868f', ink: '#3a4048', name: '#dfe5ea' },  // 은
+    { a: '#7a5414', b: '#e2b445', c: '#fff0b8', d: '#9c7424', ink: '#4a3208', name: '#f3d27a' },  // 금
+    { a: '#1d4c3e', b: '#5fae8c', c: '#c8f0dc', d: '#2f6e5a', ink: '#123a2e', name: '#9fdcbf' },  // 옥
+    { a: '#123a30', b: '#3f9a78', c: '#bff0d6', d: '#1f5a48', ink: '#0c2a22', name: '#f3d27a' },  // 용옥
   ][i];
-  return `<svg class="tx-svg" viewBox="0 0 320 140" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-  <defs>
-    <linearGradient id="${id}p" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f7f1e3"/><stop offset="1" stop-color="#e6dcc4"/></linearGradient>
-    <linearGradient id="${id}g" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#a8823a"/><stop offset=".5" stop-color="#e9cf8a"/><stop offset="1" stop-color="#a8823a"/></linearGradient>
-    <clipPath id="${id}c"><path d="M14 4 H306 a10 10 0 0 1 10 10 V56 a14 14 0 0 0 0 28 V126 a10 10 0 0 1 -10 10 H14 a10 10 0 0 1 -10 -10 V84 a14 14 0 0 0 0 -28 V14 a10 10 0 0 1 10 -10 Z"/></clipPath>
-  </defs>
-  <g clip-path="url(#${id}c)">
-    <rect width="320" height="140" fill="url(#${id}p)"/>
-    ${motif}
-    <rect x="0" y="0" width="14" height="140" fill="${band}"/>
-    <rect x="232" y="0" width="88" height="140" fill="${band}" fill-opacity=".1"/>
-    <rect x="22" y="12" width="290" height="116" rx="4" fill="none" stroke="url(#${id}g)" stroke-width="1.2"/>
-    <line x1="232" y1="16" x2="232" y2="124" stroke="${band}" stroke-opacity=".5" stroke-width="1.2" stroke-dasharray="3 4"/>
-    <rect x="252" y="46" width="48" height="48" rx="5" fill="#a5302a" transform="rotate(-6 276 70)"/>
-    <rect x="256" y="50" width="40" height="40" rx="3" fill="none" stroke="#f7f1e3" stroke-opacity=".8" stroke-width="1.5" transform="rotate(-6 276 70)"/>
-    <text x="276" y="80" text-anchor="middle" font-size="26" font-weight="800" fill="#f7f1e3" font-family="Nanum Myeongjo, Noto Serif KR, serif" transform="rotate(-6 276 70)">${word}</text>
-  </g>
-  ${mini ? '' : `<text x="40" y="46" font-size="11" font-weight="700" fill="${band}" letter-spacing="4" font-family="Nanum Myeongjo, Noto Serif KR, serif">매직고스톱 뽑기권</text>
-  <text x="40" y="90" font-size="32" font-weight="800" fill="#2a2018" font-family="Nanum Myeongjo, Noto Serif KR, serif">${t.name}</text>
-  <text x="40" y="114" font-size="12.5" font-weight="700" fill="#6b5a44" font-family="Nanum Myeongjo, Noto Serif KR, serif">${t.minGrade ? `${t.minGrade} 등급 이상 보장` : '보장 없이 가볍게'}</text>`}
+  const cx = mini ? 160 : 82, cy = 70;
+  const defs = `<linearGradient id="${id}m" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${M.c}"/><stop offset=".35" stop-color="${M.b}"/><stop offset=".7" stop-color="${M.d}"/><stop offset="1" stop-color="${M.a}"/></linearGradient>
+    <radialGradient id="${id}h" cx="35%" cy="28%" r="60%"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".5" stop-color="#fff" stop-opacity=".08"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+    <linearGradient id="${id}g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff2c0"/><stop offset=".5" stop-color="#d6a640"/><stop offset="1" stop-color="#8a6420"/></linearGradient>
+    <radialGradient id="${id}bg" cx="25%" cy="50%" r="80%"><stop offset="0" stop-color="${M.b}" stop-opacity=".22"/><stop offset="1" stop-color="#0d1015" stop-opacity="0"/></radialGradient>`;
+  let obj = '';
+  if (i <= 2) {
+    // 엽전: 둥근 몸통 + 네모 구멍 + 테두리 + 네 글자
+    const words = ['복', '록', '수', '강'];
+    const pos = [[0, -30], [30, 0], [0, 30], [-30, 0]];
+    obj = `<g transform="translate(${cx} ${cy})">
+      <circle r="55" fill="#000" opacity=".35" transform="translate(3 5)"/>
+      <circle r="54" fill="url(#${id}m)"/>
+      <circle r="54" fill="none" stroke="${M.a}" stroke-width="2"/>
+      <circle r="46" fill="none" stroke="${M.ink}" stroke-opacity=".55" stroke-width="2.2"/>
+      <circle r="44.5" fill="none" stroke="${M.c}" stroke-opacity=".5" stroke-width="1"/>
+      ${i === 2 ? Array.from({ length: 24 }, (_, k) => { const an = (k / 24) * Math.PI * 2; return `<circle cx="${(50 * Math.cos(an)).toFixed(1)}" cy="${(50 * Math.sin(an)).toFixed(1)}" r="1.3" fill="${M.c}" opacity=".8"/>`; }).join('') : ''}
+      <rect x="-13" y="-13" width="26" height="26" fill="#0b0d12"/>
+      <rect x="-17" y="-17" width="34" height="34" fill="none" stroke="${M.ink}" stroke-opacity=".6" stroke-width="2.4"/>
+      <rect x="-16" y="-16" width="32" height="32" fill="none" stroke="${M.c}" stroke-opacity=".45" stroke-width="1"/>
+      ${words.map((w, k) => `<text x="${pos[k][0]}" y="${pos[k][1] + 6}" text-anchor="middle" font-size="16" font-weight="800" fill="${M.ink}" fill-opacity=".72" font-family="Nanum Myeongjo, Noto Serif KR, serif">${w}</text>`).join('')}
+      <circle r="54" fill="url(#${id}h)"/>
+    </g>`;
+  } else {
+    // 옥패(노리개): 매듭 끈 + 둥근 사각 옥 + 술. 용옥은 금테 + 금빛 용
+    const dragon = i === 4 ? `<g fill="none" stroke="url(#${id}g)" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M-12 30 C-30 16 -4 6 -12 -6 C-20 -18 2 -30 12 -22" stroke-width="5"/>
+        <path d="M-12 30 C-30 16 -4 6 -12 -6 C-20 -18 2 -30 12 -22" stroke="#0c2a22" stroke-opacity=".5" stroke-width="1.4" stroke-dasharray="2 3"/>
+        <path d="M12 -22 C18 -18 20 -12 14 -10 C10 -9 8 -12 10 -15" stroke-width="3"/>
+        <path d="M12 -24 L18 -32 M9 -25 L11 -34" stroke-width="1.6"/>
+        <path d="M17 -13 C24 -14 26 -8 22 -4 M15 -10 C20 -6 18 0 14 0" stroke-width="1.2"/>
+        <path d="M-21 18 l-6 2 m6 -2 l-5 -3 m5 3 l-2 5 M-17 -10 l-6 -1 m6 1 l-4 -4 m4 4 l-3 4" stroke-width="1.6"/>
+        <circle cx="14" cy="-17" r="1.3" fill="#fff2c0" stroke="none"/>
+      </g>
+      <circle cx="-4" cy="40" r="4" fill="url(#${id}g)" stroke="none"/>` : `<g fill="none" stroke="${M.ink}" stroke-opacity=".45" stroke-width="1.6">
+        <path d="M-18 -14 c6 -8 14 -8 16 -1 c4 -7 14 -6 15 2 c8 -1 10 6 4 9 c-12 3 -27 3 -35 -1 z"/>
+        <path d="M-14 16 c5 -6 12 -6 13 0 c4 -6 12 -5 13 2 c6 0 8 5 3 7 c-10 2 -22 2 -29 -1 z"/></g>`;
+    obj = `<g transform="translate(${cx} ${cy})">
+      <path d="M0 -66 C-6 -60 6 -56 0 -50" fill="none" stroke="#8a1f24" stroke-width="2.4"/>
+      <path d="M-7 -58 C-10 -52 -4 -50 0 -52 C4 -50 10 -52 7 -58 C4 -62 -4 -62 -7 -58 Z" fill="#a3262c"/>
+      <rect x="-34" y="-50" width="68" height="96" rx="20" fill="#000" opacity=".35" transform="translate(3 5)"/>
+      <rect x="-34" y="-50" width="68" height="96" rx="20" fill="url(#${id}m)"/>
+      ${i === 4 ? `<rect x="-34" y="-50" width="68" height="96" rx="20" fill="none" stroke="url(#${id}g)" stroke-width="3.2"/><rect x="-28" y="-44" width="56" height="84" rx="15" fill="none" stroke="url(#${id}g)" stroke-width="1" opacity=".7"/>`
+        : `<rect x="-34" y="-50" width="68" height="96" rx="20" fill="none" stroke="${M.a}" stroke-width="1.6"/><rect x="-28" y="-44" width="56" height="84" rx="15" fill="none" stroke="${M.c}" stroke-opacity=".35" stroke-width="1"/>`}
+      ${dragon}
+      <rect x="-34" y="-50" width="68" height="96" rx="20" fill="url(#${id}h)"/>
+      <path d="M-4 46 V52 M4 46 V52" stroke="#a3262c" stroke-width="2.4"/>
+      <path d="M-6 52 H6 L5 70 H-5 Z" fill="#a3262c"/><path d="M-4 54 V70 M0 54 V70 M4 54 V70" stroke="#6e1418" stroke-width=".8"/>
+    </g>`;
+  }
+  return `<svg class="tx-svg" viewBox="${mini ? '96 -6 128 152' : '0 0 320 140'}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <defs>${defs}</defs>
+  ${mini ? '' : `<rect x="1" y="1" width="318" height="138" rx="14" fill="#11141a"/><rect x="1" y="1" width="318" height="138" rx="14" fill="url(#${id}bg)"/>
+  <rect x="1.5" y="1.5" width="317" height="137" rx="13.5" fill="none" stroke="${M.b}" stroke-opacity=".45"/>
+  <rect x="8" y="8" width="304" height="124" rx="9" fill="none" stroke="${M.b}" stroke-opacity=".15"/>`}
+  ${obj}
+  ${mini ? '' : `<text x="170" y="44" font-size="10.5" font-weight="700" fill="${M.name}" fill-opacity=".8" letter-spacing="5" font-family="Nanum Myeongjo, Noto Serif KR, serif">뽑기권</text>
+  <text x="170" y="82" font-size="30" font-weight="800" fill="#f4ecdc" font-family="Nanum Myeongjo, Noto Serif KR, serif">${t.name.replace('권', '')}</text>
+  <line x1="170" y1="94" x2="290" y2="94" stroke="${M.b}" stroke-opacity=".4"/>
+  <text x="170" y="113" font-size="12" font-weight="700" fill="${M.name}" font-family="Nanum Myeongjo, Noto Serif KR, serif">${t.minGrade ? `${t.minGrade} 등급 이상 보장` : '보장 없이 가볍게'}</text>`}
 </svg>`;
 }
 

@@ -1625,3 +1625,9 @@ body[data-frame=""] .seat.me .pname, body[data-cb=""] .back { }
 .deck-n { background: rgba(0,0,0,.6); color: #f4ecdc; box-shadow: none; border: 1px solid rgba(255,255,255,.18); font-weight: 700; }
 
 .rc-extra { margin-top: 4px; font-size: .78rem; color: #f3d27a; } .rc-extra small { color: #b9b2a2; font-size: .7rem; }
+
+/* ===== 뽑기권: 재질 그대로 깔끔하게 ===== */
+.tx-tier .tx-svg { max-width: 46px; filter: drop-shadow(0 3px 5px rgba(0,0,0,.5)); }
+.tx-tier { padding: 8px 4px 6px; }
+.tx-tier.cur .tx-svg { filter: drop-shadow(0 0 8px color-mix(in srgb, var(--tc) 60%, transparent)) drop-shadow(0 3px 5px rgba(0,0,0,.5)); }
+.tx-hero-card { border-radius: 14px; filter: drop-shadow(0 14px 26px rgba(0,0,0,.55)); }

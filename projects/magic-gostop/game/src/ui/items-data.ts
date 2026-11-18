@@ -54,7 +54,7 @@ export const ITEM_SPECS: ItemSpec[] = [
   { id: 'shield', name: '금강 방패', category: 'spell', icon: 'shield', hue: '#f0c35a', weight: W_NORMAL,
     stack: '중첩 가능(최대 6회) · 금강 방패와 현무 거북이 막는 횟수는 합쳐 판당 6회까지, 박 방어는 판당 피박 1·광박 1이 한도',
     effects: E((g) => `피 뺏김을 ${[1, 1, 2, 2, 2, 3, 3, 4, 4, 5][g]}번 막음${g >= 5 ? ' · 피박도 1번' : ''}${g >= 8 ? ' · 광박도 1번' : ''}${ch(g)}`) },
-  { id: 'double', name: '황금 배수', category: 'spell', icon: 'x2', hue: '#ff5a5f', weight: W_RARE,
+  { id: 'double', name: '황금 배수', category: 'spell', icon: 'x2', hue: '#3f9a78', weight: W_RARE,
     stack: '중첩 불가 · 배수 계열(황금 배수·땅울림)은 한 판에 하나만, 둘이면 큰 쪽만 적용',
     effects: E((g) => `이긴 판 최종 점수 ×2 · 발동 ${(g + 1) * 10}% (진 판엔 효과 없음)`) },
   { id: 'mirror', name: '거울 반사', category: 'spell', icon: 'mirror', hue: '#c9d6e8', weight: W_NORMAL,
@@ -191,7 +191,7 @@ export const TICKETS: TicketSpec[] = [
     rates: { F: 8, E: 14, D: 20, C: 20, B: 16, A: 11, S: 6.5, SS: 3, SSS: 1.2, 'SSS+': 0.3 } },
   { id: 'jade', name: '옥패권', desc: 'F·E는 나오지 않는다. 최소 D 보장.', hue: '#5bd1a0',
     rates: { F: 0, E: 0, D: 8, C: 24, B: 28, A: 20, S: 11, SS: 6, SSS: 2.4, 'SSS+': 0.6 }, minGrade: 'D' },
-  { id: 'dragon', name: '용옥권', desc: '가장 높은 단계. 최소 B 보장.', hue: '#ff5a5f',
+  { id: 'dragon', name: '용옥권', desc: '가장 높은 단계. 최소 B 보장.', hue: '#3f9a78',
     rates: { F: 0, E: 0, D: 0, C: 0, B: 40, A: 30, S: 18, SS: 8, SSS: 3.2, 'SSS+': 0.8 }, minGrade: 'B' },
 ];
 
