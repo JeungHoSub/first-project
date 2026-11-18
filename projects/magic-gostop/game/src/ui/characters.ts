@@ -161,14 +161,19 @@ function portraitBody(c: CharDef, k: string): string {
         <path d="M50 46 L52 30 H68 L70 46Z" fill="#1a1a1e"/><rect x="48" y="44" width="24" height="4" rx="1" fill="#2a2a30"/><path d="M60 30 V24" stroke="#d6b36a" stroke-width="2"/><circle cx="60" cy="23" r="2.4" fill="#d6b36a"/>`;
   }
 }
+/** 일러스트 파일(assets/chars/<id>.webp)이 있는 캐릭터. 없으면 코드로 그린 초상을 쓴다 */
+export const CHAR_ART = new Set<string>([]);
 export function portrait(c: CharDef, lv = 1): string {
   const k = `ch${++seq}`;
   const ring = lv >= 10 ? '#f3d27a' : lv >= 7 ? '#d6b36a' : lv >= 4 ? '#b8a27a' : '#8f8a80';
   return `<svg viewBox="0 0 120 150" class="ch-art" aria-hidden="true">
     <defs><radialGradient id="${k}b" cx="50%" cy="36%" r="72%"><stop offset="0" stop-color="${c.color}" stop-opacity=".7"/><stop offset=".7" stop-color="#14161c"/><stop offset="1" stop-color="#0b0c10"/></radialGradient>
-    <clipPath id="${k}c"><rect x="4" y="4" width="112" height="142" rx="56" ry="56"/></clipPath></defs>
+    <clipPath id="${k}c"><rect x="4" y="4" width="112" height="142" rx="56" ry="56"/></clipPath>
+    <linearGradient id="${k}f" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b0c10" stop-opacity="0"/><stop offset="1" stop-color="#0b0c10" stop-opacity=".55"/></linearGradient></defs>
     <rect x="4" y="4" width="112" height="142" rx="56" ry="56" fill="url(#${k}b)"/>
-    <g clip-path="url(#${k}c)"><circle cx="60" cy="56" r="44" fill="#f4ecdc" opacity=".06"/>${portraitBody(c, k)}</g>
+    <g clip-path="url(#${k}c)">${CHAR_ART.has(c.id)
+      ? `<image href="chars/${c.id}.webp" x="4" y="4" width="112" height="142" preserveAspectRatio="xMidYMin slice"/><rect x="4" y="110" width="112" height="36" fill="url(#${k}f)"/>`
+      : `<circle cx="60" cy="56" r="44" fill="#f4ecdc" opacity=".06"/>${portraitBody(c, k)}`}</g>
     <rect x="4" y="4" width="112" height="142" rx="56" ry="56" fill="none" stroke="${ring}" stroke-width="2.5"/>
     <rect x="9" y="9" width="102" height="132" rx="51" ry="51" fill="none" stroke="${ring}" stroke-width=".8" opacity=".6"/>
   </svg>`;

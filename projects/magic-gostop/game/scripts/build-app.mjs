@@ -57,6 +57,8 @@ mkdirSync(`${OUT}/icons`, { recursive: true });
 writeFileSync(`${OUT}/index.html`, html);
 writeFileSync(`${OUT}/manifest.webmanifest`, JSON.stringify(manifest, null, 2));
 writeFileSync(`${OUT}/sw.js`, sw);
+mkdirSync(`${OUT}/chars`, { recursive: true });
+for (const f of readdirSync('assets/chars')) if (f.endsWith('.webp')) copyFileSync(`assets/chars/${f}`, `${OUT}/chars/${f}`);
 mkdirSync(`${OUT}/bgm`, { recursive: true });
 for (const f of readdirSync('assets/bgm')) if (f.endsWith('.mp3')) copyFileSync(`assets/bgm/${f}`, `${OUT}/bgm/${f}`);
 for (const f of readdirSync('../app/icons')) if (f.endsWith('.png')) copyFileSync(`../app/icons/${f}`, `${OUT}/icons/${f}`);

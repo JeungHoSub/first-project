@@ -19,5 +19,7 @@ mkdirSync('dist', { recursive: true });
 writeFileSync('dist/magic-gostop.html', page);
 // 배경음악(녹음 음원)은 페이지 옆 bgm/ 폴더로 (미리보기에서는 같은 폴더에 두고 함께 올린다)
 mkdirSync('dist/bgm', { recursive: true });
+mkdirSync('dist/chars', { recursive: true });
+for (const f of readdirSync('assets/chars')) if (f.endsWith('.webp')) copyFileSync(`assets/chars/${f}`, `dist/chars/${f}`);
 for (const f of readdirSync('assets/bgm')) if (f.endsWith('.mp3')) copyFileSync(`assets/bgm/${f}`, `dist/bgm/${f}`);
 console.log('dist/magic-gostop.html', (page.length / 1024).toFixed(1) + 'KB');
