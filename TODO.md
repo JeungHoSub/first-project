@@ -18,3 +18,7 @@
 - [ ] `outputs/agent-recommendations.md`에서 만들 에이전트 고르기
 - [ ] Google Sheets / Drive 커넥터 연결 마무리
 - [ ] 기존 프로젝트를 `idea-scoring`으로 점수 매겨 우선순위 재정리
+
+## AI·메이커 실험실 (2026-11-18 추가)
+- [ ] 첫 실험 고르기 (`projects/ai-maker-lab/brief.md`)
+- [ ] PC 연결: Claude 데스크톱 앱 → 설정 → Claude Code → Remote Control에서 실험 폴더 공유
