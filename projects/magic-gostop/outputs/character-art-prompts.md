@@ -10,11 +10,15 @@
 - 배경: **단색 어두운 남색 또는 투명(PNG)** — 메달 테두리와 배경은 게임에서 씌웁니다
 - 글자·워터마크·테두리 없이
 
-## 공통 스타일 (모든 캐릭터 앞에 붙이기)
+## 공통 스타일 (모든 캐릭터 앞에 붙이기) — 반실사 조선 판타지 (사용자 선택 2026-11-18)
+참고 방향: 넥슨게임즈 "우치 더 웨이페어러", 블레이드앤소울 일러스트처럼 **실제 사람 얼굴 비율 + 정교한 채색 + 판타지 조명**.
+
 ```
-Korean Joseon dynasty character portrait for a premium mobile card game, bust shot from chest up, facing viewer with slight 3/4 angle, refined semi-realistic Korean webtoon illustration style, clean confident line art with soft painterly shading, elegant and warm expression, historically accurate hanbok and headwear details, subtle rim light, muted rich colors (ink black, indigo, ivory, gold accents), plain dark navy background, no text, no border, no watermark, high detail, 4:5 vertical
+semi-realistic Joseon dynasty fantasy character portrait, premium Korean mobile game key art, realistic human facial proportions and skin texture, detailed painterly rendering like high-end Korean MMORPG character illustration, historically grounded hanbok and headwear with fine fabric folds and embroidery, cinematic soft key light with warm rim light, subtle magical glow particles, bust shot from chest up, slight 3/4 angle, looking at viewer, plain dark navy gradient background, no text, no border, no watermark, ultra detailed, 4:5 vertical
 ```
-(한국어로 쓰는 도구라면: "조선시대 인물 반신 초상, 고급 모바일 카드게임용, 정면에서 살짝 비스듬히, 세련된 반실사 한국 웹툰 일러스트, 깔끔한 선과 부드러운 채색, 고증에 맞는 한복과 쓰개, 은은한 테두리 빛, 먹·남색·상아색·금색 위주의 차분한 색, 단색 짙은 남색 배경, 글자·테두리·워터마크 없음, 세로 4:5")
+(한국어 도구용: "반실사 조선 판타지 캐릭터 초상, 고급 한국 모바일 게임 키아트, 실제 사람 얼굴 비율과 피부 질감, 고급 MMORPG 일러스트 같은 정교한 회화풍 채색, 고증에 맞는 한복과 쓰개(옷감 주름·자수까지), 영화 같은 부드러운 주광과 따뜻한 테두리 빛, 은은한 마법 빛 입자, 가슴 위 반신, 살짝 비스듬히 정면 응시, 짙은 남색 그라데이션 단색 배경, 글자·테두리·워터마크 없음, 아주 정밀하게, 세로 4:5")
+
+피해야 할 것(네거티브): `chibi, cartoon, anime cel shading, Chinese hanfu, Japanese kimono, extra fingers, text, logo`
 
 ## 캐릭터별
 | 캐릭터 | 파일 이름 | 붙일 문장 |

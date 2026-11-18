@@ -558,52 +558,87 @@ const M3 = gseq([[64, 16], [69, 8], [71, 8], [74, 16], [71, 8], [69, 8], [64, 16
 const M5 = gseq([[69, 24], [71, 8], [74, 16], [76, 8], [74, 8], [71, 8], [69, 24], [-1, 8], [64, 16], [69, 8]]);
 const ARP: Record<number, number[]> = { 45: [57, 64, 69, 71, 76], 50: [62, 69, 74, 76, 81], 40: [52, 59, 64, 69, 71] };
 
+// ===== 게임 OST 국악 편곡풍 (사용자 선택 2026-11-18) =====
+// 거문고가 베이스(신스 베이스 자리), 피리·대금이 선율, 모듬북이 박을 잡고, 현악 패드가 받친다. 라단조 5음(라·도·레·미·솔).
+/** 피리: 겹서로 내는 굵고 콧소리 섞인 관악기 — 음 시작을 살짝 밀어 올리고 떨림 */
+function piri(t: number, m: number, dur: number, vol: number) {
+  const c = ctx!; const f = mf(m);
+  const o = c.createOscillator(); o.type = 'square'; const o2 = c.createOscillator(); o2.type = 'sawtooth';
+  for (const x of [o, o2]) { x.frequency.setValueAtTime(f * 0.94, t); x.frequency.linearRampToValueAtTime(f, t + 0.07); }
+  o2.detune.value = 6;
+  const lfo = c.createOscillator(); lfo.frequency.value = 6; const lg = c.createGain();
+  lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(0, t + 0.15); lg.gain.linearRampToValueAtTime(f * 0.016, t + Math.min(dur, 0.6));
+  lfo.connect(lg); lg.connect(o.frequency); lg.connect(o2.frequency);
+  const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1500; bp.Q.value = 0.7;
+  const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 4200;
+  const g2 = c.createGain(); g2.gain.value = 0.6;
+  const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 0.04); g.gain.setValueAtTime(vol * 0.85, t + Math.max(0.05, dur * 0.85)); g.gain.linearRampToValueAtTime(0.0001, t + dur + 0.12);
+  o.connect(bp); o2.connect(g2).connect(bp); bp.connect(lp).connect(g); out(g);
+  [o, o2, lfo].forEach((x) => { x.start(t); x.stop(t + dur + 0.2); });
+}
+type S2 = [number, number][];
+function seqOf(a: S2) { const m = new Map<number, [number, number]>(); let p = 0; a.forEach(([n, l]) => { if (n >= 0) m.set(p, [n, l]); p += l; }); return m; }
+const R1 = [45, 45, 48, 43, 45, 45, 50, 40]; // 라 라 도 솔 라 라 레 미
+const P1 = seqOf([[69, 4], [72, 4], [74, 8], [76, 6], [74, 2], [72, 4], [69, 4], [67, 8], [69, 4], [72, 4], [69, 16],
+  [76, 4], [79, 4], [81, 8], [79, 6], [76, 2], [74, 4], [72, 4], [74, 8], [76, 4], [72, 4], [69, 12], [-1, 4]]);
+const D2 = seqOf([[-1, 16], [64, 8], [67, 4], [69, 4], [72, 12], [69, 4], [67, 16], [-1, 16], [76, 8], [74, 4], [72, 4], [74, 12], [72, 4], [69, 16]]);
+const P3 = seqOf([[69, 16], [72, 8], [74, 8], [76, 24], [74, 8], [72, 16], [69, 8], [67, 8], [69, 32]]);
+const P4 = seqOf([[69, 2], [72, 2], [74, 4], [76, 2], [74, 2], [72, 4], [69, 2], [67, 2], [69, 4], [72, 4], [74, 4], [76, 4], [79, 4], [76, 2], [74, 2], [72, 4], [74, 4], [69, 8], [-1, 8],
+  [81, 4], [79, 2], [76, 2], [74, 4], [76, 4], [72, 4], [74, 4], [69, 8], [67, 8], [69, 20]]);
+const D5 = seqOf([[69, 24], [72, 8], [74, 16], [76, 8], [74, 8], [72, 8], [69, 24], [-1, 8], [64, 16], [69, 8]]);
+const CHD: Record<number, number[]> = { 45: [57, 64, 69], 48: [55, 60, 64], 43: [55, 62, 67], 50: [57, 62, 69], 40: [52, 59, 64] };
+const ARP2: Record<number, number[]> = { 45: [57, 64, 69, 72, 76], 48: [60, 64, 67, 72, 76], 43: [55, 62, 67, 69, 74], 50: [57, 62, 69, 72, 74], 40: [52, 59, 64, 67, 71] };
+
 const TRACKS: Track[] = [
-  { id: 'moon', name: '달빛 정원', desc: '가야금 선율에 대금이 대답하는 굿거리 — 은은하고 단정하게', bpm: 66, swing: 0, bars: 8, steps: 12,
+  { id: 'march', name: '출정', desc: '모듬북과 거문고가 몰아치고 피리가 앞장서는 — 판을 여는 힘찬 곡', bpm: 100, swing: 0, bars: 8,
     play: (s, bar, t, sp, i) => {
-      const r = ROOTS[bar];
-      if (s === 0 && bar % 2 === 0) pad(t, r, sp * 24, 0.009, 700);
-      if (s === 0) sub(t, r[0], sp * 10, 0.06);
-      gutgeori(s, t, 0.12);
-      const m = M1.get(i); if (m) gaya(t, mf(m[0]), m[2], m[1] * sp, 0.1);
-      const d = D1.get(i); if (d) dae(t, mf(d[0] - 12), d[1] * sp, 0.05);
+      const r = R1[bar];
+      if (s % 2 === 0) geomun(t, s % 8 === 0 ? r : s % 8 === 4 ? r + 7 : r + 12, s % 8 === 0 ? 0.2 : 0.11);
+      if (s === 0 || s === 3 || s === 8 || s === 11) taiko(t, s === 0 ? 0.34 : 0.2);
+      if (bar % 2 === 1 && s >= 13) taiko(t, 0.1 + (s - 13) * 0.05);
+      if (s === 4 || s === 12) deok(t, 0.1);
+      if (s === 0 && bar % 2 === 0) pad(t, CHD[r], sp * 32, 0.012, 1000);
+      const m = P1.get(i); if (m) piri(t, m[0], m[1] * sp, 0.085);
     } },
-  { id: 'sarang', name: '사랑방', desc: '거문고의 낮은 울림 위로 해금이 길게 — 차분한 사랑방 저녁', bpm: 60, swing: 0, bars: 8, steps: 12,
+  { id: 'duel2', name: '달밤의 승부', desc: '거문고가 낮게 맥박을 치고 대금이 길게 노래하는 — 긴장되는 한 판', bpm: 88, swing: 0, bars: 8,
     play: (s, bar, t, sp, i) => {
-      const r = ROOTS[bar];
-      if (s === 0) geomun(t, r[0], 0.18); if (s === 6) geomun(t, r[1], 0.1); if (s === 9 && bar % 2) geomun(t, r[2], 0.07);
-      if (s === 0 && bar % 2 === 0) pad(t, [r[1], r[2]], sp * 24, 0.007, 600);
-      if (s === 0 && bar % 2 === 0) kung(t, 0.1); if (s === 9 && bar % 4 === 3) deok(t, 0.05);
-      const m = M2.get(i); if (m) haegeum(t, m[0], m[1] * sp, 0.08);
+      const r = R1[bar];
+      if (s % 2 === 0) geomun(t, s % 4 === 0 ? r : r + 12, s % 4 === 0 ? 0.15 : 0.07);
+      if (s === 0) { taiko(t, 0.22); sub(t, r, sp * 14, 0.07); }
+      if (s === 10) taiko(t, 0.12);
+      if (s % 4 === 2) deok(t, 0.045);
+      if (s === 0 && bar % 2 === 0) pad(t, CHD[r], sp * 32, 0.011, 800);
+      const m = D2.get(i); if (m) dae(t, mf(m[0] + 12), m[1] * sp, 0.075);
     } },
-  { id: 'palace', name: '궁중 연회', desc: '편경과 대금이 한목소리로 — 느리고 장중한 궁중 음악풍', bpm: 50, swing: 0, bars: 8, steps: 16,
+  { id: 'kingroad', name: '왕의 길', desc: '현악이 크게 부풀고 대금·피리가 한목소리로 — 장엄하고 웅장하게', bpm: 72, swing: 0, bars: 8,
     play: (s, bar, t, sp, i) => {
-      const r = ROOTS[bar];
-      if (s === 0 && bar % 2 === 0) { bak(t, 0.2); pad(t, r, sp * 32, 0.01, 800); }
-      if (s === 0) kung(t, 0.14); if (s === 8) kung(t, 0.06);
-      const m = M3.get(i); if (m) { bell(t, m[0] + 12, 0.07, 3); dae(t, mf(m[0]), m[1] * sp, 0.07); }
+      const r = R1[bar];
+      if (s === 0) { taiko(t, 0.36); geomun(t, r, 0.2); bell(t, r + 36, 0.04, 3); }
+      if (s === 8) { taiko(t, 0.2); geomun(t, r + 7, 0.1); }
+      if (s === 0 && bar % 2 === 0) pad(t, [...CHD[r], CHD[r][0] + 12], sp * 32, 0.016, 1400);
+      const m = P3.get(i); if (m) { piri(t, m[0], m[1] * sp, 0.06); dae(t, mf(m[0] + 12), m[1] * sp, 0.05); }
     } },
-  { id: 'stream', name: '가야금 물결', desc: '가야금이 물결처럼 고르게 흐르고 장구가 살짝 받치는', bpm: 72, swing: 0, bars: 8, steps: 12,
+  { id: 'hero', name: '장터의 영웅', desc: '장구가 신명 나게 몰고 피리가 재잘대는 — 경쾌하지만 가볍지 않게', bpm: 112, swing: 0.05, bars: 8,
     play: (s, bar, t, sp, i) => {
-      const r = ROOTS[bar]; const ar = ARP[r[0]];
+      const r = R1[bar];
+      if (s % 4 === 0) kung(t, s === 0 ? 0.2 : 0.12);
+      if (s % 4 === 2) deok(t, 0.08); if (s % 2 === 1) deok(t, 0.025);
+      if (s % 2 === 0) geomun(t, s % 8 === 0 ? r : r + (s % 8 === 4 ? 7 : 12), s % 8 === 0 ? 0.16 : 0.08);
+      if (s === 0) taiko(t, 0.2);
+      const m = P4.get(i); if (m) piri(t, m[0], m[1] * sp, 0.075);
+    } },
+  { id: 'eve', name: '결전 전야', desc: '가야금이 고요히 흐르고 대금이 멀리서 — 숨 고르는 쉬는 곡', bpm: 66, swing: 0, bars: 8, steps: 12,
+    play: (s, bar, t, sp, i) => {
+      const r = R1[bar]; const ar = ARP2[r];
       const k = [0, 1, 2, 3, 4, 2][s % 6]; gaya(t, mf(ar[k]), s % 6 === 0 ? 1 : 0, sp * 2, s % 6 === 0 ? 0.075 : 0.05);
-      if (s === 0 && bar % 2 === 0) pad(t, r, sp * 24, 0.008, 650);
-      if (s === 0) sub(t, r[0], sp * 10, 0.05);
-      gutgeori(s, t, 0.08);
-      const d = D1.get(i); if (d && bar >= 4) dae(t, mf(d[0] - 12), d[1] * sp, 0.045);
-    } },
-  { id: 'bamboo', name: '대숲 바람', desc: '바람 소리와 대금 독주 — 박자 없이 고요하게', bpm: 54, swing: 0, bars: 8, steps: 16,
-    play: (s, bar, t, sp, i) => {
-      const r = ROOTS[bar];
-      if (s === 0 && bar % 2 === 0) { wind(t, sp * 32, 0.03); pad(t, [r[0], r[1]], sp * 32, 0.01, 500); }
-      if (s === 0 && bar % 4 === 0) geomun(t, r[0], 0.08);
-      const m = M5.get(i); if (m) dae(t, mf(m[0]), m[1] * sp, 0.09);
+      if (s === 0 && bar % 2 === 0) { pad(t, CHD[r], sp * 24, 0.01, 650); geomun(t, r, 0.1); }
+      const m = D5.get(Math.floor(i * 16 / 12)); if (m && (i * 16) % 12 === 0) dae(t, mf(m[0]), m[1] * sp * 0.75, 0.07);
     } },
 ];
 export const BGM_TRACKS = TRACKS.map(({ id, name, desc }) => ({ id, name, desc }));
 
 // 선택·좋아요·재생 방식 (이 기기에 저장)
-let trackId = 'moon';
+let trackId = 'march';
 let favs: string[] = [];
 let mode: 'one' | 'favs' = 'one';
 try {
