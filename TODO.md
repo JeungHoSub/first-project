@@ -22,3 +22,6 @@
 ## AI·메이커 실험실 (2026-11-18 추가)
 - [ ] 첫 실험 고르기 (`projects/ai-maker-lab/brief.md`)
 - [ ] PC 연결: Claude 데스크톱 앱 → 설정 → Claude Code → Remote Control에서 실험 폴더 공유
+
+## 입찰 플랫폼에 넣을 기능 후보 (money-ideas에서 흡수)
+- [ ] 인증 만료 알림: 직접생산확인(2년)·중소기업확인서(1년) 등 만료일 등록 → 90/30/7일 전 텔레그램 알림 + 필요 서류 목록 (근거: money-ideas/outputs/briefings/2026-11-18-noon.md)
