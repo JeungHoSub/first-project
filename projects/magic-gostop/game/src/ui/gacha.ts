@@ -3,6 +3,7 @@
 // 연출: 뽑기권이 날아와 빛나며 찢어짐 → 화투 뒷면이 사선 축으로 빨라지며 회전(잔상) + 빛 입자가 빨려 듦
 //      (높은 등급이면 화면 흔들림·번개) → 충격파와 함께 폭발 → 카드가 3D로 뒤집히며 공개.
 //      10회는 카드 10장이 깔린 뒤 한 장씩 뒤집히고, S 이상은 마지막에 따로 크게 뒤집힌다. 화면을 누르면 건너뛴다.
+import { ownedOf, upgradeItem, dismantleItem, UPGRADE_NEED, UPGRADE_SILVER, DISMANTLE_RATE } from './collection';
 import { ITEMS, bestGrade, TICKETS, GRADES, GRADE_COLOR, drawWithTicket, priceOf, curOf, itemArt, CATEGORY_LABEL, type Ticket, type Drop } from './collection';
 import { copyOf, USE_LABEL } from './item-copy';
 import { coinGroup, norigaeGroup } from './coin-art';
@@ -321,6 +322,26 @@ async function climax(stage: HTMLElement, gi: number) {
 
 /** 공개된 카드에 마우스를 올리거나(누르면) 어떤 아이템인지 설명을 띄운다 */
 /** 구성품 카드 확대: 큰 그림 + 기본 정보 + 등급별(F~SSS+) 능력치 표 */
+let zoomChanged: () => void = () => {};
+/** 확대창에서 승급·분해로 보유가 바뀌면 부를 함수 (도감 다시 그리기 등) */
+export function onZoomChange(fn: () => void) { zoomChanged = fn; }
+/** 확대창 안 "내 카드": 등급별 보유 장수, 승급(같은 등급 N장 + 은화), 분해 */
+function ownedBlock(id: string) {
+  const o = ownedOf(id);
+  const have = GRADES.map((g, gi) => ({ gi, n: o[g] ?? 0 })).filter((x) => x.n > 0);
+  if (!have.length) return '';
+  const rows = have.map(({ gi, n }) => {
+    const up = gi < GRADES.length - 1;
+    const need = up ? UPGRADE_NEED[gi] : 0;
+    const can = up && n >= need && bal('eun') >= UPGRADE_SILVER[gi];
+    return `<li>${badge(gi)}<span class="tz-n">${n}장</span>
+      ${up ? `<button type="button" class="tz-up" data-g="${gi}" ${can ? '' : 'disabled'} title="${GRADES[gi]} ${need}장 + 은화 ${UPGRADE_SILVER[gi]}">승급 <small>${Math.min(n, need)}/${need}장 · ${curIco('eun')}${UPGRADE_SILVER[gi]}</small></button>` : '<span class="tz-max">최고 등급</span>'}
+      <button type="button" class="tz-dis" data-g="${gi}">분해</button></li>`;
+  }).join('');
+  return `<div class="tz-h">내 카드</div><ol class="tz-own-list">${rows}</ol>
+    <p class="tz-dis-rate">분해하면 1장이 사라지고 <b>엽전 ${DISMANTLE_RATE.yeop}%</b> · <b>은화 ${DISMANTLE_RATE.eun}%</b> · <b>같은 등급 다른 카드 ${DISMANTLE_RATE.card}%</b> 중 하나가 나옵니다. 양은 등급이 높을수록 많습니다.</p>
+    <div class="tz-msg" aria-live="polite"></div>`;
+}
 export function openItemZoom(id: string, from?: HTMLElement) {
   const it = ITEMS.find((x) => x.id === id); if (!it) return;
   const totalW = ITEMS.reduce((a, x) => a + x.weight, 0);
@@ -340,6 +361,7 @@ export function openItemZoom(id: string, from?: HTMLElement) {
         <dl class="tz-meta"><div><dt>쓰는 법</dt><dd>${USE_LABEL[cp.use]}</dd></div><div><dt>나올 확률</dt><dd>${Math.round((it.weight / totalW) * 1000) / 10}%</dd></div></dl>
       </div>
     </div>
+    ${ownedBlock(id)}
     <div class="tz-h">등급별 능력치</div>
     <ol class="tz-grades">${rows}</ol>
     ${it.stack ? `<p class="tz-stack"><b>함께 쓸 때</b> ${it.stack}</p>` : ''}
@@ -350,6 +372,23 @@ export function openItemZoom(id: string, from?: HTMLElement) {
   card.classList.remove('in'); void card.offsetWidth; card.classList.add('in');
   const close = () => { z!.hidden = true; };
   z.onclick = (e) => { if (e.target === z) close(); };
+  // 승급·분해
+  const msg = (html: string) => { const m = z!.querySelector<HTMLElement>('.tz-msg'); if (m) { m.innerHTML = html; m.classList.remove('pop'); void m.offsetWidth; m.classList.add('pop'); } };
+  const rerender = (html: string) => { const sc = card.scrollTop; openItemZoom(id); const c2 = z!.querySelector<HTMLElement>('.tz-card')!; c2.classList.remove('in'); c2.scrollTop = sc; msg(html); zoomChanged(); };
+  z.querySelectorAll<HTMLButtonElement>('.tz-up').forEach((b) => b.addEventListener('click', () => {
+    const gi = +b.dataset.g!;
+    if (!pay('eun', UPGRADE_SILVER[gi])) return;
+    if (!upgradeItem(id, gi)) { add('eun', UPGRADE_SILVER[gi]); return; }
+    sfx.magic(); rerender(`<b>승급!</b> ${badge(gi)} ${UPGRADE_NEED[gi]}장 → ${badge(gi + 1)} 1장`);
+  }));
+  z.querySelectorAll<HTMLButtonElement>('.tz-dis').forEach((b) => b.addEventListener('click', () => {
+    const gi = +b.dataset.g!;
+    const last = (ownedOf(id)[GRADES[gi]] ?? 0) === 1 && bestGrade(id) === gi;
+    if (last && b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = '정말?'; b.classList.add('warn'); msg('가장 높은 등급의 마지막 1장입니다. 한 번 더 누르면 분해합니다.'); return; }
+    const r = dismantleItem(id, gi); if (!r) return;
+    if (r.kind === 'card') { sfx.reward(); rerender(`<b>분해</b> → 다른 카드 <b>${r.item.name}</b> ${badge(r.gi)} 획득!`); }
+    else { add(r.kind, r.amount); sfx.coinToss(); rerender(`<b>분해</b> → ${curIco(r.kind)} ${CUR_NAME[r.kind]} ${fmt(r.amount)} 획득`); }
+  }));
   z.querySelector('.tz-x')!.addEventListener('click', close);
   const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { close(); removeEventListener('keydown', onKey); } };
   addEventListener('keydown', onKey);

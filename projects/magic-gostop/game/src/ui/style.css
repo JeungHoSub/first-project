@@ -2082,3 +2082,17 @@ body.online .lv, body.online .pmoney, body.online #opp-items { display: none !im
 .gx-tip .tp-eff b { color: var(--gc, var(--gold-mid)); margin-right: 4px; }
 .gx-tip .tp-more { font-size: .64rem; color: var(--gold-mid); opacity: .8; }
 .cl-item { transition: transform .15s; } @media (hover: hover) { .cl-item:hover { transform: translateY(-3px) scale(1.04); } }
+/* 확대창: 내 카드 (승급·분해) */
+.tz-own-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; }
+.tz-own-list li { display: grid; grid-template-columns: 44px 38px 1fr auto; gap: 8px; align-items: center; padding: 6px 8px; border-radius: 10px; background: rgba(255,255,255,.035); }
+.tz-n { font-size: .8rem; color: #f3e6c4; font-weight: 700; }
+.tz-up, .tz-dis { border: 1px solid rgba(243,210,122,.45); border-radius: 9px; padding: 6px 10px; font: inherit; font-size: .76rem; font-weight: 700; cursor: pointer; color: #2a1c08; background: linear-gradient(180deg, #f7dc8c, #c9952e); }
+.tz-up small { display: block; font-size: .6rem; font-weight: 500; opacity: .85; }
+.tz-up:disabled { filter: grayscale(.8) brightness(.6); cursor: default; }
+.tz-dis { color: #f0d9d0; background: linear-gradient(180deg, #5b3a34, #3a2420); border-color: rgba(255,160,140,.35); }
+.tz-dis.warn { background: linear-gradient(180deg, #b0402e, #7a2618); color: #fff; }
+.tz-max { font-size: .7rem; color: var(--gold-mid); }
+.tz-dis-rate { margin: 8px 2px 0; font-size: .7rem; color: #b9b3a6; line-height: 1.5; } .tz-dis-rate b { color: #e8dcc0; font-weight: 600; }
+.tz-msg { min-height: 1.4em; margin-top: 8px; padding: 0 4px; font-size: .82rem; color: #fff1c8; text-align: center; }
+.tz-msg.pop { animation: tzPop .5s cubic-bezier(.3,1.6,.5,1); } .tz-msg b { color: var(--gold-mid); }
+@keyframes tzPop { from { transform: scale(.7); opacity: 0; } to { transform: none; opacity: 1; } }

@@ -255,20 +255,44 @@ export function grantItem(id: string, gi: number, n = 1) {
 }
 /** 승급 비용: 같은 등급 2장 + 은화 (F→E … SSS→SSS+) */
 export const UPGRADE_SILVER = [5, 8, 12, 18, 25, 35, 50, 70, 100];
-/** 승급할 수 있는 등급 (같은 등급 2장 이상 & SSS+ 아님). 가장 높은 것 */
+/** 승급에 필요한 같은 등급 장수 (F→E … SSS→SSS+): 높은 등급일수록 더 많이 */
+export const UPGRADE_NEED = [2, 2, 2, 3, 3, 3, 4, 4, 5];
+/** 승급할 수 있는 등급 (같은 등급이 필요 장수 이상 & SSS+ 아님). 가장 높은 것 */
 export function upgradable(id: string): number {
   const o = ownedOf(id);
-  for (let i = GRADES.length - 2; i >= 0; i--) if ((o[GRADES[i]] ?? 0) >= 2) return i;
+  for (let i = GRADES.length - 2; i >= 0; i--) if ((o[GRADES[i]] ?? 0) >= UPGRADE_NEED[i]) return i;
   return -1;
 }
-/** 같은 등급 2장을 합쳐 한 등급 위 1장으로 (은화는 부르는 쪽에서 낸다) */
+/** 같은 등급 필요 장수를 합쳐 한 등급 위 1장으로 (은화는 부르는 쪽에서 낸다) */
 export function upgradeItem(id: string, gi: number): boolean {
   const o = { ...ownedOf(id) };
-  const g = GRADES[gi], up = GRADES[gi + 1];
-  if (!up || (o[g] ?? 0) < 2) return false;
-  o[g] = (o[g] ?? 0) - 2; if (!o[g]) delete o[g];
+  const g = GRADES[gi], up = GRADES[gi + 1]; const need = UPGRADE_NEED[gi];
+  if (!up || (o[g] ?? 0) < need) return false;
+  o[g] = (o[g] ?? 0) - need; if (!o[g]) delete o[g];
   o[up] = (o[up] ?? 0) + 1;
   mem = { ...mem, [id]: o };
   save(mem);
   return true;
+}
+
+// ---------- 분해: 카드 1장 → 엽전 / 은화 / 같은 등급 다른 카드 ----------
+/** 분해 결과 확률(%) — 화면에 그대로 공개 */
+export const DISMANTLE_RATE = { yeop: 55, eun: 30, card: 15 } as const;
+export const DISMANTLE_YEOP = [300, 500, 800, 1300, 2000, 3200, 5000, 8000, 13000, 20000];
+export const DISMANTLE_EUN = [1, 1, 2, 3, 4, 6, 9, 13, 20, 30];
+export type DismantleResult = { kind: 'yeop' | 'eun'; amount: number } | { kind: 'card'; item: ItemDef; gi: number };
+/** 1장을 없애고 결과를 굴린다. 재화 지급은 부르는 쪽(지갑)에서, 카드는 여기서 바로 지급 */
+export function dismantleItem(id: string, gi: number, rnd: () => number = Math.random): DismantleResult | null {
+  const o = { ...ownedOf(id) }; const g = GRADES[gi];
+  if ((o[g] ?? 0) < 1) return null;
+  o[g] = (o[g] ?? 0) - 1; if (!o[g]) delete o[g];
+  mem = { ...mem, [id]: o }; save(mem);
+  const r = rnd() * 100;
+  if (r < DISMANTLE_RATE.yeop) return { kind: 'yeop', amount: DISMANTLE_YEOP[gi] };
+  if (r < DISMANTLE_RATE.yeop + DISMANTLE_RATE.eun) return { kind: 'eun', amount: DISMANTLE_EUN[gi] };
+  const pool = ITEMS.filter((x) => x.id !== id);
+  const tw = pool.reduce((a, x) => a + x.weight, 0); let k = rnd() * tw; let pick = pool[0];
+  for (const x of pool) { k -= x.weight; if (k <= 0) { pick = x; break; } }
+  grantItem(pick.id, gi);
+  return { kind: 'card', item: pick, gi };
 }

@@ -310,6 +310,20 @@ export function ttadak() {
   tone(t + 0.1, 0.45, 'sine', 130, 55, 0.5, 0.002); // 둥
   [1175, 1568, 2093].forEach((f, i) => tone(t + 0.2 + i * 0.06, 0.32, 'triangle', f, f, 0.08));
 }
+/** 싹쓸이: 빗자루로 판을 "쓰으윽~" 쓸고 → 패가 우르르 "착착착착착" → 북·징 → 상승 팡파르 → 엽전 비 */
+export function sweep() {
+  if (!ready()) return;
+  const t = now();
+  noise(t, 0.55, 'bandpass', 900, 0.32, 0.8, 4200);           // 쓰으윽 (낮→높)
+  noise(t + 0.08, 0.5, 'highpass', 3000, 0.12, 0.6, 7000);
+  for (let i = 0; i < 7; i++) setTimeout(() => slap(0.55 + i * 0.06), 380 + i * 65); // 우르르 착착착
+  const d0 = t + 0.88;
+  tone(d0, 0.55, 'sine', 125, 48, 0.8, 0.002); noise(d0, 0.08, 'lowpass', 700, 0.3, 0.8, 200);   // 둥!
+  tone(d0, 2.4, 'sine', 178, 174, 0.13, 0.02); tone(d0, 1.7, 'sine', 356, 350, 0.05, 0.02);       // 징
+  [523, 659, 784, 1047, 1319, 1568].forEach((f, i) => tone(d0 + 0.05 + i * 0.075, i === 5 ? 0.8 : 0.24, 'triangle', f, f, 0.11));
+  [0.5, 0.6, 0.7, 0.85].forEach((d, i) => { const f = [2093, 2637, 3136, 3520][i]; tone(d0 + d, 0.9, 'sine', f, f, 0.05, 0.002); });
+  setTimeout(() => coinRain(1000), 1300);
+}
 /** 고 */
 /** 고: 큰 북 "둥!" — 2고는 "둥둥!", 3고부터는 징까지 울린다 */
 export function go(n = 1) {

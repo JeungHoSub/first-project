@@ -6,7 +6,7 @@ import type { Action, Card, GameEvent, GameState, PlayerId } from '../engine';
 import { chooseAction, AI_LEVELS, type AiLevel } from '../ai/simple';
 import { cardArt } from './art';
 import * as sfx from './sound';
-import { initGacha, openGacha, attachItemTip } from './gacha';
+import { initGacha, openGacha, attachItemTip, onZoomChange } from './gacha';
 import { initEconomy, record as missionRecord, missionReady, syncCurrencies } from './economy';
 import * as chars from './characters';
 import { installCoinIcons, coinSvg, norigaeGroup } from './coin-art';
@@ -1055,7 +1055,7 @@ async function playOut(prev: GameState, next: GameState, notes: { text: string; 
       const x = special as { self?: boolean; fromPpeok?: boolean };
       banner(x.fromPpeok === false ? '3장 먹기!' : x.self ? '자뻑! 피 2장' : '뻑 먹기!'); sfx.bonus(); shakeScreen();
     }
-    else { banner(kind === 'jjok' ? '쪽!' : kind === 'ttadak' ? '따닥!' : '싹쓸이!'); if (kind === 'jjok') sfx.jjok(); else if (kind === 'ttadak') sfx.ttadak(); else sfx.bonus(); shakeScreen(); sfx.buzz(kind === 'ttadak' ? [40, 50, 60] : 40); }
+    else { banner(kind === 'jjok' ? '쪽!' : kind === 'ttadak' ? '따닥!' : '싹쓸이!'); if (kind === 'jjok') sfx.jjok(); else if (kind === 'ttadak') sfx.ttadak(); else sfx.sweep(); shakeScreen(); sfx.buzz(kind === 'ttadak' ? [40, 50, 60] : kind === 'sweep' ? [30, 30, 30, 30, 30, 30, 150] : 40); if (kind === 'sweep') await wait(900); }
     await wait(650);
     if (no !== gameNo) return;
   }
@@ -1495,6 +1495,7 @@ for (const id of ['opp-caps', 'my-caps']) $(id).addEventListener('click', () => 
 $('btn-cd-close').addEventListener('click', () => { $('caps-detail').hidden = true; });
 $('btn-res-home').addEventListener('click', () => { sfx.click(); showHome(); });
 $('btn-home').addEventListener('click', () => { sfx.click(); showHome(); });
+onZoomChange(() => { if (!$('collection').hidden) renderCollection(); });
 $('btn-collection').addEventListener('click', () => { sfx.click(); renderCollection(); $('collection').hidden = false; });
 // 홈 정리: 상점(미션·윷놀이·은화·금화) / 설정(음악·효과음·규칙)
 for (const id of ['shop', 'settings']) $(id).querySelectorAll<HTMLElement>('[data-close]').forEach((b) => b.addEventListener('click', () => { $(id).hidden = true; syncHome(); }));

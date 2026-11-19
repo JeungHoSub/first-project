@@ -1,6 +1,6 @@
 // 재화 경제: 오늘의 미션(은화) · 윷놀이 내기(엽전 → 엽전·은화) · 은화 상점(승급·직접 구매·꾸미기) · 금화 상점(금화 → 엽전).
 // 원칙: 금화는 결제로만 얻는다(지금은 테스트 충전). 어떤 내기로도 금화를 얻을 수 없다. 은화는 돈으로 살 수 없다.
-import { ITEMS, GRADES, GRADE_COLOR, itemArt, bestGrade, ownedOf, grantItem, upgradable, upgradeItem, UPGRADE_SILVER, CATEGORY_LABEL } from './collection';
+import { ITEMS, GRADES, GRADE_COLOR, itemArt, bestGrade, ownedOf, grantItem, upgradable, upgradeItem, UPGRADE_SILVER, UPGRADE_NEED, CATEGORY_LABEL } from './collection';
 import { bal, add, pay, fmt, curIco, EXCHANGE, exchange, onCoins, type Cur } from './wallet';
 import * as sfx from './sound';
 
@@ -148,8 +148,8 @@ function renderSilver() {
     `<li class="sv-row"><span class="sv-art">${itemArt(it, Math.max(0, gi), gi < 0)}</span><div class="sv-txt"><b>${it.name}</b><small>${CATEGORY_LABEL[it.category]}${gi >= 0 ? ` · 보유 최고 ${GRADES[gi]}` : ' · 아직 없음'}</small></div>${right}</li>`;
   if (sTab === 'up') {
     const list = ITEMS.map((it) => ({ it, g: upgradable(it.id) })).filter((x) => x.g >= 0);
-    box.innerHTML = `<p class="tx-sub">같은 아이템·같은 등급 2장을 합쳐 한 등급 위 1장으로 만듭니다. 뽑기에서 겹친 아이템을 이렇게 씁니다.</p>${
-      list.length ? `<ul class="sv-list">${list.map(({ it, g }) => row(it, bestGrade(it.id), `<button type="button" class="sv-buy" data-up="${it.id}" data-g="${g}" ${bal('eun') < UPGRADE_SILVER[g] ? 'disabled' : ''}>${badge(g)}×2 → ${badge(g + 1)}<span>${curIco('eun')}${UPGRADE_SILVER[g]}</span></button>`)).join('')}</ul>`
+    box.innerHTML = `<p class="tx-sub">같은 아이템·같은 등급 카드를 모아 한 등급 위 1장으로 만듭니다. 필요 장수: F~D 2장 · C~A 3장 · S~SS 4장 · SSS 5장. 아이템 도감에서 카드를 눌러도 승급·분해할 수 있습니다.</p>${
+      list.length ? `<ul class="sv-list">${list.map(({ it, g }) => row(it, bestGrade(it.id), `<button type="button" class="sv-buy" data-up="${it.id}" data-g="${g}" ${bal('eun') < UPGRADE_SILVER[g] ? 'disabled' : ''}>${badge(g)}×${UPGRADE_NEED[g]} → ${badge(g + 1)}<span>${curIco('eun')}${UPGRADE_SILVER[g]}</span></button>`)).join('')}</ul>`
         : '<p class="sv-empty">승급할 수 있는 아이템이 없습니다. 같은 등급이 2장 모이면 여기에 나타납니다.</p>'}`;
     box.querySelectorAll<HTMLButtonElement>('[data-up]').forEach((b) => b.addEventListener('click', () => {
       const g = +b.dataset.g!; const id = b.dataset.up!;
