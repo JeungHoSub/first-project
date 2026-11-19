@@ -213,11 +213,23 @@ export function bomb() {
   for (let i = 0; i < 9; i++) noise(t + 0.25 + i * 0.06 + (i % 3) * 0.02, 0.03, 'bandpass', 3000 + (i % 4) * 700, 0.18 - i * 0.012, 2);
 }
 /** 고 */
-export function go() {
+/** 고: 큰 북 "둥!" — 2고는 "둥둥!", 3고부터는 징까지 울린다 */
+export function go(n = 1) {
   if (!ready()) return;
   const t = now();
-  [523, 659, 784].forEach((fq, i) => tone(t + i * 0.08, 0.25, 'square', fq, fq, 0.07));
-  tone(t + 0.24, 0.4, 'triangle', 1047, 1047, 0.12);
+  const drum = (at: number, v: number) => {
+    tone(at, 0.55, 'sine', 120, 52, v, 0.003);          // 북 몸통
+    tone(at, 0.18, 'triangle', 240, 110, v * 0.25, 0.002); // 가죽 울림
+    noise(at, 0.08, 'lowpass', 600, v * 0.35, 0.8, 200);   // 북채 닿는 소리
+  };
+  drum(t, 0.55);
+  if (n >= 2) drum(t + 0.17, 0.5);
+  if (n >= 3) { // 징: 낮고 길게 퍼지는 금속 울림
+    const g = t + (n >= 2 ? 0.3 : 0.1);
+    tone(g, 2.2, 'sine', 178, 174, 0.13, 0.02);
+    tone(g, 1.6, 'sine', 356, 350, 0.05, 0.02);
+    tone(g, 1.1, 'sine', 523, 515, 0.025, 0.02);
+  }
 }
 /** 스톱 */
 export function stop() {

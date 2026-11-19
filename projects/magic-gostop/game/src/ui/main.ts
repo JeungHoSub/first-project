@@ -33,7 +33,7 @@ const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 let speed = 1; // 패 속도: 1 보통 · 0.6 빠르게
 try { if (localStorage.getItem('mg-speed') === 'fast') speed = 0.6; } catch { /* 무시 */ }
 const wait = (ms: number) => new Promise((r) => setTimeout(r, reduced ? 0 : ms * speed));
-const GO_WORD = ['', '원 고', '투 고', '쓰리 고', '포 고', '파이브 고', '식스 고'];
+const GO_WORD = ['', '고', '투 고', '쓰리 고', '포 고', '파이브 고', '식스 고'];
 /** 한 수에서 나온 일 중 가장 중요한 것 하나를 음성으로 (상위 맞고 앱의 효과 음성) */
 function announce(evs: GameEvent[]) {
   const pri: [string, (e: GameEvent) => string | null][] = [
@@ -1057,7 +1057,7 @@ async function playOut(prev: GameState, next: GameState, notes: { text: string; 
   if (evs.some((e) => e.type === 'steal')) { sfx.steal(); }
   for (const n of ia.notes) { banner(n.text); sfx.magic(); $('feed').innerHTML = `<b>아이템</b> · ${n.text}`; await wait(700); if (no !== gameNo) return; }
   const goEv = evs.find((e) => e.type === 'go');
-  if (goEv && goEv.type === 'go') { banner(`${goEv.goCount}고!`); sfx.go(); sfx.buzz(30); }
+  if (goEv && goEv.type === 'go') { banner(`${goEv.goCount}고!`); sfx.go(goEv.goCount); sfx.buzz(goEv.goCount >= 3 ? [40, 60, 40] : 30); }
   if (evs.some((e) => e.type === 'stop')) { banner('스톱!'); sfx.stop(); }
 
   if (s.phase === 'ended') {
