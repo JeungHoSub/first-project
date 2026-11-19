@@ -4,7 +4,7 @@
 //      (높은 등급이면 화면 흔들림·번개) → 충격파와 함께 폭발 → 카드가 3D로 뒤집히며 공개.
 //      10회는 카드 10장이 깔린 뒤 한 장씩 뒤집히고, S 이상은 마지막에 따로 크게 뒤집힌다. 화면을 누르면 건너뛴다.
 import { ITEMS, bestGrade, TICKETS, GRADES, GRADE_COLOR, drawWithTicket, priceOf, curOf, itemArt, CATEGORY_LABEL, type Ticket, type Drop } from './collection';
-import { copyOf } from './item-copy';
+import { copyOf, USE_LABEL } from './item-copy';
 import { coinGroup, norigaeGroup } from './coin-art';
 import { ALL_CARDS, type Card } from '../engine';
 import { cardArt } from './art';
@@ -153,7 +153,7 @@ function renderTickets() {
     ${cats.map((c) => `<div class="tx-cat"><div class="tx-cat-h">${CATEGORY_LABEL[c as keyof typeof CATEGORY_LABEL] ?? c}</div><div class="tx-items">${ITEMS.filter((it) => it.category === c).map((it) => {
       const g = bestGrade(it.id); const cp = copyOf(it.id); const gi = Math.max(g, 0);
       const eff = EFFECT[it.id] ? EFFECT[it.id](gi) : it.effect(gi);
-      return `<div class="tx-it gf${g < 0 ? ' no' : ''}" tabindex="0" data-gi="${gi}" data-name="${esc(it.name)}" data-cat="${esc(`${CATEGORY_LABEL[it.category as keyof typeof CATEGORY_LABEL] ?? ''} · 나올 확률 ${Math.round((it.weight / totalW) * 1000) / 10}%`)}" data-one="${esc(cp.one)}" data-eff="${esc(`${g < 0 ? '미보유 · F 등급 기준: ' : `내 최고 ${GRADES[g]} 등급: `}${eff}`)}">
+      return `<div class="tx-it gf${g < 0 ? ' no' : ''}" tabindex="0" data-id="${it.id}" data-gi="${gi}" data-name="${esc(it.name)}" data-cat="${esc(`${CATEGORY_LABEL[it.category as keyof typeof CATEGORY_LABEL] ?? ''} · 나올 확률 ${Math.round((it.weight / totalW) * 1000) / 10}%`)}" data-one="${esc(cp.one)}" data-eff="${esc(`${g < 0 ? '미보유 · F 등급 기준: ' : `내 최고 ${GRADES[g]} 등급: `}${eff}`)}">
         <span>${itemArt(it, gi)}</span><b>${it.name}</b><small>${Math.round((it.weight / totalW) * 1000) / 10}%</small></div>`;
     }).join('')}</div></div>`).join('')}`;
   const allLog = log.slice(-40).reverse();
@@ -165,7 +165,13 @@ function renderTickets() {
   const panel = txTab === 'odds' ? `${stats}<ol class="tx-ladder">${ladder}</ol>${compare}` : txTab === 'items' ? itemsPanel : logPanel;
   $('tx-odds').innerHTML = `<div class="tx-tabs" role="tablist">${([['odds', '확률'], ['items', '구성품'], ['log', '기록']] as const).map(([k, l]) => `<button type="button" role="tab" class="tab${txTab === k ? ' cur' : ''}" data-k="${k}">${l}</button>`).join('')}</div><div class="tx-panel">${panel}</div>`;
   $('tx-odds').querySelectorAll<HTMLButtonElement>('.tx-tabs .tab').forEach((b) => b.addEventListener('click', () => { txTab = b.dataset.k as typeof txTab; sfx.click(); renderTickets(); }));
-  if (txTab === 'items') wireTips($('tx-odds'));
+  if (txTab === 'items') {
+    wireTips($('tx-odds'));
+    $('tx-odds').querySelectorAll<HTMLElement>('.tx-it').forEach((el) => el.addEventListener('click', (e) => {
+      e.stopPropagation(); $('gx-tip').hidden = true; sfx.click();
+      const id = el.dataset.id; if (id) openItemZoom(id, el);
+    }));
+  }
 
   $('tx-actions').innerHTML = [1, 10].map((n) => {
     const p = priceOf(t, n);
@@ -314,6 +320,41 @@ async function climax(stage: HTMLElement, gi: number) {
 }
 
 /** 공개된 카드에 마우스를 올리거나(누르면) 어떤 아이템인지 설명을 띄운다 */
+/** 구성품 카드 확대: 큰 그림 + 기본 정보 + 등급별(F~SSS+) 능력치 표 */
+function openItemZoom(id: string, from?: HTMLElement) {
+  const it = ITEMS.find((x) => x.id === id); if (!it) return;
+  const totalW = ITEMS.reduce((a, x) => a + x.weight, 0);
+  const g = bestGrade(id); const cp = copyOf(id);
+  let z = document.getElementById('tx-zoom');
+  if (!z) { z = document.createElement('div'); z.id = 'tx-zoom'; z.className = 'tz-back'; document.body.append(z); }
+  const rows = GRADES.map((gr, gi) => `<li class="${gi === g ? 'mine' : ''}${gi >= S_INDEX ? ' hi' : ''}">${badge(gi)}<p>${it.effect(gi)}</p>${gi === g ? '<em>내 등급</em>' : ''}</li>`).join('');
+  z.innerHTML = `<div class="tz-card" role="dialog" aria-modal="true" aria-label="${it.name} 상세" style="--gc:${gcol(Math.max(0, g))}">
+    <button type="button" class="x-btn tz-x" aria-label="닫기">✕</button>
+    <div class="tz-top">
+      <div class="tz-art">${itemArt(it, Math.max(0, g))}</div>
+      <div class="tz-info">
+        <div class="tz-cat">${CATEGORY_LABEL[it.category as keyof typeof CATEGORY_LABEL] ?? ''}</div>
+        <div class="tz-name">${it.name}</div>
+        <div class="tz-own">${g >= 0 ? `보유 · 최고 ${badge(g)}` : '<span class="no">아직 없음</span>'}</div>
+        <p class="tz-one">${cp.one}</p>
+        <dl class="tz-meta"><div><dt>쓰는 법</dt><dd>${USE_LABEL[cp.use]}</dd></div><div><dt>나올 확률</dt><dd>${Math.round((it.weight / totalW) * 1000) / 10}%</dd></div></dl>
+      </div>
+    </div>
+    <div class="tz-h">등급별 능력치</div>
+    <ol class="tz-grades">${rows}</ol>
+    ${it.stack ? `<p class="tz-stack"><b>함께 쓸 때</b> ${it.stack}</p>` : ''}
+  </div>`;
+  z.hidden = false;
+  const card = z.querySelector<HTMLElement>('.tz-card')!;
+  if (from) { const r = from.getBoundingClientRect(); card.style.transformOrigin = `${r.left + r.width / 2 - innerWidth / 2 + card.offsetWidth / 2}px ${r.top + r.height / 2 - innerHeight / 2 + card.offsetHeight / 2}px`; }
+  card.classList.remove('in'); void card.offsetWidth; card.classList.add('in');
+  const close = () => { z!.hidden = true; };
+  z.onclick = (e) => { if (e.target === z) close(); };
+  z.querySelector('.tz-x')!.addEventListener('click', close);
+  const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { close(); removeEventListener('keydown', onKey); } };
+  addEventListener('keydown', onKey);
+}
+
 function wireTips(box: HTMLElement) {
   const tip = $('gx-tip');
   const show = (el: HTMLElement) => {
