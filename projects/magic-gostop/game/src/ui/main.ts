@@ -866,7 +866,7 @@ function ppeokFx(ids: string[]) {
 }
 /** 폭탄: 흰 섬광 + 충격파 고리 + 불꽃 파편 + 연기 + 화면 붉게 번쩍 + 강한 흔들림 */
 function explodeAt(ids: string[]) {
-  sfx.bomb(); sfx.buzz([80, 40, 120, 40, 60]);
+  sfx.cannon(); sfx.buzz([120, 60, 40, 30, 30]);
   if (reduced) { banner('폭탄!'); return; }
   const rects = ids.map((id) => document.querySelector(`#floor [data-id="${CSS.escape(id)}"]`)?.getBoundingClientRect()).filter(Boolean) as DOMRect[];
   const r = rects[0] ?? $('floor').getBoundingClientRect();
