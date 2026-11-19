@@ -72,17 +72,39 @@ const saveY = () => { try { localStorage.setItem('mg-yut-v1', JSON.stringify(ys)
 function renderYut() {
   if (ys.day !== today()) { ys = { day: today(), n: 0 }; saveY(); }
   $('yt-bets').innerHTML = BETS.map((b) => `<button type="button" class="yt-bet${b === yBet ? ' on' : ''}" data-b="${b}">${curIco('yeop')}${fmt(b)}</button>`).join('');
-  $('yt-picks').innerHTML = YUT.map((y) => `<button type="button" class="yt-pick${y.id === yPick ? ' on' : ''}" data-id="${y.id}"><b>${y.name}</b><small>×${y.mult}${y.eun ? ` · ${curIco('eun')}${y.eun}` : ''}</small></button>`).join('');
+  $('yt-picks').innerHTML = YUT.map((y) => `<button type="button" class="yt-pick${y.id === yPick ? ' on' : ''}" data-id="${y.id}">${miniSticks(y.flats)}<b>${y.name}</b><small>×${y.mult}${y.eun ? ` · ${curIco('eun')}${y.eun}` : ''}</small></button>`).join('');
   $('yt-left').textContent = `오늘 ${DAILY_THROWS - ys.n}번 남음`;
+  if (!$('yt-stage').innerHTML) $('yt-stage').innerHTML = [true, false, true, false].map((f, i) => stickHtml(f, i, false)).join('');
   const btn = $('yt-throw') as HTMLButtonElement;
   btn.disabled = yBusy || ys.n >= DAILY_THROWS || bal('yeop') < yBet;
   btn.innerHTML = ys.n >= DAILY_THROWS ? '오늘은 여기까지' : `던지기 · ${curIco('yeop')}${fmt(yBet)}`;
   $('yt-bets').querySelectorAll<HTMLButtonElement>('.yt-bet').forEach((b) => b.addEventListener('click', () => { if (yBusy) return; yBet = +b.dataset.b!; sfx.click(); renderYut(); }));
   $('yt-picks').querySelectorAll<HTMLButtonElement>('.yt-pick').forEach((b) => b.addEventListener('click', () => { if (yBusy) return; yPick = b.dataset.id!; sfx.click(); renderYut(); }));
 }
-function stickHtml(flat: boolean, i: number) {
-  return `<div class="yt-stick ${flat ? 'flat' : 'round'}" style="--i:${i};--r:${(Math.random() * 30 - 15).toFixed(1)}deg;--x:${(Math.random() * 16 - 8).toFixed(1)}px"><i></i><i></i><i></i></div>`;
+/** 실물 윷가락 그림: 배(평평한 면)는 밝은 나뭇결, 등(둥근 면)은 진한 원통에 X 새김 */
+let ysq = 0;
+function stickSvg(flat: boolean): string {
+  const k = `ys${++ysq}`;
+  return `<svg viewBox="0 0 30 150" aria-hidden="true"><defs>
+    <linearGradient id="${k}f" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#c9a36a"/><stop offset=".12" stop-color="#ecd3a0"/><stop offset=".5" stop-color="#f6e4bc"/><stop offset=".88" stop-color="#e6c992"/><stop offset="1" stop-color="#b8915a"/></linearGradient>
+    <linearGradient id="${k}r" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3e2610"/><stop offset=".3" stop-color="#8a5a2c"/><stop offset=".45" stop-color="#b47c44"/><stop offset=".62" stop-color="#7a4c22"/><stop offset="1" stop-color="#2e1c0a"/></linearGradient>
+  </defs>
+  <rect x="1" y="1" width="28" height="148" rx="14" fill="url(#${k}${flat ? 'f' : 'r'})" stroke="${flat ? '#8a6a3a' : '#22140a'}" stroke-width="1.2"/>
+  ${flat
+    ? `<g fill="none" stroke="#a8824c" stroke-opacity=".45" stroke-width=".8"><path d="M9 14 C7 50 11 90 8 136"/><path d="M15 10 C17 44 13 96 16 140"/><path d="M21 16 C23 60 19 100 22 134"/><path d="M12 60 c3 4 3 10 0 14 c-3 -4 -3 -10 0 -14z"/></g>
+       <rect x="3" y="3" width="24" height="144" rx="12" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="1"/>`
+    : `${[38, 75, 112].map((y) => `<g stroke-linecap="round"><path d="M9 ${y - 7} L21 ${y + 7} M21 ${y - 7} L9 ${y + 7}" stroke="#1a0e05" stroke-width="2.6"/><path d="M9.6 ${y - 6} L21.6 ${y + 8} M21.6 ${y - 6} L9.6 ${y + 8}" stroke="#d9a868" stroke-opacity=".35" stroke-width="1"/></g>`).join('')}
+       <path d="M13 6 C12 50 14 100 13 144" stroke="#e2b07a" stroke-opacity=".35" stroke-width="2" fill="none"/>`}
+  </svg>`;
 }
+function stickHtml(flat: boolean, i: number, land = true) {
+  const x = land ? (i - 1.5) * 52 + (Math.random() * 24 - 12) : (i - 1.5) * 34;
+  const y = land ? Math.random() * 30 - 15 : 0;
+  const r = land ? Math.random() * 70 - 35 + (i % 2 ? 90 : 0) * (Math.random() < 0.35 ? 1 : 0) : 0;
+  return `<div class="yt-stick" style="--i:${i};--lx:${x.toFixed(0)}px;--ly:${y.toFixed(0)}px;--lr:${r.toFixed(0)}deg">${stickSvg(flat)}</div>`;
+}
+/** 고르기 버튼 아이콘: 그 결과가 나올 때의 윷가락 4개 (배=밝음, 등=진함) */
+const miniSticks = (flats: number) => `<span class="yt-mini">${[0, 1, 2, 3].map((i) => `<i class="${i < flats ? 'f' : 'r'}"></i>`).join('')}</span>`;
 async function throwYut() {
   if (yBusy || ys.n >= DAILY_THROWS) return;
   if (!pay('yeop', yBet)) { sfx.buzz([40]); return; }
@@ -95,7 +117,7 @@ async function throwYut() {
   stage.innerHTML = faces.map((f, i) => stickHtml(f, i)).join('');
   void stage.offsetWidth; stage.classList.add('toss');
   sfx.yutToss();
-  await new Promise((r) => setTimeout(r, 900));
+  await new Promise((r) => setTimeout(r, 1100));
   stage.classList.remove('toss'); stage.classList.add('landed');
   sfx.yutLand();
   const win = res.id === yPick;
@@ -103,10 +125,10 @@ async function throwYut() {
   if (win) {
     const gain = Math.floor(yBet * res.mult); add('yeop', gain);
     if (res.eun) add('eun', res.eun);
-    out.innerHTML = `<b>${res.name}!</b> 맞혔습니다 · ${curIco('yeop')}+${fmt(gain)}${res.eun ? ` · ${curIco('eun')}+${res.eun}` : ''}`;
+    out.innerHTML = `<b>${res.name}!</b><span>맞혔습니다 · ${curIco('yeop')}+${fmt(gain)}${res.eun ? ` · ${curIco('eun')}+${res.eun}` : ''}</span>`;
     out.className = 'yt-result win'; sfx.bonus(); if (res.mult >= 7) sfx.win();
   } else {
-    out.innerHTML = `<b>${res.name}</b> · 아쉽네요`; out.className = 'yt-result lose';
+    out.innerHTML = `<b>${res.name}</b><span>아쉽네요 · ${YUT.find((y) => y.id === yPick)!.name}에 걸었습니다</span>`; out.className = 'yt-result lose';
   }
   yBusy = false; renderYut(); onChange();
 }
