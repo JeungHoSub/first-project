@@ -8,8 +8,15 @@ import * as sfx from './sound';
 import { initGacha, openGacha } from './gacha';
 import { initEconomy, record as missionRecord, missionReady, syncCurrencies } from './economy';
 import * as chars from './characters';
-import { installCoinIcons } from './coin-art';
+import { installCoinIcons, coinSvg, norigaeGroup } from './coin-art';
 installCoinIcons();
+// 홈 뽑기 버튼: 옻칠판 + 나전 구름 + 양옆 금화·용옥패
+{
+  const g = document.getElementById('btn-gacha');
+  if (g) g.innerHTML = `<span class="gb-art l">${coinSvg('geum', 60)}</span><span class="gb-txt"><b>뽑기</b><small>엽전 · 은화 · 금화로 뽑기</small></span><span class="gb-art r"><svg viewBox="-42 -74 84 150" aria-hidden="true">${norigaeGroup(true)}</svg></span><i class="gb-shine" aria-hidden="true"></i>`;
+  const sh = document.getElementById('btn-shop');
+  if (sh) sh.insertAdjacentHTML('beforeend', `<span class="sp-coins" aria-hidden="true">${[0, 1, 2].map((i) => `<span style="--k:${i}">${coinSvg('yeop', 26, false)}</span>`).join('')}</span>`);
+}
 import { earn, lose, coins, fmt, COIN_PER_POINT, FIRST_PPEOK_COINS, add as addCur } from './wallet';
 import { ITEMS, GRADES, GRADE_RATE, CATEGORY_LABEL, EQUIP_LIMITS, DROP_RATE, itemArt, gradeFill, ownedOf, bestGrade, ownedKinds, rollDrop, type Drop, type ItemDef, type Category, MAGIC_IDS, magicParams, grantTestMagic, type MagicId } from './collection';
 
@@ -1278,7 +1285,7 @@ function renderMusic() {
 function syncHome() {
   syncCurrencies();
   renderProfiles();
-  { const n = missionReady(); const el = document.getElementById('home-ms'); if (el) { el.textContent = n ? `받을 보상 ${n}개` : '은화 받기'; el.parentElement!.classList.toggle('ready', n > 0); } const sh = document.getElementById('btn-shop'); if (sh) { sh.classList.toggle('ready', n > 0); const sub = document.getElementById('home-shop-sub'); if (sub) sub.textContent = n ? `미션 보상 ${n}개 받기` : '미션 · 윷놀이 · 은화 · 금화'; } }
+  { const n = missionReady(); const el = document.getElementById('home-ms'); if (el) { el.textContent = n ? `받을 보상 ${n}개` : '은화 받기'; el.parentElement!.classList.toggle('ready', n > 0); } const sh = document.getElementById('btn-shop'); if (sh) { sh.classList.toggle('ready', n > 0); const sub = document.getElementById('home-shop-sub'); if (sub) sub.textContent = n ? `미션 보상 ${n}개 받기` : '미션 · 윷놀이 · 환전'; } }
   document.querySelectorAll('.coin-amt').forEach((e) => { e.textContent = fmt(coins()); });
   const label = AI_LEVELS.find((l) => l.id === level)!.label;
   $('home-level').textContent = label;

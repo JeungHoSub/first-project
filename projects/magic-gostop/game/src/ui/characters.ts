@@ -226,7 +226,7 @@ export function renderChars() {
 export function renderHomeChar() {
   const el = document.getElementById('btn-chars'); if (!el) return;
   const { def: c, lv } = current();
-  el.innerHTML = `<span class="hc-art">${portrait(c, lv)}</span><span class="hc-txt"><b>${c.name} <small>Lv.${lv}</small></b><span>${c.label} · ${c.val(lv)}%</span></span><em>캐릭터 · 아이템</em>`;
+  el.innerHTML = `<span class="hc-art">${portrait(c, lv)}</span><span class="hc-txt"><small class="hc-kick">함께하는 동료</small><b>${c.name} <small>Lv.${lv}</small></b><span>${c.label} · ${c.val(lv)}%</span></span><em>동료<br>도감</em>`;
 }
 export function initChars(onChange: () => void) {
   onChars(() => { renderHomeChar(); onChange(); });
