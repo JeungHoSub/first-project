@@ -1738,3 +1738,11 @@ body[data-frame=""] .seat.me .pname, body[data-cb=""] .back { }
 .mu-credit { font-size: .72rem; color: #a9a291; } .mu-credit summary { cursor: pointer; color: #c9ad74; }
 .mu-credit ul { margin: 6px 0; padding-left: 16px; display: grid; gap: 3px; } .mu-credit b { color: #e8e1d2; font-weight: 700; } .mu-credit a { color: #c9ad74; }
 .mu-credit p { margin: 4px 0 0; }
+
+/* 금화 뽑기권: 금빛이 스치는 반짝임 */
+.tx-hero[data-tier="2"] .tx-hero-card { position: relative; overflow: hidden; }
+.tx-hero[data-tier="2"] .tx-hero-card::before { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 2; border-radius: 14px;
+  background: linear-gradient(115deg, transparent 35%, rgba(255,246,208,.0) 40%, rgba(255,246,208,.55) 48%, rgba(255,255,255,.85) 50%, rgba(255,246,208,.55) 52%, transparent 60%);
+  background-size: 300% 100%; mix-blend-mode: screen; animation: goldSweep 3.2s ease-in-out infinite; }
+@keyframes goldSweep { 0% { background-position: 120% 0; } 60%, 100% { background-position: -40% 0; } }
+.tx-tier[data-i="2"] .tx-svg { filter: drop-shadow(0 0 6px rgba(243,210,122,.55)) drop-shadow(0 3px 5px rgba(0,0,0,.5)); }

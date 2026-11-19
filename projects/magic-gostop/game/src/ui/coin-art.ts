@@ -6,9 +6,19 @@ export const PAL: Record<Metal, Pal> = {
   // 엽전: 사진 속 상평통보처럼 누런 놋쇠, 바닥은 검게 삭은 색
   yeop: { hi: '#e3cf98', mid: '#b99a58', lo: '#7f6532', edge: '#5e4a22', field: '#4a3d27', fieldLo: '#2c2416', ink: '#c9ad6c', words: ['매', '직', '엽', '전'] },
   eun: { hi: '#f7f9fb', mid: '#c4cbd2', lo: '#858e98', edge: '#5f6770', field: '#4d545c', fieldLo: '#2e3338', ink: '#dfe4e9', words: ['매', '직', '은', '화'] },
-  geum: { hi: '#fff0b8', mid: '#e0b247', lo: '#9a7222', edge: '#6e5014', field: '#6a4e18', fieldLo: '#3e2d0c', ink: '#f3d27a', words: ['매', '직', '금', '화'] },
+  geum: { hi: '#fff8d6', mid: '#f2c54a', lo: '#a8761a', edge: '#6e5014', field: '#b08a30', fieldLo: '#5e4410', ink: '#fff0b8', words: ['매', '직', '금', '화'] },
 };
 let seq = 0;
+/** 꽃잎 테(금화): n개 꽃잎을 가진 둥근 테 경로 */
+function flower(r: number, n: number): string {
+  let d = '';
+  for (let i = 0; i < n; i++) {
+    const a0 = (i / n) * Math.PI * 2, a1 = ((i + 1) / n) * Math.PI * 2, am = (a0 + a1) / 2;
+    const p0 = [r * 0.965 * Math.cos(a0), r * 0.965 * Math.sin(a0)], p1 = [r * 0.965 * Math.cos(a1), r * 0.965 * Math.sin(a1)], c = [r * 1.06 * Math.cos(am), r * 1.06 * Math.sin(am)];
+    d += `${i ? '' : `M${p0[0].toFixed(1)} ${p0[1].toFixed(1)} `}Q${c[0].toFixed(1)} ${c[1].toFixed(1)} ${p1[0].toFixed(1)} ${p1[1].toFixed(1)} `;
+  }
+  return d + 'Z';
+}
 /** 반지름 56짜리 주화를 (0,0) 중심으로 그린 SVG 조각 (defs 포함). 다른 SVG 안에 넣어 translate/scale 해서 쓴다 */
 export function coinGroup(m: Metal, detail = true): string {
   const p = PAL[m]; const k = `cn${++seq}`;
@@ -34,19 +44,24 @@ export function coinGroup(m: Metal, detail = true): string {
     </filter>` : ''}
   </defs>
   <g mask="url(#${k}h)">
-    <circle r="57" fill="#000" opacity=".35" transform="translate(2.5 4)"/>
+    ${m === 'geum' ? `<path d="${flower(57, 16)}" fill="#000" opacity=".35" transform="translate(2.5 4)"/>` : '<circle r="57" fill="#000" opacity=".35" transform="translate(2.5 4)"/>'}
     <g ${detail ? `filter="url(#${k}n)"` : ''}>
-      <circle r="56" fill="url(#${k}m)"/>
+      ${m === 'geum' ? `<path d="${flower(57, 16)}" fill="url(#${k}m)"/>
+      <circle r="51" fill="none" stroke="${p.lo}" stroke-width="1"/>
+      ${Array.from({ length: 40 }, (_, i) => { const a = (i / 40) * Math.PI * 2; return `<circle cx="${(48 * Math.cos(a)).toFixed(1)}" cy="${(48 * Math.sin(a)).toFixed(1)}" r="1.55" fill="url(#${k}t)"/>`; }).join('')}` : '<circle r="56" fill="url(#${k}m)"/>'}
       <circle r="44" fill="url(#${k}f)"/>
+      ${m === 'geum' && detail ? `<g fill="none" stroke="${p.mid}" stroke-opacity=".55" stroke-width="1.1">${[45, 135, 225, 315].map((a) => `<path transform="rotate(${a})" d="M0 -40 c-5 2 -6 7 -2 9 c3 1 5 -2 3 -4 M0 -40 c5 2 6 7 2 9 c-3 1 -5 -2 -3 -4"/>`).join('')}</g>` : ''}
       <rect x="-18" y="-18" width="36" height="36" fill="url(#${k}sq)"/>
       ${detail ? `${txt(0, -31, w1)}${txt(0, 31, w2)}${txt(31, 0, w3)}${txt(-31, 0, w4)}` : ''}
     </g>
-    <circle r="55.4" fill="none" stroke="${p.edge}" stroke-width="1.4"/>
+    ${m === 'geum' ? `<path d="${flower(56.5, 16)}" fill="none" stroke="${p.edge}" stroke-width="1.2"/>` : `<circle r="55.4" fill="none" stroke="${p.edge}" stroke-width="1.4"/>`}
     <circle r="44" fill="none" stroke="url(#${k}rim)" stroke-width="1.6"/>
     <rect x="-18" y="-18" width="36" height="36" fill="none" stroke="${p.edge}" stroke-opacity=".7" stroke-width="1"/>
     <rect x="-12" y="-12" width="24" height="24" fill="none" stroke="${p.edge}" stroke-width="1.6"/>
-    <path d="M-40 -30 A50 50 0 0 1 10 -50" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="2.4" stroke-linecap="round"/>
-  </g>`;
+    <path d="M-40 -30 A50 50 0 0 1 10 -50" fill="none" stroke="#fff" stroke-opacity="${m === 'geum' ? '.6' : '.35'}" stroke-width="2.4" stroke-linecap="round"/>
+    ${m === 'geum' && detail ? `<path d="M-50 4 A50 50 0 0 0 -20 46" fill="none" stroke="#fff6d0" stroke-opacity=".35" stroke-width="1.6" stroke-linecap="round"/>` : ''}
+  </g>
+  ${m === 'geum' && detail ? [[-36, -38, 7, 0], [40, -22, 5, 0.7], [22, 42, 6, 1.3], [-44, 22, 4, 1.9]].map(([x, y, r, d]) => `<g transform="translate(${x} ${y})"><path d="M0 -${r} C1 -1 1 -1 ${r} 0 C1 1 1 1 0 ${r} C-1 1 -1 1 -${r} 0 C-1 -1 -1 -1 0 -${r}Z" fill="#fffbe8" opacity="0"><animate attributeName="opacity" values="0;1;0" dur="2.4s" begin="${d}s" repeatCount="indefinite"/><animateTransform attributeName="transform" type="scale" values=".3;1.15;.3" dur="2.4s" begin="${d}s" repeatCount="indefinite"/></path></g>`).join('') : ''}`;
 }
 /** 단독 주화 SVG */
 export function coinSvg(m: Metal, size = 120, detail = true): string {
