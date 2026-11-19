@@ -4,8 +4,8 @@ export type Metal = 'yeop' | 'eun' | 'geum';
 interface Pal { hi: string; mid: string; lo: string; edge: string; field: string; fieldLo: string; ink: string; words: [string, string, string, string] }
 export const PAL: Record<Metal, Pal> = {
   // 엽전: 사진 속 상평통보처럼 누런 놋쇠, 바닥은 검게 삭은 색
-  yeop: { hi: '#e3cf98', mid: '#b99a58', lo: '#7f6532', edge: '#5e4a22', field: '#4a3d27', fieldLo: '#2c2416', ink: '#c9ad6c', words: ['매', '직', '엽', '전'] },
-  eun: { hi: '#f7f9fb', mid: '#c4cbd2', lo: '#858e98', edge: '#5f6770', field: '#4d545c', fieldLo: '#2e3338', ink: '#dfe4e9', words: ['매', '직', '은', '화'] },
+  yeop: { hi: '#f2c98a', mid: '#c0843a', lo: '#6e4316', edge: '#4e2e0c', field: '#7a4e1e', fieldLo: '#3a230a', ink: '#e0a860', words: ['매', '직', '엽', '전'] },
+  eun: { hi: '#e9edf1', mid: '#97a0aa', lo: '#4a525c', edge: '#2e343b', field: '#5a626b', fieldLo: '#262b31', ink: '#c9d0d7', words: ['매', '직', '은', '화'] },
   geum: { hi: '#fff8d6', mid: '#f2c54a', lo: '#a8761a', edge: '#6e5014', field: '#b08a30', fieldLo: '#5e4410', ink: '#fff0b8', words: ['매', '직', '금', '화'] },
 };
 let seq = 0;
@@ -19,50 +19,57 @@ function flower(r: number, n: number): string {
   }
   return d + 'Z';
 }
-/** 반지름 56짜리 주화를 (0,0) 중심으로 그린 SVG 조각 (defs 포함). 다른 SVG 안에 넣어 translate/scale 해서 쓴다 */
+/** 반지름 56짜리 주화를 (0,0) 중심으로 그린 SVG 조각 (defs 포함). 다른 SVG 안에 넣어 translate/scale 해서 쓴다
+ *  입체감: 테(바깥 고리)와 네모 구멍 테를 각각 빛 받는 돋을새김(조명 필터)으로, 바닥은 한 단 낮게 안쪽 그림자. 글자 없음. */
 export function coinGroup(m: Metal, detail = true): string {
   const p = PAL[m]; const k = `cn${++seq}`;
-  const [w1, w2, w3, w4] = p.words; // 위·아래·오른쪽·왼쪽
-  const txt = (x: number, y: number, s: string) =>
-    `<text x="${x + 0.8}" y="${y + 0.8}" text-anchor="middle" dominant-baseline="central" font-size="19" font-weight="800" fill="${p.fieldLo}" opacity=".8" font-family="Nanum Myeongjo, Noto Serif KR, serif">${s}</text>`
-    + `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" font-size="19" font-weight="800" fill="url(#${k}t)" font-family="Nanum Myeongjo, Noto Serif KR, serif">${s}</text>`;
+  const gold = m === 'geum';
+  const outer = gold ? flower(57, 16) : circ(56);
+  const rimPath = `${outer} ${circ(44)}`; // 바깥 - 바닥 = 테 (evenodd)
+  const sqPath = 'M-18 -18 H18 V18 H-18Z M-12 -12 V12 H12 V-12Z';
+  const bevel = (id: string, depth: number) => `<filter id="${id}" x="-15%" y="-15%" width="130%" height="130%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="${depth}" result="b"/>
+      <feSpecularLighting in="b" surfaceScale="${3 + depth}" specularConstant="1.1" specularExponent="18" lighting-color="#ffffff" result="s"><feDistantLight azimuth="225" elevation="42"/></feSpecularLighting>
+      <feComposite in="s" in2="SourceAlpha" operator="in" result="si"/>
+      <feDiffuseLighting in="b" surfaceScale="${3 + depth}" diffuseConstant="1" lighting-color="#ffffff" result="d"><feDistantLight azimuth="225" elevation="50"/></feDiffuseLighting>
+      <feComposite in="SourceGraphic" in2="d" operator="arithmetic" k1="1.15" k2="0" k3="0" k4="0" result="lit"/>
+      <feComposite in="lit" in2="si" operator="arithmetic" k1="0" k2="1" k3=".85" k4="0" result="o"/>
+      <feComposite in="o" in2="SourceAlpha" operator="in"/>
+    </filter>`;
   return `<defs>
     <linearGradient id="${k}m" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${p.hi}"/><stop offset=".45" stop-color="${p.mid}"/><stop offset="1" stop-color="${p.lo}"/></linearGradient>
+    <radialGradient id="${k}f" cx="60%" cy="62%" r="70%"><stop offset="0" stop-color="${p.field}"/><stop offset="1" stop-color="${p.fieldLo}"/></radialGradient>
+    <linearGradient id="${k}rim" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#000" stop-opacity=".75"/><stop offset=".5" stop-color="#000" stop-opacity=".15"/><stop offset="1" stop-color="#fff" stop-opacity=".45"/></linearGradient>
     <linearGradient id="${k}t" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${p.hi}"/><stop offset="1" stop-color="${p.ink}"/></linearGradient>
-    <radialGradient id="${k}f" cx="45%" cy="40%" r="65%"><stop offset="0" stop-color="${p.field}"/><stop offset="1" stop-color="${p.fieldLo}"/></radialGradient>
-    <linearGradient id="${k}rim" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${p.fieldLo}"/><stop offset="1" stop-color="${p.hi}"/></linearGradient>
-    <linearGradient id="${k}sq" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${p.hi}"/><stop offset="1" stop-color="${p.lo}"/></linearGradient>
-    <mask id="${k}h"><rect x="-60" y="-60" width="120" height="120" fill="#fff"/><rect x="-12" y="-12" width="24" height="24" fill="#000"/></mask>
-    ${detail ? `<filter id="${k}n" x="-10%" y="-10%" width="120%" height="120%">
+    ${detail ? `${bevel(`${k}bv`, 2.2)}${bevel(`${k}bs`, 1.4)}
+    <filter id="${k}n" x="-10%" y="-10%" width="120%" height="120%">
       <feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="3" seed="${seq % 9}" result="g"/>
-      <feTurbulence type="fractalNoise" baseFrequency=".045" numOctaves="2" seed="${(seq * 7) % 13}" result="b"/>
-      <feColorMatrix in="g" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .55 -.1" result="ga"/>
-      <feColorMatrix in="b" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1.6 -.75" result="ba"/>
+      <feTurbulence type="fractalNoise" baseFrequency=".05" numOctaves="2" seed="${(seq * 7) % 13}" result="bb"/>
+      <feColorMatrix in="g" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .4 -.08" result="ga"/>
+      <feColorMatrix in="bb" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1.3 -.7" result="ba"/>
       <feComposite in="ga" in2="SourceAlpha" operator="in" result="gw"/>
       <feComposite in="ba" in2="SourceAlpha" operator="in" result="bw"/>
       <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="bw"/><feMergeNode in="gw"/></feMerge>
-    </filter>` : ''}
+    </filter>
+    <filter id="${k}is" x="-10%" y="-10%" width="120%" height="120%"><feOffset dx="2.2" dy="2.6" in="SourceAlpha"/><feGaussianBlur stdDeviation="2.2" result="o"/><feComposite in="SourceAlpha" in2="o" operator="out" result="inv"/><feFlood flood-color="#000" flood-opacity=".7"/><feComposite in2="inv" operator="in" result="sh"/><feComposite in="sh" in2="SourceAlpha" operator="in"/></filter>` : ''}
   </defs>
-  <g mask="url(#${k}h)">
-    ${m === 'geum' ? `<path d="${flower(57, 16)}" fill="#000" opacity=".35" transform="translate(2.5 4)"/>` : '<circle r="57" fill="#000" opacity=".35" transform="translate(2.5 4)"/>'}
-    <g ${detail ? `filter="url(#${k}n)"` : ''}>
-      ${m === 'geum' ? `<path d="${flower(57, 16)}" fill="url(#${k}m)"/>
-      <circle r="51" fill="none" stroke="${p.lo}" stroke-width="1"/>
-      ${Array.from({ length: 40 }, (_, i) => { const a = (i / 40) * Math.PI * 2; return `<circle cx="${(48 * Math.cos(a)).toFixed(1)}" cy="${(48 * Math.sin(a)).toFixed(1)}" r="1.55" fill="url(#${k}t)"/>`; }).join('')}` : '<circle r="56" fill="url(#${k}m)"/>'}
-      <circle r="44" fill="url(#${k}f)"/>
-      ${m === 'geum' && detail ? `<g fill="none" stroke="${p.mid}" stroke-opacity=".55" stroke-width="1.1">${[45, 135, 225, 315].map((a) => `<path transform="rotate(${a})" d="M0 -40 c-5 2 -6 7 -2 9 c3 1 5 -2 3 -4 M0 -40 c5 2 6 7 2 9 c-3 1 -5 -2 -3 -4"/>`).join('')}</g>` : ''}
-      <rect x="-18" y="-18" width="36" height="36" fill="url(#${k}sq)"/>
-      ${detail ? `${txt(0, -31, w1)}${txt(0, 31, w2)}${txt(31, 0, w3)}${txt(-31, 0, w4)}` : ''}
-    </g>
-    ${m === 'geum' ? `<path d="${flower(56.5, 16)}" fill="none" stroke="${p.edge}" stroke-width="1.2"/>` : `<circle r="55.4" fill="none" stroke="${p.edge}" stroke-width="1.4"/>`}
-    <circle r="44" fill="none" stroke="url(#${k}rim)" stroke-width="1.6"/>
-    <rect x="-18" y="-18" width="36" height="36" fill="none" stroke="${p.edge}" stroke-opacity=".7" stroke-width="1"/>
-    <rect x="-12" y="-12" width="24" height="24" fill="none" stroke="${p.edge}" stroke-width="1.6"/>
-    <path d="M-40 -30 A50 50 0 0 1 10 -50" fill="none" stroke="#fff" stroke-opacity="${m === 'geum' ? '.6' : '.35'}" stroke-width="2.4" stroke-linecap="round"/>
-    ${m === 'geum' && detail ? `<path d="M-50 4 A50 50 0 0 0 -20 46" fill="none" stroke="#fff6d0" stroke-opacity=".35" stroke-width="1.6" stroke-linecap="round"/>` : ''}
-  </g>
-  ${m === 'geum' && detail ? [[-36, -38, 7, 0], [40, -22, 5, 0.7], [22, 42, 6, 1.3], [-44, 22, 4, 1.9]].map(([x, y, r, d]) => `<g transform="translate(${x} ${y})"><path d="M0 -${r} C1 -1 1 -1 ${r} 0 C1 1 1 1 0 ${r} C-1 1 -1 1 -${r} 0 C-1 -1 -1 -1 0 -${r}Z" fill="#fffbe8" opacity="0"><animate attributeName="opacity" values="0;1;0" dur="2.4s" begin="${d}s" repeatCount="indefinite"/><animateTransform attributeName="transform" type="scale" values=".3;1.15;.3" dur="2.4s" begin="${d}s" repeatCount="indefinite"/></path></g>`).join('') : ''}`;
+  <path d="${outer}" fill="#000" opacity=".4" transform="translate(3 5)"/>
+  <!-- 바닥(한 단 낮음) -->
+  <g ${detail ? `filter="url(#${k}n)"` : ''}><path d="${circ(44)} M-12 -12 V12 H12 V-12Z" fill-rule="evenodd" fill="url(#${k}f)"/></g>
+  ${detail ? `<path d="${circ(44)} M-18 -18 H18 V18 H-18Z" fill-rule="evenodd" fill="#000" filter="url(#${k}is)"/>` : ''}
+  <!-- 테(돋을새김) -->
+  <g ${detail ? `filter="url(#${k}bv)"` : ''}><path d="${rimPath}" fill-rule="evenodd" fill="url(#${k}m)"/></g>
+  ${gold ? Array.from({ length: 40 }, (_, i) => { const a = (i / 40) * Math.PI * 2; return `<circle cx="${(50 * Math.cos(a)).toFixed(1)}" cy="${(50 * Math.sin(a)).toFixed(1)}" r="1.6" fill="url(#${k}t)" stroke="${p.lo}" stroke-width=".4"/>`; }).join('') : `<circle r="50" fill="none" stroke="${p.lo}" stroke-opacity=".5" stroke-width=".8"/>`}
+  ${gold && detail ? `<g fill="none" stroke="${p.hi}" stroke-opacity=".5" stroke-width="1.1">${[45, 135, 225, 315].map((a) => `<path transform="rotate(${a})" d="M0 -40 c-5 2 -6 7 -2 9 c3 1 5 -2 3 -4 M0 -40 c5 2 6 7 2 9 c-3 1 -5 -2 -3 -4"/>`).join('')}</g>` : ''}
+  <!-- 네모 구멍 테(돋을새김) -->
+  <g ${detail ? `filter="url(#${k}bs)"` : ''}><path d="${sqPath}" fill-rule="evenodd" fill="url(#${k}m)"/></g>
+  <path d="${outer}" fill="none" stroke="${p.edge}" stroke-width="1.2"/>
+  <circle r="44" fill="none" stroke="url(#${k}rim)" stroke-width="1.4"/>
+  <rect x="-12" y="-12" width="24" height="24" fill="none" stroke="${p.edge}" stroke-width="1.4"/>
+  <path d="M-40 -30 A50 50 0 0 1 10 -50" fill="none" stroke="#fff" stroke-opacity="${gold ? '.6' : '.4'}" stroke-width="2.4" stroke-linecap="round"/>
+  ${gold && detail ? [[-36, -38, 7, 0], [40, -22, 5, 0.7], [22, 42, 6, 1.3], [-44, 22, 4, 1.9]].map(([x, y, r, d]) => `<g transform="translate(${x} ${y})"><path d="M0 -${r} C1 -1 1 -1 ${r} 0 C1 1 1 1 0 ${r} C-1 1 -1 1 -${r} 0 C-1 -1 -1 -1 0 -${r}Z" fill="#fffbe8" opacity="0"><animate attributeName="opacity" values="0;1;0" dur="2.4s" begin="${d}s" repeatCount="indefinite"/><animateTransform attributeName="transform" type="scale" values=".3;1.15;.3" dur="2.4s" begin="${d}s" repeatCount="indefinite"/></path></g>`).join('') : ''}`;
 }
+const circ = (r: number) => `M${r} 0 A${r} ${r} 0 1 0 ${-r} 0 A${r} ${r} 0 1 0 ${r} 0Z`;
 /** 단독 주화 SVG */
 export function coinSvg(m: Metal, size = 120, detail = true): string {
   return `<svg viewBox="-60 -60 120 120" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${coinGroup(m, detail)}</svg>`;

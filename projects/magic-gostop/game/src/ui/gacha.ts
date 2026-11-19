@@ -95,7 +95,7 @@ function ticketArt(t: Ticket, i: number, mini = false): string {
   ${mini ? '' : `<text x="170" y="44" font-size="10.5" font-weight="700" fill="${M.name}" fill-opacity=".8" letter-spacing="5" font-family="Nanum Myeongjo, Noto Serif KR, serif">뽑기권</text>
   <text x="170" y="82" font-size="30" font-weight="800" fill="#f4ecdc" font-family="Nanum Myeongjo, Noto Serif KR, serif">${t.name.replace('권', '')}</text>
   <line x1="170" y1="94" x2="290" y2="94" stroke="${M.b}" stroke-opacity=".4"/>
-  <text x="170" y="113" font-size="12" font-weight="700" fill="${M.name}" font-family="Nanum Myeongjo, Noto Serif KR, serif">${t.minGrade ? `${t.minGrade} 등급 이상 보장` : '보장 없이 가볍게'}</text>`}
+  ${t.minGrade ? `<text x="170" y="113" font-size="12" font-weight="700" fill="${M.name}" font-family="Nanum Myeongjo, Noto Serif KR, serif">${t.minGrade} 등급 이상 보장</text>` : ''}`}
 </svg>`;
 }
 
@@ -110,7 +110,7 @@ function renderTickets() {
   hero.innerHTML = `<div class="tx-hero-card">${ticketArt(t, sel)}<i class="tx-foil" aria-hidden="true"></i><i class="tx-shine" aria-hidden="true"></i></div>
     <div class="tx-altar" aria-hidden="true"></div>
 
-    <div class="tx-hero-info"><b>${t.name}</b><span>${t.minGrade ? `${t.minGrade} 등급 이상 보장` : '보장 없음'} · S 이상 ${Math.round(GRADES.reduce((a, g, gi) => a + (gi >= S_INDEX ? t.rates[g] : 0), 0) * 100) / 100}%</span></div>`;
+    <div class="tx-hero-info"><b>${t.name}</b><span>${t.minGrade ? `${t.minGrade} 등급 이상 보장 · ` : ''}S 이상 ${Math.round(GRADES.reduce((a, g, gi) => a + (gi >= S_INDEX ? t.rates[g] : 0), 0) * 100) / 100}%</span></div>`;
   const card = hero.firstElementChild as HTMLElement;
   const tilt = (x: number, y: number) => { card.style.setProperty('--rx', `${(0.5 - y) * 16}deg`); card.style.setProperty('--ry', `${(x - 0.5) * 22}deg`); card.style.setProperty('--mx', `${x * 100}%`); card.style.setProperty('--my', `${y * 100}%`); };
   hero.onpointermove = (e) => { const r = card.getBoundingClientRect(); tilt((e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height); card.classList.add('tilting'); };
