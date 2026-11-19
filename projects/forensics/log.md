@@ -1,3 +1,5 @@
+# 작업 로그
+
 ## 2026-11-19 메인 세션(직접)
 - 한 일: 프로젝트 생성. 포렌식 실무 필수 지식, AI 결합 사업, 한국·세계 수준, 사업모델 비교 1차 정리. 기술 구성 시각화 HTML 작성
 - 결과물: outputs/01-forensics-study-basics.md, outputs/02-forensics-skill-map.html
