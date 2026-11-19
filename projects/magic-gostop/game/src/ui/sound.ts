@@ -166,23 +166,40 @@ export function steal() {
 }
 /** 뻑: 김 빠지는 "뿌웅" */
 export function ppeok() {
-  // 절망: 낮은 "쿵" 뒤에 힘 빠지게 내려가는 "뿌-우-웅" 세 번 (패 치는 소리는 이미 남)
+  // 처량하게: 낮은 "쿵" → 반음씩 축 처지며 내려가는 "뿌우~ 뿌우~ 뿌우~ 뿌우우우~" (느리게, 끝음은 길게 떨며 꺼짐) → 한숨 "하아…"
   if (!ready()) return;
-  const t = now();
-  tone(t, 0.5, 'sine', 90, 45, 0.35, 0.004);
-  noise(t, 0.12, 'lowpass', 400, 0.18, 0.7, 120);
-  const c = ctx!;
-  const notes: [number, number, number][] = [[0.18, 233, 220], [0.5, 207, 196], [0.82, 185, 138]];
-  for (const [d, f0, f1] of notes) {
-    const st = t + d; const dur = d > 0.8 ? 1.05 : 0.28;
-    const o = c.createOscillator(); o.type = 'sawtooth';
-    o.frequency.setValueAtTime(f0, st); o.frequency.linearRampToValueAtTime(f1, st + dur);
-    const lfo = c.createOscillator(); lfo.frequency.value = d > 0.8 ? 6 : 0; const lg = c.createGain(); lg.gain.value = 5; lfo.connect(lg).connect(o.frequency);
-    const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.setValueAtTime(900, st); f.frequency.linearRampToValueAtTime(380, st + dur);
-    const g = c.createGain(); g.gain.setValueAtTime(0.0001, st); g.gain.linearRampToValueAtTime(0.17, st + 0.04); g.gain.setValueAtTime(0.15, st + dur * 0.7); g.gain.exponentialRampToValueAtTime(0.0001, st + dur + 0.08);
-    o.connect(f).connect(g).connect(master!);
-    o.start(st); lfo.start(st); o.stop(st + dur + 0.1); lfo.stop(st + dur + 0.1);
+  const t = now(); const c = ctx!;
+  tone(t, 0.6, 'sine', 80, 40, 0.32, 0.004);
+  noise(t, 0.14, 'lowpass', 350, 0.16, 0.7, 100);
+  // [시작, 길이, 시작음, 끝음(처짐)]
+  const notes: [number, number, number, number][] = [
+    [0.22, 0.34, 220, 212], [0.6, 0.34, 207, 199], [0.98, 0.34, 196, 187], [1.36, 1.5, 185, 130],
+  ];
+  for (const [d, dur, f0, f1] of notes) {
+    const st = t + d; const last = dur > 1;
+    const out = c.createGain();
+    out.gain.setValueAtTime(0.0001, st);
+    out.gain.linearRampToValueAtTime(0.16, st + 0.07);
+    if (last) { out.gain.setValueAtTime(0.15, st + 0.5); out.gain.exponentialRampToValueAtTime(0.0001, st + dur); }
+    else { out.gain.setValueAtTime(0.13, st + dur * 0.75); out.gain.exponentialRampToValueAtTime(0.0001, st + dur + 0.05); }
+    const f = c.createBiquadFilter(); f.type = 'lowpass'; f.Q.value = 3;
+    // 약음기 낀 금관처럼 "와-우": 필터가 열렸다 닫힘
+    f.frequency.setValueAtTime(350, st); f.frequency.linearRampToValueAtTime(1100, st + 0.1); f.frequency.linearRampToValueAtTime(420, st + dur);
+    f.connect(out).connect(master!);
+    // 해금처럼 살짝 어긋난 두 줄 + 느린 떨림(마지막 음은 점점 깊게)
+    for (const [type, det, vol] of [['sawtooth', 0, 0.7], ['triangle', -7, 0.6]] as const) {
+      const o = c.createOscillator(); o.type = type; o.detune.value = det;
+      o.frequency.setValueAtTime(f0, st); o.frequency.linearRampToValueAtTime(f0, st + dur * 0.4); o.frequency.exponentialRampToValueAtTime(f1, st + dur);
+      const lfo = c.createOscillator(); lfo.frequency.value = last ? 4.5 : 5.5;
+      const lg = c.createGain(); lg.gain.setValueAtTime(last ? 1 : 2, st); if (last) lg.gain.linearRampToValueAtTime(9, st + dur);
+      lfo.connect(lg).connect(o.frequency);
+      const g = c.createGain(); g.gain.value = vol; o.connect(g).connect(f);
+      o.start(st); lfo.start(st); o.stop(st + dur + 0.1); lfo.stop(st + dur + 0.1);
+    }
   }
+  // 한숨 "하아…" (숨소리처럼 걸러진 바람 소리가 내려가며 사라짐)
+  const sg = t + 2.75;
+  noise(sg, 0.9, 'bandpass', 900, 0.07, 1.2, 380);
 }
 /** 쪽·따닥·싹쓸이처럼 기분 좋은 한 방 */
 export function bonus() {
@@ -190,6 +207,13 @@ export function bonus() {
   const t = now();
   slap(1);
   [784, 988, 1175, 1568].forEach((fq, i) => tone(t + 0.06 + i * 0.07, 0.22, 'triangle', fq, fq, 0.1));
+}
+/** 판 밖(메뉴·상점·미션·뽑기) 보상음: 화투 치는 소리 없이 맑은 방울 + 엽전 소리 */
+export function reward() {
+  if (!ready()) return;
+  const t = now();
+  [784, 988, 1175, 1568].forEach((fq, i) => tone(t + i * 0.07, 0.24, 'triangle', fq, fq, 0.1));
+  coin(1);
 }
 /** 흔들기: 패를 "착착착" 흔드는 소리 */
 export function shake() {

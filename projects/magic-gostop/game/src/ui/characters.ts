@@ -217,7 +217,7 @@ export function renderChars() {
   $('ch-hero').querySelectorAll<HTMLButtonElement>('[data-act]').forEach((b) => b.addEventListener('click', () => {
     const a = b.dataset.act;
     const ok = a === 'buy' ? buy(c.id) : a === 'up' ? upgrade(c.id) : (select(c.id), true);
-    if (ok) { if (a === 'sel') sfx.click(); else sfx.bonus(); } else sfx.buzz([40]);
+    if (ok) { if (a === 'sel') sfx.click(); else sfx.reward(); } else sfx.buzz([40]);
     renderChars();
     if (ok && a === 'up') { const p = $('ch-hero').querySelector('.ch-portrait'); p?.classList.add('lvup'); }
   }));

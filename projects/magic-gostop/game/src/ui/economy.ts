@@ -48,7 +48,7 @@ function renderMissions() {
   $('ms-list').querySelectorAll<HTMLButtonElement>('.ms-claim').forEach((b) => b.addEventListener('click', () => {
     const m = MISSIONS.find((x) => x.id === b.dataset.id)!;
     if (ms.claimed.includes(m.id) || (ms.prog[m.id] ?? 0) < m.goal) return;
-    ms.claimed.push(m.id); saveM(); add('eun', m.reward); add('yeop', m.yeop); sfx.bonus(); renderMissions(); onChange();
+    ms.claimed.push(m.id); saveM(); add('eun', m.reward); add('yeop', m.yeop); sfx.reward(); sfx.coinRain(500); renderMissions(); onChange();
   }));
 }
 
@@ -126,7 +126,7 @@ async function throwYut() {
     const gain = Math.floor(yBet * res.mult); add('yeop', gain);
     if (res.eun) add('eun', res.eun);
     out.innerHTML = `<b>${res.name}!</b><span>맞혔습니다 · ${curIco('yeop')}+${fmt(gain)}${res.eun ? ` · ${curIco('eun')}+${res.eun}` : ''}</span>`;
-    out.className = 'yt-result win'; sfx.bonus(); if (res.mult >= 7) sfx.win();
+    out.className = 'yt-result win'; sfx.reward(); if (res.mult >= 7) sfx.win();
   } else {
     out.innerHTML = `<b>${res.name}</b><span>아쉽네요 · ${YUT.find((y) => y.id === yPick)!.name}에 걸었습니다</span>`; out.className = 'yt-result lose';
   }
@@ -163,7 +163,7 @@ function renderSilver() {
     box.querySelectorAll<HTMLButtonElement>('.sv-grade button').forEach((b) => b.addEventListener('click', () => { shopGrade = +b.dataset.g!; sfx.click(); renderSilver(); }));
     box.querySelectorAll<HTMLButtonElement>('[data-buy]').forEach((b) => b.addEventListener('click', () => {
       if (!pay('eun', SHOP_PRICE[shopGrade])) return;
-      grantItem(b.dataset.buy!, shopGrade); sfx.bonus(); toast(`${ITEMS.find((x) => x.id === b.dataset.buy)!.name} ${GRADES[shopGrade]} 구매`); renderSilver(); onChange();
+      grantItem(b.dataset.buy!, shopGrade); sfx.reward(); toast(`${ITEMS.find((x) => x.id === b.dataset.buy)!.name} ${GRADES[shopGrade]} 구매`); renderSilver(); onChange();
     }));
   } else {
     box.innerHTML = `<p class="tx-sub">꾸미기는 은화로 원하는 등급을 바로 살 수 있습니다. 게임 결과에는 영향이 없습니다.</p>
@@ -172,7 +172,7 @@ function renderSilver() {
     box.querySelectorAll<HTMLButtonElement>('.sv-grade button').forEach((b) => b.addEventListener('click', () => { lookPick = +b.dataset.i!; sfx.click(); renderSilver(); }));
     box.querySelectorAll<HTMLButtonElement>('[data-look]').forEach((b) => b.addEventListener('click', () => {
       if (!pay('eun', LOOK_PRICE[lookPick])) return;
-      grantItem(b.dataset.look!, LOOK_GRADES[lookPick]); sfx.bonus(); renderSilver(); onChange();
+      grantItem(b.dataset.look!, LOOK_GRADES[lookPick]); sfx.reward(); renderSilver(); onChange();
     }));
   }
   void ownedOf;
@@ -183,7 +183,7 @@ function renderGold() {
   $('gs-list').innerHTML = EXCHANGE.map((x) => `<li class="gs-row"><div class="gs-txt"><b>${x.label}</b><small>${curIco('yeop')} ${fmt(x.yeop)}</small></div>
     <button type="button" class="sv-buy" data-x="${x.id}" ${bal('geum') < x.geum ? 'disabled' : ''}>${curIco('geum')} ${x.geum}</button></li>`).join('');
   $('gs-list').querySelectorAll<HTMLButtonElement>('[data-x]').forEach((b) => b.addEventListener('click', () => {
-    if (exchange(b.dataset.x!)) { sfx.bonus(); renderGold(); onChange(); }
+    if (exchange(b.dataset.x!)) { sfx.reward(); renderGold(); onChange(); }
   }));
 }
 
@@ -201,7 +201,7 @@ export function initEconomy(changed: () => void, notify: (msg: string) => void) 
   $('btn-silver').addEventListener('click', () => { sfx.unlock(); sfx.click(); open('silver', renderSilver); });
   document.querySelectorAll('[data-open="gold"]').forEach((e) => e.addEventListener('click', () => { sfx.unlock(); sfx.click(); open('goldshop', renderGold); }));
   $('yt-throw').addEventListener('click', () => { throwYut(); });
-  $('gs-test').addEventListener('click', () => { add('geum', 10); sfx.bonus(); renderGold(); onChange(); });
+  $('gs-test').addEventListener('click', () => { add('geum', 10); sfx.reward(); renderGold(); onChange(); });
   for (const id of ['missions', 'yut', 'silver', 'goldshop']) {
     $(id).querySelectorAll<HTMLElement>('[data-close]').forEach((b) => b.addEventListener('click', () => { $(id).hidden = true; onChange(); }));
   }

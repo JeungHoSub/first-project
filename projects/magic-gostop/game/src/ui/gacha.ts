@@ -43,7 +43,7 @@ export function initGacha(changed: () => void) {
   $('btn-gacha-close').addEventListener('click', () => { $('gacha').hidden = true; });
   $('gr-close').addEventListener('click', () => { closeRun(); renderTickets(); });
   document.body.append($('gx-tip')); // 뽑기 연출 밖(구성품 탭)에서도 보이게
-  $('btn-coin-test').addEventListener('click', () => { add('yeop', 10000); add('eun', 20); add('geum', 50); sfx.bonus(); renderTickets(); });
+  $('btn-coin-test').addEventListener('click', () => { add('yeop', 10000); add('eun', 20); add('geum', 50); sfx.reward(); renderTickets(); });
   $('gacha-run').addEventListener('click', (e) => {
     if ((e.target as HTMLElement).closest('#gr-close')) return;
     if (running) skipping = true;
@@ -595,7 +595,7 @@ async function run(t: Ticket, tier: number, n: number) {
     const ring = document.createElement('div'); ring.className = 'gx-five';
     ring.innerHTML = gwang.slice(0, 5).map((c, i) => `<div class="g5" style="--a:${i * 72}deg">${cardArt(c)}</div>`).join('');
     spin.append(ring);
-    sfx.bonus();
+    sfx.reward();
     await wait(900);
     ring.classList.add('in');
     stage.classList.add('shake'); sfx.shake(); sfx.buzz([40, 30, 60]);
@@ -610,7 +610,7 @@ async function run(t: Ticket, tier: number, n: number) {
   stage.classList.remove('shake', 'lvup'); stage.classList.add('burst');
   spawnOut(high ? 240 : 120, gcol(best.gi), rainbow, center(), high ? 1.3 : 1);
   sfx.bomb(); sfx.magic();
-  if (high) setTimeout(() => sfx.bonus(), 260);
+  if (high) setTimeout(() => sfx.reward(), 260);
   if (rainbow || best.gi >= 8) {
     setTimeout(() => sfx.win(), 520);
     for (let k = 1; k <= 4; k++) setTimeout(() => spawnOut(90, gcol(best.gi), rainbow, { x: fx.w * (0.15 + Math.random() * 0.7), y: fx.h * (0.15 + Math.random() * 0.5) }, 0.8), 250 * k);
@@ -627,7 +627,7 @@ async function run(t: Ticket, tier: number, n: number) {
     const el = res.firstElementChild as HTMLElement;
     await wait(250);
     el.classList.add('open'); sfx.flip();
-    if (high) { spawnOut(120, gcol(best.gi), rainbow, center(), 0.8); sfx.bonus(); }
+    if (high) { spawnOut(120, gcol(best.gi), rainbow, center(), 0.8); sfx.reward(); }
     await wait(500);
     el.classList.add('stamp');
     if (high) spawnFloat(60, gcol(best.gi), rainbow);
@@ -646,7 +646,7 @@ async function run(t: Ticket, tier: number, n: number) {
         if (gi >= 8) { sfx.heartbeat(); await wait(300); }
         res.classList.add('focus'); el.classList.add('spot'); sfx.shake();
         await wait(1250);
-        el.classList.add('open', 'stamp'); sfx.flip(); sfx.bonus();
+        el.classList.add('open', 'stamp'); sfx.flip(); sfx.reward();
         const r = el.getBoundingClientRect();
         spawnOut(gi >= 8 ? 140 : 90, gcol(gi), isRainbow(gi), { x: r.left + r.width / 2, y: r.top + r.height / 2 }, 0.8);
         await wait(gi >= 8 ? 1100 : 800);
@@ -663,7 +663,7 @@ async function run(t: Ticket, tier: number, n: number) {
       if (gi >= S_INDEX) {
         const r = el.getBoundingClientRect();
         spawnOut(70, gcol(gi), isRainbow(gi), { x: r.left + r.width / 2, y: r.top + r.height / 2 }, 0.6);
-        sfx.bonus();
+        sfx.reward();
         await wait(380);
       } else await wait(110);
     }

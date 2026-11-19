@@ -1238,7 +1238,7 @@ function showResult() {
       const tr = items.treasureRoll();
       if (tr.eun) { addCur('eun', tr.eun); extra.push(`금은 보따리 · 은화 +${tr.eun}`); }
       if (tr.geum) { addCur('geum', tr.geum); extra.push(`금은 보따리 · 금화 +${tr.geum}`); }
-      if (tr.eun || tr.geum) sfx.bonus();
+      if (tr.eun || tr.geum) sfx.reward();
     }
     if (extra.length) { rc.hidden = false; rc.innerHTML += extra.map((x) => `<div class="rc-extra">${x}</div>`).join(''); syncCurrencies(); }
   }
@@ -1263,7 +1263,7 @@ function showReward(d: Drop) {
   box.style.setProperty('--gc', gradeFill(d.gi) === 'rainbow' ? '#ffd23a' : gradeFill(d.gi));
   box.hidden = false;
   box.classList.remove('on'); void box.offsetWidth; box.classList.add('on');
-  sfx.magic(); if (d.gi >= 6) setTimeout(() => sfx.bonus(), 450);
+  sfx.magic(); if (d.gi >= 6) setTimeout(() => sfx.reward(), 450);
   sfx.buzz(d.gi >= 6 ? [40, 60, 40, 60, 80] : [30, 50, 30]);
   syncHome();
 }

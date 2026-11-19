@@ -51,7 +51,7 @@ function onMsg(m: { t: string; [k: string]: unknown }) {
     case 'room': $('ol-code').textContent = String(m.code); setView('room'); break;
     case 'err': if (mode === 'playing') hooks.toast(String(m.msg)); else { setView('error', String(m.msg)); mode = 'idle'; } break;
     case 'start':
-      mode = 'playing'; $('online').hidden = true; sfx.bonus();
+      mode = 'playing'; $('online').hidden = true; sfx.reward();
       hooks.start(m.state as GameState, m.opp as OppProfile, (a) => sendRaw({ t: 'act', action: a }));
       break;
     case 'state': hooks.state(m.state as GameState); startCountdown(); break;
