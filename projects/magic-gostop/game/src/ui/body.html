@@ -39,7 +39,7 @@
     <div class="seat-head">
       <div class="avatar mine">나</div>
       <div class="pinfo">
-        <div class="pname"><span id="my-name">나</span><span class="my-coins" id="my-coins"></span><span class="turn-tag">내 차례</span></div>
+        <div class="pname"><span id="my-name">나</span><span class="my-coins" id="my-coins"></span><span class="turn-tag">내 차례</span><span class="turn-timer" id="turn-timer" hidden></span></div>
         <div class="prompt" id="prompt"></div>
         <div class="magic-bar" id="magic-bar" hidden></div>
         <button class="text-btn magic-cancel" id="magic-cancel" type="button" hidden>취소</button>
@@ -181,13 +181,32 @@
     <div class="home-fan" id="home-fan" aria-hidden="true"></div>
     <h1 class="home-title">매직고스톱</h1>
     <p class="home-sub">한국 화투로 즐기는 맞고 · 아이템 수집</p>
-    <button class="big go-btn home-start" id="btn-start" type="button">게임 시작<small><span id="home-level">쉬움</span></small></button>
+    <button class="big go-btn home-start" id="btn-online" type="button">온라인 대전<small>무작위 대전 · 친구 대전</small></button>
+    <button class="solo-btn" id="btn-start" type="button"><b>혼자 하기</b><small><span id="home-level">쉬움</span></small></button>
     <div class="seg seg-level-sm" id="seg-level" role="radiogroup" aria-label="상대 난이도"></div>
     <button class="big gacha-btn" id="btn-gacha" type="button">뽑기<small>엽전 · 은화 · 금화로 뽑기</small></button>
     <div class="home-duo">
       <button class="home-char" id="btn-chars" type="button" aria-label="캐릭터와 아이템"></button>
       <button class="home-tile home-shop" id="btn-shop" type="button"><b>상점</b><span id="home-shop-sub">미션 · 윷놀이 · 환전</span></button>
     </div>
+  </div>
+</div>
+
+<div class="sheet" id="online" hidden>
+  <div class="sheet-card inv-card ol-card">
+    <div class="inv-head"><div><div class="sheet-kicker">사람과 한 판</div><div class="sheet-title">온라인 대전</div></div><button class="x-btn" data-close type="button" aria-label="닫기">✕</button></div>
+    <div id="ol-menu">
+      <button class="ol-big" id="ol-random" type="button"><b>무작위 대전</b><span>지금 기다리는 사람과 바로 한 판</span></button>
+      <div class="ol-two">
+        <button class="ol-mid" id="ol-create" type="button"><b>방 만들기</b><span>친구에게 코드 보내기</span></button>
+        <button class="ol-mid" id="ol-joinbtn" type="button"><b>코드로 들어가기</b><span>친구가 보낸 6자리</span></button>
+      </div>
+      <p class="dt-note">온라인 대전은 아이템·캐릭터 능력 없이 기본 맞고 규칙으로 겨룹니다. 엽전은 오가지 않습니다. 한 수에 20초, 3번 넘기면 기권패입니다.</p>
+    </div>
+    <div id="ol-wait" hidden><div class="ol-spin" aria-hidden="true"></div><p id="ol-wait-txt">상대를 찾고 있습니다</p><button class="text-btn" id="ol-cancel" type="button">그만 찾기</button></div>
+    <div id="ol-room" hidden><p class="ol-lab">방 코드 — 친구에게 알려 주세요</p><div class="ol-code" id="ol-code">------</div><button class="ol-mid" id="ol-copy" type="button"><b>코드 복사</b></button><div class="ol-spin sm" aria-hidden="true"></div><p class="ol-lab">친구가 들어오면 바로 시작합니다</p><button class="text-btn" id="ol-room-cancel" type="button">방 닫기</button></div>
+    <div id="ol-join" hidden><p class="ol-lab">친구가 보낸 방 코드 6자리</p><input class="ol-input" id="ol-code-in" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABC123"><button class="ol-big" id="ol-join-go" type="button"><b>들어가기</b></button><button class="text-btn" id="ol-join-back" type="button">뒤로</button></div>
+    <div id="ol-error" hidden><p id="ol-error-txt"></p><button class="text-btn" id="ol-error-back" type="button">돌아가기</button></div>
   </div>
 </div>
 

@@ -1,4 +1,5 @@
-import { applyAction, createGame, getLegalActions, score, scoreOf, setGukjin, setMagicState, magicSwap, magicSweep, magicExtraFlip, PI_VALUE } from '../engine';
+import { applyAction, createGame, getLegalActions, score, scoreOf, setGukjin, setMagicState, magicSwap, magicSweep, magicExtraFlip, PI_VALUE, ALL_CARDS, buildBonusCards } from '../engine';
+import * as net from './online';
 import * as items from './items-runtime';
 import { copyOf, USE_LABEL, STACK_RULE } from './item-copy';
 import type { Action, Card, GameEvent, GameState, PlayerId } from '../engine';
@@ -53,7 +54,10 @@ const KIND_LABEL: Record<Card['kind'], string> = { G: '광', Y: '열끗', T: '�
 const TAG_LABEL: Record<string, string> = { hong: '홍단', cheong: '청단', cho: '초단', godori: '고도리', gukjin: '국진', bi: '비광' };
 
 const $ = (id: string) => document.getElementById(id)!;
-let s: GameState; // 엔진의 진짜 상태
+let s: GameState; // 엔진의 진짜 상태 (온라인에서는 서버가 보내 준 내 시점의 판)
+/** 온라인 대전 중이면 서버로 수를 보내는 함수와 상대 프로필 */
+let online: { send: (a: Action) => void; opp: net.OppProfile; ended: boolean } | null = null;
+let remoteQ: Promise<void> = Promise.resolve();
 let busy = false; // 연출 중에는 입력을 막는다
 let gameNo = 0; // 새 판을 누르면 진행 중인 연출을 끊기 위한 번호
 
@@ -204,10 +208,11 @@ function render(view: GameState) {
   const myTurn = live && view.turn === ME && view.phase !== 'ended';
   const sc = [scoreOf(view, 0), scoreOf(view, 1)];
 
+  if (online) { const tm = document.getElementById('turn-timer'); const host = document.querySelector(`.player.${view.turn === ME ? 'me' : 'opp'} .pname`); if (tm && host && tm.parentElement !== host) host.append(tm); }
   for (const [p, sfx] of [[ME, 'my'], [AI, 'opp']] as const) {
     const b = $(`${sfx}-score`);
     b.textContent = String(sc[p].total);
-    { const m = document.getElementById(`${sfx}-money`); if (m) m.textContent = fmt(sc[p].total * ROOMS[level].per); }
+    { const m = document.getElementById(`${sfx}-money`); if (m) m.textContent = online ? '' : fmt(sc[p].total * ROOMS[level].per); }
     b.parentElement!.classList.toggle('hot', sc[p].total >= view.options.winScore);
     b.parentElement!.style.setProperty('--pct', String(Math.min(sc[p].total / view.options.winScore, 1)));
     const go = $(`${sfx}-go`);
@@ -938,11 +943,17 @@ function describe(events: GameEvent[]): string {
  */
 async function perform(a: Action) {
   if (busy || s.phase === 'ended') return;
+  if (online) { busy = true; online.send(a); render(s); return; } // 온라인: 서버가 판정해서 보내 준 판으로 연출
   busy = true;
-  const no = gameNo;
   const prev = s;
   const ia = items.after(prev, applyAction(prev, a));
-  const next = ia.state;
+  await playOut(prev, ia.state, ia.notes);
+}
+/** 한 수의 결과(prev → next)를 장면으로 보여 준다. 온라인에서는 서버가 보낸 판으로 부른다 */
+async function playOut(prev: GameState, next: GameState, notes: { text: string; cards?: string[] }[]) {
+  busy = true;
+  const no = gameNo;
+  const ia = { state: next, notes };
   const evs = next.events.slice(prev.events.length);
   announce(evs);
   const T = (e: GameEvent) => e.type as string; // 엔진에 새 이벤트가 붙어도 화면이 안전하게 읽도록
@@ -1062,6 +1073,7 @@ async function perform(a: Action) {
     return;
   }
   markMyTurnStart();
+  if (online) { busy = false; render(s); return; }
   if (s.turn === AI) {
     busy = true; render(s);
     await wait(AI_THINK);
@@ -1086,11 +1098,11 @@ function syncLevel() {
 const OPP_BY_LEVEL: Record<string, string[]> = { easy: ['bobu', 'jumo'], normal: ['jumo', 'maehwa'], hard: ['janggun', 'dosa'] };
 function renderProfiles() {
   const me = chars.current();
-  const oppId = (OPP_BY_LEVEL[level] ?? ['bobu']).find((x) => x !== me.def.id) ?? 'bobu';
-  const opp = chars.CHARS.find((c) => c.id === oppId)!;
+  const oppId = online ? online.opp.char : (OPP_BY_LEVEL[level] ?? ['bobu']).find((x) => x !== me.def.id) ?? 'bobu';
+  const opp = chars.CHARS.find((c) => c.id === oppId) ?? chars.CHARS[0];
   const oa = $('opp-avatar'); oa.innerHTML = chars.portrait(opp, level === 'hard' ? 10 : level === 'normal' ? 6 : 3); oa.classList.add('has-art');
   const ma = document.querySelector<HTMLElement>('.avatar.mine')!; ma.innerHTML = chars.portrait(me.def, me.lv); ma.classList.add('has-art');
-  const on = document.getElementById('opp-name'); if (on) on.textContent = opp.name;
+  const on = document.getElementById('opp-name'); if (on) on.textContent = online ? online.opp.name : opp.name;
   const mn = document.getElementById('my-name'); if (mn) mn.innerHTML = `${me.def.name} <small>Lv.${me.lv}</small>`;
   const mc = document.getElementById('my-coins'); if (mc) mc.innerHTML = `<i class="cur-ico yeop" aria-hidden="true"></i>${fmt(coins())}`;
 }
@@ -1133,7 +1145,7 @@ function showResult() {
     if ((x.bakMultiplier ?? 1) > 1) parts.push(`박 ×${x.bakMultiplier}`);
     if ((x.carry ?? 1) > 1) parts.push(`나가리 ×${x.carry}`);
     if ((r as unknown as { magicDouble?: boolean }).magicDouble) parts.push('황금 배수 ×2');
-    $('res-formula').textContent = `${parts.join(' · ')} = ${r.finalScore}점 × ${fmt(ROOMS[level].per)}엽전`;
+    $('res-formula').textContent = `${parts.join(' · ')} = ${r.finalScore}점${online ? '' : ` × ${fmt(ROOMS[level].per)}엽전`}`;
     if (x.bak?.pi) badge('피박');
     if (x.bak?.gwang) badge('광박');
     if (x.bak?.meong) badge('멍따');
@@ -1154,6 +1166,12 @@ function showResult() {
     col.innerHTML = `<h3>${p === ME ? '나' : '상대'}</h3><div class="tot">${sc[p].total}점${ipSum ? `<small> + 아이템 ${ipSum}</small>` : ''}</div><ul>${lines}</ul>`;
     grid.append(col);
   });
+  $('btn-new').textContent = carry > 1 ? `새 판 (×${carry})` : '새 판';
+  if (online) { // 온라인: 엽전·아이템 보상 없음
+    online.ended = true;
+    $('res-coins').hidden = true; $('btn-new').textContent = '다시 찾기';
+    return;
+  }
   $('btn-new').textContent = carry > 1 ? `새 판 (×${carry})` : '새 판';
   // 가상머니: 이긴 판 점수 × 100 엽전
   const rc = $('res-coins');
@@ -1319,6 +1337,7 @@ function setLevel(l: AiLevel) {
   syncLevel(); syncHome();
 }
 function showHome() {
+  if (online) { if (!online.ended) net.leave(); online = null; document.body.classList.remove('online'); }
   gameNo++; busy = false;
   for (const id of ['result', 'special', 'choose', 'gostop', 'info', 'reward', 'collection', 'caps-detail', 'item-detail', 'gukjin', 'magic-pick', 'gacha', 'gacha-run', 'music', 'missions', 'yut', 'silver', 'goldshop']) $(id).hidden = true;
   syncHome();
@@ -1408,7 +1427,7 @@ function syncSoundBtn() {
 
 $('btn-go').addEventListener('click', () => perform({ type: 'go' }));
 $('btn-stop').addEventListener('click', () => perform({ type: 'stop' }));
-$('btn-new').addEventListener('click', newGame);
+$('btn-new').addEventListener('click', () => { if (online) { onlineAgain(); return; } newGame(); });
 $('btn-restart').addEventListener('click', newGame);
 $('btn-info').addEventListener('click', () => { $('info').hidden = false; });
 $('btn-info-close').addEventListener('click', () => { $('info').hidden = true; });
@@ -1466,3 +1485,60 @@ $('btn-reward-ok').addEventListener('click', () => { $('reward').hidden = true; 
 document.addEventListener('pointerdown', () => { if (!$('home').hidden) return; sfx.startBgm(); }, { capture: true });
 showHome();
 (window as unknown as { __mgTest?: unknown }).__mgTest = { explodeAt, askGukjin }; // 화면 점검용(폭탄 연출 미리보기)
+
+
+// ================= 온라인 대전 =================
+/** 서버 판에 나오는 모든 카드(가린 패 제외)를 알아 둔다 */
+function learnAllCards() { for (const c of [...ALL_CARDS, ...buildBonusCards(2, 1)]) allCards.set(c.id, c); }
+async function startOnline(state: GameState, opp: net.OppProfile, send: (a: Action) => void) {
+  gameNo++; const no = gameNo; busy = false; carry = 1;
+  online = { send, opp, ended: false };
+  document.body.classList.add('online');
+  remoteQ = Promise.resolve();
+  items.prepare([], []); equipped = []; slotOf.clear(); learnAllCards();
+  for (const c of [...state.hands[0], ...state.floor]) allCards.set(c.id, c);
+  s = state;
+  for (const id of ['result', 'special', 'choose', 'gostop', 'gukjin', 'home', 'online']) $(id).hidden = true;
+  renderProfiles(); sfx.shuffle();
+  $('feed').innerHTML = `<b>${opp.name}</b> 님과 대전 · ${s.turn === ME ? '내가 선입니다' : '상대가 선입니다'}`;
+  render(s);
+  await dealIn(no);
+  if (no !== gameNo) return;
+  render(s);
+}
+function onlineState(next: GameState) {
+  remoteQ = remoteQ.then(async () => {
+    if (!online) return;
+    if (next.events.length <= s.events.length) { s = next; busy = false; render(s); return; }
+    await playOut(s, next, []);
+  }).catch(() => {});
+}
+function onlineEnd(m: { reason: string; win?: boolean; state: GameState | null }) {
+  remoteQ = remoteQ.then(async () => {
+    if (!online) return;
+    if (m.reason === 'normal' && m.state) { if (m.state.events.length > s.events.length) await playOut(s, m.state, []); return; }
+    // 기권·연결 끊김
+    online.ended = true; busy = false;
+    const win = !!m.win;
+    const why: Record<string, string> = { 'opp-left': '상대가 나갔습니다', 'opp-timeout': '상대가 시간을 넘겼습니다', 'you-left': '대전을 나갔습니다', 'you-timeout': '시간을 3번 넘겼습니다', disconnected: '서버와 연결이 끊겼습니다' };
+    $('result').hidden = false;
+    $('res-card').dataset.out = win ? 'win' : 'lose';
+    const me = chars.current(); const op = chars.CHARS.find((c) => c.id === online!.opp.char) ?? chars.CHARS[0];
+    $('res-hero').innerHTML = `<div class="rh-face">${chars.portrait(win ? me.def : op, win ? me.lv : 6)}</div><div class="rh-seal">${win ? '승' : '패'}</div>`;
+    $('res-kicker').textContent = why[m.reason] ?? '대전 종료';
+    $('res-title').textContent = win ? '기권승' : m.reason === 'disconnected' ? '연결 끊김' : '기권패';
+    $('res-formula').textContent = '온라인 대전은 엽전이 오가지 않습니다';
+    $('res-badges').innerHTML = ''; $('res-grid').innerHTML = ''; $('res-coins').hidden = true;
+    $('btn-new').textContent = '다시 찾기';
+    if (win) sfx.win(); else sfx.lose();
+  }).catch(() => {});
+}
+function onlineAgain() { $('result').hidden = true; online = null; document.body.classList.remove('online'); net.again(); }
+net.initOnline({
+  start: (st, opp, send) => { startOnline(st, opp, send); },
+  state: onlineState,
+  end: onlineEnd,
+  auto: () => { busy = false; },
+  toast: (msg) => banner(msg),
+  me: () => { const c = chars.current(); return { name: `${c.def.name}${Math.floor(Math.random() * 900 + 100)}`, char: c.def.id }; },
+});
