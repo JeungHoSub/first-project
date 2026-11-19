@@ -125,6 +125,20 @@ export function flip() {
   noise(t, 0.05, 'bandpass', 2400, 0.035, 0.6, 1400);
   clack(t + 0.05, 0.4, 1.06);
 }
+/** 먹을 게 없어 빈 담요에 내려놓는 "툭": 패끼리 부딪히는 소리 없이 둔하고 낮게 */
+export function place(power = 0.7) {
+  if (!ready()) return;
+  const t = now();
+  noise(t, 0.05, 'lowpass', 900, 0.22 + 0.15 * power, 0.7, 300);
+  tone(t, 0.07, 'sine', 140, 85, 0.25 + 0.15 * power, 0.002);
+  noise(t + 0.004, 0.012, 'bandpass', 1400, 0.05, 1);
+}
+/** 먹은 패를 내 쪽으로 쓸어 오는 "슥슥": 작게 */
+export function swish(n = 2) {
+  if (!ready()) return;
+  const t = now();
+  for (let i = 0; i < Math.min(2, n); i++) noise(t + i * 0.11, 0.12, 'bandpass', 2600 - i * 300, 0.045, 0.9, 1200);
+}
 /** 패를 먹어 가져오는 소리 ("착착" + 짧은 반짝임) */
 /** 꾸미기 "효과음 팩" 단계 (-1 = 기본). 먹을 때 소리에 국악풍 음을 얹는다 */
 let pack = -1;
@@ -134,8 +148,7 @@ export function capture(count = 2) {
   if (!ready()) return;
   const t = now();
   // 먹은 패를 모아 쥐는 "착착": 장수만큼 빠르게 겹쳐 붙는 소리
-  const n = Math.max(2, Math.min(count, 3));
-  for (let i = 0; i < n; i++) clack(t + i * 0.09, i === n - 1 ? 1 : 0.8, 1 + i * 0.025);
+  swish(count); // 가져올 때는 "슥슥"만 (치는 소리는 낼 때 이미 남)
   if (pack < 1) return;
   // 가야금 뜯는 소리(1~), 장구(2~), 징(3~), 여러 음 꾸밈(6~)
   const base = PENTA[Math.floor(Math.random() * 4)];

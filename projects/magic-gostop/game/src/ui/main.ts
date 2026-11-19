@@ -821,7 +821,7 @@ async function show(view: GameState, from: { deck?: Set<string>; opp?: Set<strin
 }
 
 /** 카드가 바닥에 "탁" 닿는 순간: 눌림 + 퍼지는 고리 + 소리 + 진동 */
-function slamAt(ids: string[], power = 0.7, delay = MOVE * 0.78 * speed) {
+function slamAt(ids: string[], power = 0.7, delay = MOVE * 0.78 * speed, hit = true) {
   if (reduced) return;
   setTimeout(() => {
     for (const id of ids) {
@@ -835,8 +835,8 @@ function slamAt(ids: string[], power = 0.7, delay = MOVE * 0.78 * speed) {
       document.body.append(ring);
       setTimeout(() => ring.remove(), 600);
     }
-    sfx.slap(power);
-    sfx.buzz(power > 0.8 ? 35 : 15);
+    if (hit) sfx.slap(power); else sfx.place(power); // 먹는 패 위 "착!" / 빈 자리에 "툭"
+    sfx.buzz(hit ? (power > 0.8 ? 35 : 15) : 8);
   }, delay);
 }
 /** 폭탄: 흰 섬광 + 충격파 고리 + 불꽃 파편 + 연기 + 화면 붉게 번쩍 + 강한 흔들림 */
@@ -976,19 +976,23 @@ async function playOut(prev: GameState, next: GameState, notes: { text: string; 
     const ev = e as GameEvent & { card?: string; cards?: string[]; from?: string };
     if (e.type === 'play' || e.type === 'bomb') {
       const ids = e.type === 'play' ? [e.card] : e.cards;
+      const pm = byId(ids[0]).month;
+      const hit = pm <= 12 && v.floor.some((c) => c.month === pm);
       v = structuredClone(v); moveToFloor(v, ids, who);
       ids.forEach((id) => fromOpp?.add(id));
       if (e.type === 'bomb') setTimeout(() => explodeAt(ids), MOVE * 0.75 * speed);
-      else slamAt(ids, 0.75);
+      else slamAt(ids, 0.75, undefined, hit);
       await show(v, { opp: fromOpp }, e.type === 'bomb' ? MOVE + 650 : MOVE + BEAT);
     } else if (e.type === 'dummy') {
       sfx.tick(); await wait(200);
     } else if (e.type === 'flip') {
       v = structuredClone(v);
       const i = v.deck.findIndex((c) => c.id === e.card);
+      const fm = byId(e.card).month;
+      const fhit = fm <= 12 && v.floor.some((c) => c.month === fm);
       if (i >= 0) v.floor.push(v.deck.splice(i, 1)[0]);
       lastFlip = e.card;
-      sfx.flip(); slamAt([e.card], 0.55, MOVE * 0.8 * speed);
+      sfx.flip(); slamAt([e.card], 0.55, MOVE * 0.8 * speed, fhit);
       await show(v, { deck: new Set([e.card]) }, MOVE + BEAT + 160);
     } else if (T(e) === 'bonus' && ev.card) {
       // 보너스 패: 바로 내 피 칸으로
