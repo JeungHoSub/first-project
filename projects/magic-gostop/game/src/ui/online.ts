@@ -13,7 +13,7 @@ export interface OnlineHooks {
   me(): { name: string; char: string };
 }
 /** 서버 주소: 정식 서버를 올리면 여기(또는 설정)에 넣는다. 지금은 내 컴퓨터 시험용 */
-const DEFAULT_SERVER = 'ws://localhost:8787';
+const DEFAULT_SERVER = 'wss://magic-gostop.onrender.com'; // Render에 만든 서비스 주소 (다르면 여기만 바꾸면 됨)
 export const serverUrl = () => { try { return localStorage.getItem('mg-server') || DEFAULT_SERVER; } catch { return DEFAULT_SERVER; } };
 
 const $ = (id: string) => document.getElementById(id)!;
@@ -32,7 +32,7 @@ function connect(): Promise<WebSocket> {
   return new Promise((res, rej) => {
     let sock: WebSocket;
     try { sock = new WebSocket(serverUrl()); } catch { rej(new Error('bad url')); return; }
-    const t = setTimeout(() => { sock.close(); rej(new Error('timeout')); }, 6000);
+    const t = setTimeout(() => { sock.close(); rej(new Error('timeout')); }, 65000); // 무료 서버가 잠들어 있으면 깨어나는 데 최대 1분
     sock.onopen = () => { clearTimeout(t); ws = sock; const me = hooks.me(); sock.send(JSON.stringify({ t: 'hello', name: me.name, char: me.char })); res(sock); };
     sock.onerror = () => { clearTimeout(t); rej(new Error('error')); };
     sock.onclose = () => {
@@ -72,7 +72,10 @@ function stopCountdown() { if (timerT !== null) clearInterval(timerT); timerT = 
 async function go(kind: 'queue' | 'create' | 'join') {
   sfx.unlock(); sfx.click();
   setView('wait', '서버에 연결하는 중');
-  try { await connect(); } catch { setView('error', '대전 서버에 연결할 수 없습니다. (정식 서버는 아직 준비 중입니다)'); return; }
+  // 무료 서버는 한동안 아무도 없으면 잠든다 → 주소를 한 번 불러 깨우고, 오래 걸리면 안내
+  try { fetch(serverUrl().replace(/^ws/, 'http'), { mode: 'no-cors' }).catch(() => {}); } catch { /* 무시 */ }
+  const slow = setTimeout(() => setView('wait', '서버를 깨우는 중입니다 (처음엔 최대 1분)'), 3000);
+  try { await connect(); clearTimeout(slow); } catch { clearTimeout(slow); setView('error', '대전 서버에 연결할 수 없습니다. 잠시 뒤 다시 시도해 주세요.'); return; }
   if (kind === 'queue') { mode = 'queue'; sendRaw({ t: 'queue' }); }
   else if (kind === 'create') { mode = 'room'; sendRaw({ t: 'room:create' }); }
   else {

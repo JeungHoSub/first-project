@@ -445,3 +445,10 @@
 - 온라인: 엽전·아이템·드롭 없음, 결과 화면 "다시 찾기", 기권승/기권패/연결 끊김 화면, 홈으로 나가면 기권
 - 시험: 로컬 서버 + 브라우저 2개로 무작위 대전 2판 끝까지 — 양쪽 점수 반대로 일치(11:18 / 18:11), 승패 일치, 오류 없음
 - 남은 일: 서버를 실제로 올릴 곳(사용자 결정 필요), 계정·랭크
+
+## 2026-11-19 · 서버 배포 준비: Render 무료 (메인)
+- 사용자 선택: Render 무료로 시작
+- outputs/server-deploy.md: 가입 → Web Service(Root Directory projects/magic-gostop, Build: cd server && npm ci && npm run build, Start: node server/dist/server.js, Singapore, Free) 단계별 안내
+- 깨끗한 복사본에서 같은 빌드·실행 명령으로 확인(상태 주소 응답 정상)
+- 게임: 기본 서버 주소 wss://magic-gostop.onrender.com, 잠든 무료 서버를 깨우는 요청 + 3초 넘으면 "서버를 깨우는 중" 안내, 연결 대기 최대 65초
+- 사용자가 실제 주소를 알려 주면 주소 확인·연결 시험 예정
