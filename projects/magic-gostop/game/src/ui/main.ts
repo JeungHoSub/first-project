@@ -796,6 +796,7 @@ function snapshot() {
 /** view를 그리고, 이전 위치에서 새 위치로 카드가 미끄러지게 한다. 새로 나타난 카드는 from 규칙으로 출발점을 정한다. */
 async function show(view: GameState, from: { deck?: Set<string>; opp?: Set<string> } = {}, settle = MOVE + BEAT) {
   const before = snapshot();
+  const wasFloor = new Set([...document.querySelectorAll<HTMLElement>('#floor [data-id]')].map((e) => e.dataset.id!));
   render(view);
   if (reduced) return;
   const deck = $('deck').getBoundingClientRect();
@@ -813,7 +814,10 @@ async function show(view: GameState, from: { deck?: Set<string>; opp?: Set<strin
     el.animate(
       flipIn
         ? [{ transform: `translate(${dx}px, ${dy}px) scale(${sc}) rotateY(90deg)` }, { transform: `translate(${dx * 0.5}px, ${dy * 0.5}px) scale(1.15) rotateY(0deg)`, offset: 0.45 }, { transform: 'none' }]
-        : [{ transform: `translate(${dx}px, ${dy}px) scale(${sc})` }, { transform: `translate(${dx * 0.08}px, ${dy * 0.08 - 10}px) scale(1.08)`, offset: 0.7 }, { transform: 'none' }],
+        : el.closest('#floor') && !wasFloor.has(id) && (before.has(id) || from.opp?.has(id))
+          // 손패(또는 상대 손)에서 바닥으로: 살짝 들어 올렸다가 비스듬히 날아가 "착" 내려앉음
+          ? [{ transform: `translate(${dx}px, ${dy}px) scale(${sc})` }, { transform: `translate(${dx * 0.55}px, ${dy * 0.55 - 34}px) scale(1.22) rotate(${dx > 0 ? -7 : 7}deg)`, offset: 0.45 }, { transform: `translate(${dx * 0.06}px, ${dy * 0.06 - 6}px) scale(1.1)`, offset: 0.8 }, { transform: 'none' }]
+          : [{ transform: `translate(${dx}px, ${dy}px) scale(${sc})` }, { transform: `translate(${dx * 0.08}px, ${dy * 0.08 - 10}px) scale(1.08)`, offset: 0.7 }, { transform: 'none' }],
       { duration: MOVE * speed, easing: 'cubic-bezier(.2,.7,.2,1)' },
     );
   });
@@ -838,6 +842,27 @@ function slamAt(ids: string[], power = 0.7, delay = MOVE * 0.78 * speed, hit = t
     if (hit) sfx.slap(power); else sfx.place(power); // 먹는 패 위 "착!" / 빈 자리에 "툭"
     sfx.buzz(hit ? (power > 0.8 ? 35 : 15) : 8);
   }, delay);
+}
+/** 뻑: 겹친 세 장이 잿빛으로 굳고 금이 가며, 화면이 잠깐 어두워진다 (절망) */
+function ppeokFx(ids: string[]) {
+  if (reduced) return;
+  const els = ids.map((id) => document.querySelector<HTMLElement>(`#floor [data-id="${CSS.escape(id)}"]`)).filter((x): x is HTMLElement => !!x);
+  els.forEach((el, i) => el.animate([
+    { filter: 'none', transform: 'none' },
+    { filter: 'grayscale(.9) brightness(.55)', transform: `translateY(4px) rotate(${i % 2 ? 2 : -2}deg)`, offset: 0.25 },
+    { filter: 'grayscale(.9) brightness(.55)', transform: `translateX(-3px) rotate(${i % 2 ? 2 : -2}deg)`, offset: 0.35 },
+    { filter: 'grayscale(.9) brightness(.55)', transform: `translateX(3px) rotate(${i % 2 ? 2 : -2}deg)`, offset: 0.45 },
+    { filter: 'grayscale(.8) brightness(.6)', transform: `rotate(${i % 2 ? 1 : -1}deg)`, offset: 0.85 },
+    { filter: 'none', transform: 'none' },
+  ], { duration: 1500, easing: 'ease-out' }));
+  if (els[0]) {
+    const r = els.map((e) => e.getBoundingClientRect()).reduce((a, b) => ({ left: Math.min(a.left, b.left), top: Math.min(a.top, b.top), right: Math.max(a.right, b.right), bottom: Math.max(a.bottom, b.bottom) }), { left: 1e9, top: 1e9, right: -1e9, bottom: -1e9 });
+    const crack = document.createElement('div'); crack.className = 'pp-crack';
+    Object.assign(crack.style, { left: `${r.left - 10}px`, top: `${r.top - 10}px`, width: `${r.right - r.left + 20}px`, height: `${r.bottom - r.top + 20}px` });
+    crack.innerHTML = '<svg viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M50 0 L46 22 L56 34 L44 52 L58 66 L48 82 L54 100" /><path d="M46 22 L30 30 M56 34 L74 40 M44 52 L24 60 M58 66 L80 74" /></svg>';
+    document.body.append(crack); setTimeout(() => crack.remove(), 1500);
+  }
+  const dim = document.createElement('div'); dim.className = 'pp-dim'; document.body.append(dim); setTimeout(() => dim.remove(), 1400);
 }
 /** 폭탄: 흰 섬광 + 충격파 고리 + 불꽃 파편 + 연기 + 화면 붉게 번쩍 + 강한 흔들림 */
 function explodeAt(ids: string[]) {
@@ -955,7 +980,6 @@ async function playOut(prev: GameState, next: GameState, notes: { text: string; 
   const no = gameNo;
   const ia = { state: next, notes };
   const evs = next.events.slice(prev.events.length);
-  announce(evs);
   const T = (e: GameEvent) => e.type as string; // 엔진에 새 이벤트가 붙어도 화면이 안전하게 읽도록
   const who = prev.turn;
   const fromOpp = who === AI ? new Set<string>() : undefined;
@@ -1016,11 +1040,17 @@ async function playOut(prev: GameState, next: GameState, notes: { text: string; 
   }
   const flip = lastFlip;
 
-  // 3) 뻑·쪽·따닥·뻑 먹기·싹쓸이 알림
+  // 3) 뻑·쪽·따닥·뻑 먹기·싹쓸이 알림 (음성도 패가 다 내려앉은 뒤에)
+  announce(evs);
   const special = evs.find((e) => ['ppeok', 'jjok', 'ttadak', 'ppeokEat', 'sweep'].includes(T(e)));
   if (special) {
     const kind = T(special);
-    if (kind === 'ppeok') { banner('뻑!'); sfx.ppeok(); shakeScreen(); sfx.buzz([40, 60, 40]); }
+    if (kind === 'ppeok') {
+      await wait(120); // 세 장째가 완전히 겹친 뒤
+      ppeokFx((special as { cards?: string[] }).cards ?? []);
+      banner('뻑!'); sfx.ppeok(); sfx.buzz([60, 80, 120]);
+      await wait(500);
+    }
     else if (kind === 'ppeokEat') {
       const x = special as { self?: boolean; fromPpeok?: boolean };
       banner(x.fromPpeok === false ? '3장 먹기!' : x.self ? '자뻑! 피 2장' : '뻑 먹기!'); sfx.bonus(); shakeScreen();
@@ -1425,8 +1455,8 @@ async function dealIn(no: number) {
 
 function syncSoundBtn() {
   const b = $('btn-sound');
-  b.classList.toggle('off', sfx.isMuted());
-  b.setAttribute('aria-label', sfx.isMuted() ? '소리 켜기' : '소리 끄기');
+  b.classList.toggle('off', !sfx.isBgmOn());
+  b.setAttribute('aria-label', sfx.isBgmOn() ? '배경음악 끄기' : '배경음악 켜기');
 }
 
 $('btn-go').addEventListener('click', () => perform({ type: 'go' }));
@@ -1435,7 +1465,7 @@ $('btn-new').addEventListener('click', () => { if (online) { onlineAgain(); retu
 $('btn-restart').addEventListener('click', newGame);
 $('btn-info').addEventListener('click', () => { $('info').hidden = false; });
 $('btn-info-close').addEventListener('click', () => { $('info').hidden = true; });
-$('btn-sound').addEventListener('click', () => { sfx.unlock(); sfx.setMuted(!sfx.isMuted()); syncSoundBtn(); if (!sfx.isMuted()) sfx.slap(0.6); });
+$('btn-sound').addEventListener('click', () => { sfx.unlock(); sfx.setBgm(!sfx.isBgmOn()); syncSoundBtn(); sfx.click(); banner(sfx.isBgmOn() ? '배경음악 켬' : '배경음악 끔'); }); // 게임 안 ♪ = 배경음악 (효과음은 설정에서)
 document.addEventListener('pointerdown', () => sfx.unlock(), { capture: true });
 syncSoundBtn();
 syncLevel();
@@ -1546,3 +1576,18 @@ net.initOnline({
   toast: (msg) => banner(msg),
   me: () => { const c = chars.current(); return { name: `${c.def.name}${Math.floor(Math.random() * 900 + 100)}`, char: c.def.id }; },
 });
+
+// 손패를 누르거나 올리면 같은 월 바닥 패가 반짝 (어디에 떨어질지 미리 보기)
+{
+  const hand = $('hand');
+  const clear = () => document.querySelectorAll('#floor .card.preview').forEach((e) => e.classList.remove('preview'));
+  const peek = (el: HTMLElement | null) => {
+    clear(); if (!el || !el.dataset.id) return;
+    const m = byId(el.dataset.id).month; if (m > 12) return;
+    document.querySelectorAll<HTMLElement>('#floor .card').forEach((f) => { if (f.dataset.id && byId(f.dataset.id).month === m) f.classList.add('preview'); });
+  };
+  hand.addEventListener('pointerover', (e) => peek((e.target as HTMLElement).closest<HTMLElement>('.card')));
+  hand.addEventListener('pointerdown', (e) => peek((e.target as HTMLElement).closest<HTMLElement>('.card')));
+  hand.addEventListener('pointerleave', clear);
+  document.addEventListener('pointerup', () => setTimeout(clear, 250));
+}

@@ -2062,3 +2062,18 @@ body.online .lv, body.online .pmoney, body.online #opp-items { display: none !im
 .ol-code { font-family: var(--font-display); font-size: 2.6rem; letter-spacing: .25em; padding-left: .25em; color: #f3d27a; background: rgba(0,0,0,.4); border-radius: 12px; padding-block: 8px; border: 1px dashed rgba(214,186,128,.5); }
 .ol-input { font: inherit; font-family: var(--font-display); font-size: 2rem; letter-spacing: .25em; text-align: center; text-transform: uppercase; padding: 10px; border-radius: 12px; color: #f3d27a; background: rgba(0,0,0,.4); border: 1px solid rgba(214,186,128,.5); }
 #ol-wait p, #ol-error p { margin: 0; color: #f4ecdc; font-family: var(--font-myeongjo); font-weight: 800; }
+
+/* ===== 손패 고르기·내기 ===== */
+.hand .card { transition: transform .18s cubic-bezier(.3,1.4,.5,1), box-shadow .18s; }
+@media (hover: hover) { .hand .card:not(:disabled):hover { transform: translateY(-12px) scale(1.06) !important; z-index: 3; } }
+.hand .card:not(:disabled):active { transform: translateY(-16px) scale(1.1) !important; z-index: 4; box-shadow: 0 0 0 2px #f3d27a, 0 12px 18px rgba(0,0,0,.5) !important; }
+#floor .card.preview { box-shadow: 0 0 0 2.5px #f3d27a, 0 0 18px 4px rgba(243,210,122,.7) !important; animation: pvPulse .8s ease-in-out infinite; }
+@keyframes pvPulse { 50% { box-shadow: 0 0 0 2.5px #fff6d0, 0 0 26px 8px rgba(243,210,122,.85); } }
+/* ===== 뻑: 금 가고 어두워짐 ===== */
+.pp-crack { position: fixed; z-index: 14; pointer-events: none; animation: ppCrack 1.5s ease-out forwards; }
+.pp-crack svg { width: 100%; height: 100%; overflow: visible; }
+.pp-crack path { fill: none; stroke: #fff; stroke-width: 1.6; vector-effect: non-scaling-stroke; stroke-linecap: round; filter: drop-shadow(0 0 3px rgba(0,0,0,.9)); stroke-dasharray: 300; stroke-dashoffset: 300; animation: ppDraw .25s ease-out .05s forwards; }
+@keyframes ppDraw { to { stroke-dashoffset: 0; } }
+@keyframes ppCrack { 0%, 75% { opacity: 1; } 100% { opacity: 0; } }
+.pp-dim { position: fixed; inset: 0; z-index: 13; pointer-events: none; background: radial-gradient(circle at 50% 45%, transparent 20%, rgba(10,8,12,.72) 75%); animation: ppDim 1.4s ease-out forwards; }
+@keyframes ppDim { 0% { opacity: 0; } 20% { opacity: 1; } 70% { opacity: .9; } 100% { opacity: 0; } }
