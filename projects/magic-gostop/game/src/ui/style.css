@@ -2077,3 +2077,8 @@ body.online .lv, body.online .pmoney, body.online #opp-items { display: none !im
 @keyframes ppCrack { 0%, 75% { opacity: 1; } 100% { opacity: 0; } }
 .pp-dim { position: fixed; inset: 0; z-index: 13; pointer-events: none; background: radial-gradient(circle at 50% 45%, transparent 20%, rgba(10,8,12,.72) 75%); animation: ppDim 1.4s ease-out forwards; }
 @keyframes ppDim { 0% { opacity: 0; } 20% { opacity: 1; } 70% { opacity: .9; } 100% { opacity: 0; } }
+/* 도감 말풍선 보강 */
+.gx-tip .tp-no { font-size: .6rem; color: #b9a98a; border: 1px solid rgba(255,255,255,.2); border-radius: 6px; padding: 0 5px; }
+.gx-tip .tp-eff b { color: var(--gc, var(--gold-mid)); margin-right: 4px; }
+.gx-tip .tp-more { font-size: .64rem; color: var(--gold-mid); opacity: .8; }
+.cl-item { transition: transform .15s; } @media (hover: hover) { .cl-item:hover { transform: translateY(-3px) scale(1.04); } }

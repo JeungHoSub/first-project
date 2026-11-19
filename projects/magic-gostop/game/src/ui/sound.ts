@@ -241,22 +241,28 @@ export function bomb() {
   noise(t + 0.16, 0.7, 'lowpass', 900, 0.5, 0.7, 80);
   for (let i = 0; i < 9; i++) noise(t + 0.25 + i * 0.06 + (i % 3) * 0.02, 0.03, 'bandpass', 3000 + (i % 4) * 700, 0.18 - i * 0.012, 2);
 }
-/** 판 위 폭탄: 대포 쏘는 "펑~" — 날카로운 포구 터짐 → 묵직한 저음 폭발 → 산에 부딪혀 굴러오는 메아리 */
+/** 판 위 폭탄: "팡~" — 귀를 때리는 날카로운 폭발 → 가슴 치는 저음 → 불꽃 파편 지글지글 → 잔향 */
 export function cannon() {
   if (!ready()) return;
-  const t = now();
-  // ① 포구 "탕": 아주 짧고 날카로운 터짐
-  noise(t, 0.06, 'highpass', 1800, 0.9, 0.7);
-  noise(t, 0.12, 'bandpass', 700, 0.8, 0.6, 250);
-  // ② "펑": 가슴이 울리는 저음이 길게 내려감
-  tone(t, 1.4, 'sine', 120, 32, 1.0, 0.002);
-  tone(t, 0.5, 'triangle', 75, 38, 0.45, 0.002);
-  noise(t + 0.01, 1.8, 'lowpass', 700, 0.85, 0.7, 55);
-  // ③ "~": 멀리서 되돌아오는 메아리 (점점 작고 둔하게)
-  [[0.38, 0.38, 420], [0.78, 0.24, 320], [1.22, 0.14, 240]].forEach(([d, v, f]) => {
-    noise(t + d, 0.9, 'lowpass', f, v, 0.7, 50);
-    tone(t + d, 0.7, 'sine', 70, 35, v * 0.6, 0.03);
-  });
+  const t = now(); const c = ctx!;
+  // ① "팡": 전 대역 잡음을 세게 찌그러뜨린 짧은 폭발 (찰나에 최고 크기)
+  const len = 0.5; const buf = c.createBuffer(1, Math.floor(c.sampleRate * len), c.sampleRate); const d = buf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) { const x = i / c.sampleRate; d[i] = (Math.random() * 2 - 1) * Math.exp(-x * 9) ; }
+  const src = c.createBufferSource(); src.buffer = buf;
+  const ws = c.createWaveShaper(); const k = 40; const curve = new Float32Array(1024);
+  for (let i = 0; i < 1024; i++) { const x = (i / 1023) * 2 - 1; curve[i] = Math.tanh(k * x) / Math.tanh(k); } ws.curve = curve;
+  const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.setValueAtTime(9000, t); lp.frequency.exponentialRampToValueAtTime(500, t + 0.45);
+  const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.55, t + 0.003); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+  src.connect(ws).connect(lp).connect(g).connect(master!); src.start(t);
+  // ② 가슴 치는 "쿵": 짧게 빠르게 떨어지는 저음
+  tone(t, 0.7, 'sine', 160, 38, 1.0, 0.001);
+  tone(t, 0.18, 'triangle', 220, 60, 0.4, 0.001);
+  // ③ "~": 불꽃 파편이 사방으로 튀며 지글지글
+  for (let i = 0; i < 22; i++) {
+    const at = t + 0.08 + Math.random() * 0.9; const v = 0.16 * (1 - (at - t) / 1.1);
+    noise(at, 0.015 + Math.random() * 0.02, 'bandpass', 2500 + Math.random() * 4000, Math.max(0.02, v), 1.5);
+  }
+  noise(t + 0.05, 1.4, 'lowpass', 1400, 0.22, 0.7, 120); // 퍼지는 폭풍 잔향
 }
 /** 총통: 같은 월 4장 — 패 4장 "착착착착" → 북 연타 → 징 → 태평소풍 팡파르 → 반짝이 방울 비 */
 export function chongtong() {
@@ -285,6 +291,24 @@ export function chongtong() {
   [1.4, 1.5, 1.6, 1.7, 1.85, 2.0].forEach((d, i) => { const f = [2093, 2637, 3136, 2349, 3520, 2794][i]; tone(t + d, 0.9, 'sine', f, f, 0.05, 0.002); tone(t + d, 0.4, 'sine', f * 2.76, f * 2.76, 0.012, 0.002); });
   setTimeout(() => coinRain(900), 1400);
   noise(t + 1.38, 1.0, 'highpass', 7000, 0.05, 0.5);
+}
+/** 쪽: 내가 낸 패를 뒤집은 패로 바로 먹음 — "착!" 한 번 세게 + 입맞추듯 "쪽" + 반짝 */
+export function jjok() {
+  if (!ready()) return;
+  const t = now();
+  slap(1);
+  tone(t + 0.07, 0.09, 'sine', 2200, 520, 0.32, 0.001);   // 쪽
+  noise(t + 0.07, 0.025, 'highpass', 3000, 0.12, 0.8);
+  [1568, 2093].forEach((f, i) => tone(t + 0.16 + i * 0.07, 0.3, 'triangle', f, f, 0.08));
+}
+/** 따닥: 같은 월 두 쌍을 한 번에 — "따-닥!" 두 번 아주 세게 + 북 + 방울 */
+export function ttadak() {
+  if (!ready()) return;
+  const t = now();
+  slap(1); setTimeout(() => slap(1), 95);
+  noise(t, 0.02, 'highpass', 2500, 0.22, 0.8); noise(t + 0.095, 0.02, 'highpass', 2800, 0.26, 0.8);
+  tone(t + 0.1, 0.45, 'sine', 130, 55, 0.5, 0.002); // 둥
+  [1175, 1568, 2093].forEach((f, i) => tone(t + 0.2 + i * 0.06, 0.32, 'triangle', f, f, 0.08));
 }
 /** 고 */
 /** 고: 큰 북 "둥!" — 2고는 "둥둥!", 3고부터는 징까지 울린다 */

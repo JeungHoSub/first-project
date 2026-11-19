@@ -6,7 +6,7 @@ import type { Action, Card, GameEvent, GameState, PlayerId } from '../engine';
 import { chooseAction, AI_LEVELS, type AiLevel } from '../ai/simple';
 import { cardArt } from './art';
 import * as sfx from './sound';
-import { initGacha, openGacha } from './gacha';
+import { initGacha, openGacha, attachItemTip } from './gacha';
 import { initEconomy, record as missionRecord, missionReady, syncCurrencies } from './economy';
 import * as chars from './characters';
 import { installCoinIcons, coinSvg, norigaeGroup } from './coin-art';
@@ -866,7 +866,7 @@ function ppeokFx(ids: string[]) {
 }
 /** 폭탄: 흰 섬광 + 충격파 고리 + 불꽃 파편 + 연기 + 화면 붉게 번쩍 + 강한 흔들림 */
 function explodeAt(ids: string[]) {
-  sfx.cannon(); sfx.buzz([120, 60, 40, 30, 30]);
+  sfx.cannon(); sfx.buzz([160, 40, 30, 20, 20]);
   if (reduced) { banner('폭탄!'); return; }
   const rects = ids.map((id) => document.querySelector(`#floor [data-id="${CSS.escape(id)}"]`)?.getBoundingClientRect()).filter(Boolean) as DOMRect[];
   const r = rects[0] ?? $('floor').getBoundingClientRect();
@@ -1055,7 +1055,7 @@ async function playOut(prev: GameState, next: GameState, notes: { text: string; 
       const x = special as { self?: boolean; fromPpeok?: boolean };
       banner(x.fromPpeok === false ? '3장 먹기!' : x.self ? '자뻑! 피 2장' : '뻑 먹기!'); sfx.bonus(); shakeScreen();
     }
-    else { banner(kind === 'jjok' ? '쪽!' : kind === 'ttadak' ? '따닥!' : '싹쓸이!'); sfx.bonus(); shakeScreen(); sfx.buzz(40); }
+    else { banner(kind === 'jjok' ? '쪽!' : kind === 'ttadak' ? '따닥!' : '싹쓸이!'); if (kind === 'jjok') sfx.jjok(); else if (kind === 'ttadak') sfx.ttadak(); else sfx.bonus(); shakeScreen(); sfx.buzz(kind === 'ttadak' ? [40, 50, 60] : 40); }
     await wait(650);
     if (no !== gameNo) return;
   }
@@ -1288,7 +1288,7 @@ function renderCollection() {
     const b = document.createElement('button');
     b.type = 'button'; b.className = 'cl-item' + (gi < 0 ? ' locked' : '');
     b.innerHTML = `<span class="cl-art">${itemArt(it, Math.max(gi, 0), gi < 0)}</span><span class="cl-name">${gi < 0 ? '???' : it.name}</span>${gi < 0 ? '' : `<span class="cl-meta">${gradeBadge(gi)}${n > 1 ? `<small>×${n}</small>` : ''}</span>`}`;
-    b.addEventListener('click', () => { sfx.click(); showItem(it); });
+    attachItemTip(b, it.id);
     grid.append(b);
   }
   const rows = (['win', 'lose', 'nagari'] as const).map((o) => {
@@ -1501,7 +1501,7 @@ for (const id of ['shop', 'settings']) $(id).querySelectorAll<HTMLElement>('[dat
 $('btn-shop').addEventListener('click', () => { sfx.unlock(); sfx.click(); syncCurrencies(); $('shop').hidden = false; });
 $('btn-settings').addEventListener('click', () => { sfx.unlock(); sfx.click(); syncHome(); $('settings').hidden = false; });
 $('btn-id-close').addEventListener('click', () => { $('item-detail').hidden = true; });
-$('btn-coll-close').addEventListener('click', () => { $('collection').hidden = true; });
+$('btn-coll-close').addEventListener('click', () => { $('collection').hidden = true; $('gx-tip').hidden = true; });
 $('btn-coll-x').addEventListener('click', () => { $('collection').hidden = true; });
 $('btn-home-rules').addEventListener('click', () => { sfx.click(); $('info').hidden = false; });
 $('btn-bgm').addEventListener('click', () => { sfx.unlock(); sfx.click(); renderMusic(); $('music').hidden = false; });

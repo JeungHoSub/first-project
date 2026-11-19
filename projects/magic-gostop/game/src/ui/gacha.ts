@@ -321,7 +321,7 @@ async function climax(stage: HTMLElement, gi: number) {
 
 /** 공개된 카드에 마우스를 올리거나(누르면) 어떤 아이템인지 설명을 띄운다 */
 /** 구성품 카드 확대: 큰 그림 + 기본 정보 + 등급별(F~SSS+) 능력치 표 */
-function openItemZoom(id: string, from?: HTMLElement) {
+export function openItemZoom(id: string, from?: HTMLElement) {
   const it = ITEMS.find((x) => x.id === id); if (!it) return;
   const totalW = ITEMS.reduce((a, x) => a + x.weight, 0);
   const g = bestGrade(id); const cp = copyOf(id);
@@ -678,4 +678,24 @@ async function run(t: Ticket, tier: number, n: number) {
   $('gr-close').hidden = false;
   running = false;
   onChange();
+}
+
+/** 도감 등에서: 마우스를 올리면 능력치 말풍선, 누르면 확대창 */
+export function attachItemTip(el: HTMLElement, id: string) {
+  const it = ITEMS.find((x) => x.id === id); if (!it) return;
+  const tip = $('gx-tip');
+  const show = () => {
+    if (!matchMedia('(hover: hover)').matches) return; // 터치 기기는 누르면 바로 확대창
+    const g = bestGrade(id); const gi = Math.max(0, g); const cp = copyOf(id);
+    tip.innerHTML = `<div class="tp-head"><b>${it.name}</b>${g >= 0 ? badge(g) : '<span class="tp-no">미보유</span>'}</div><div class="tp-cat">${CATEGORY_LABEL[it.category as keyof typeof CATEGORY_LABEL] ?? ''} · ${USE_LABEL[cp.use]}</div><p>${cp.one}</p><p class="tp-eff"><b>${g >= 0 ? '내 등급' : 'F 등급'}</b> ${it.effect(gi)}</p>${g < GRADES.length - 1 ? `<p class="tp-eff"><b>최고 등급</b> ${it.effect(GRADES.length - 1)}</p>` : ''}<p class="tp-more">눌러서 등급별 능력치 보기</p>`;
+    tip.style.setProperty('--gc', gcol(gi)); tip.hidden = false;
+    const r = el.getBoundingClientRect(); const tw = tip.offsetWidth; const th = tip.offsetHeight;
+    let x = r.left + r.width / 2 - tw / 2; x = Math.max(8, Math.min(innerWidth - tw - 8, x));
+    let y = r.top - th - 10; if (y < 8) y = Math.min(innerHeight - th - 8, r.bottom + 10);
+    tip.style.left = `${x}px`; tip.style.top = `${y}px`;
+  };
+  const hide = () => { tip.hidden = true; };
+  el.addEventListener('mouseenter', show); el.addEventListener('mouseleave', hide);
+  el.addEventListener('focus', show); el.addEventListener('blur', hide);
+  el.addEventListener('click', () => { hide(); sfx.click(); openItemZoom(id, el); });
 }
