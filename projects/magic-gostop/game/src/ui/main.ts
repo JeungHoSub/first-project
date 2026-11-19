@@ -880,10 +880,21 @@ async function reveal(title: string, ids: string[]) {
   box.hidden = true;
 }
 
+/** 가운데 알림: 내용에 따라 붉은 낙관(좋은 일) · 옻칠 현판(고·스톱·폭탄 같은 큰 순간) · 먹 낙관(뻑·불발) · 한지 띠(긴 안내) */
 function banner(text: string) {
   if (reduced) return;
   const b = $('banner');
-  b.textContent = text;
+  const t = text.trim();
+  const big = /^(\d+고!|스톱!|폭탄!|총통!|흔들기|흔들어)/.test(t);
+  const bad = /^뻑!$|불발|상대 첫뻑/.test(t);
+  const good = /^(쪽!|따닥!|싹쓸이!|보너스!|뻑 먹기!|자뻑|3장 먹기!|첫뻑!|방패!|바닥 정리!|패 바꾸기!|되돌리기!|쌍둥이 그림자!)/.test(t);
+  const kind = big ? 'plaque' : bad ? 'ink' : good ? 'seal' : 'note';
+  const bang = t.indexOf('!');
+  const head = bang >= 0 ? t.slice(0, bang + 1) : t;
+  const rest = bang >= 0 && t.slice(bang + 1).trim() ? [t.slice(bang + 1).trim()] : [];
+  b.dataset.kind = kind;
+  b.innerHTML = kind === 'note' ? `<span class="bn-note">${t}</span>`
+    : `<span class="bn-${kind}"><b>${head.replace(/!$/, '')}</b></span>${rest.length ? `<small class="bn-sub">${rest.join(' ')}</small>` : ''}`;
   b.classList.remove('show'); void b.offsetWidth; b.classList.add('show');
 }
 

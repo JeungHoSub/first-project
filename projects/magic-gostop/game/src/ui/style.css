@@ -1959,3 +1959,75 @@ body[data-frame=""] .seat.me .pname, body[data-cb=""] .back { }
 .home-shop.ready::after { content: "!"; position: absolute; right: -6px; top: -6px; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-weight: 900; font-size: .8rem; color: #fff; background: #c23a2a; box-shadow: 0 0 0 2px #1a0e06; }
 #btn-gacha { background-blend-mode: screen, normal; }
 .home-shop span#home-shop-sub { padding-right: 34px; white-space: normal; display: block; }
+
+/* ===== 판 연출: 낙관·현판·먹·한지 띠 ===== */
+.banner[data-kind] { background: none !important; box-shadow: none !important; padding: 0 !important; -webkit-text-stroke: 0 !important; text-shadow: none !important; font-size: 1rem !important;
+  display: grid; justify-items: center; gap: 8px; opacity: 1; transform: translate(-50%, -50%); visibility: hidden; }
+.banner[data-kind]::before { display: none !important; }
+.banner[data-kind].show { visibility: visible; animation: bnLife 1.35s ease-out forwards !important; }
+@keyframes bnLife { 0% { opacity: 1; } 78% { opacity: 1; } 100% { opacity: 0; } }
+/* 붉은 낙관 */
+.bn-seal { position: relative; display: grid; place-items: center; min-width: 120px; height: 120px; padding: 0 18px; border-radius: 14px; transform: rotate(-7deg);
+  background: radial-gradient(circle at 30% 25%, #d8463a, #a5302a 55%, #7c1d18); box-shadow: inset 0 0 0 4px rgba(255,236,214,.85), inset 0 0 0 7px #a5302a, 0 14px 28px rgba(0,0,0,.55); }
+.bn-seal b { font-family: var(--font-brush); font-weight: 400; font-size: 4.2rem; line-height: 1; color: #fff2e2; text-shadow: 0 2px 0 rgba(90,10,10,.5); white-space: nowrap; }
+.banner.show .bn-seal { animation: bnStamp .5s cubic-bezier(.3,1.6,.5,1) both; }
+.bn-seal::after { content: ""; position: absolute; inset: -40px; border-radius: 50%; z-index: -1; pointer-events: none;
+  background: radial-gradient(circle, rgba(200,40,40,.35) 0 30%, transparent 31%), radial-gradient(circle at 20% 70%, rgba(200,40,40,.4) 0 6%, transparent 7%), radial-gradient(circle at 85% 25%, rgba(200,40,40,.4) 0 5%, transparent 6%), radial-gradient(circle at 75% 85%, rgba(200,40,40,.35) 0 4%, transparent 5%);
+  transform: scale(.4); opacity: 0; }
+.banner.show .bn-seal::after { animation: bnSplash .5s ease-out .18s forwards; }
+@keyframes bnStamp { 0% { transform: rotate(-24deg) scale(2.6); opacity: 0; } 60% { transform: rotate(-5deg) scale(.92); opacity: 1; } 100% { transform: rotate(-7deg) scale(1); opacity: 1; } }
+@keyframes bnSplash { to { transform: scale(1); opacity: 1; } }
+/* 옻칠 현판 (고·스톱·폭탄·총통·흔들기) */
+.bn-plaque { position: relative; display: grid; place-items: center; min-width: 200px; padding: 14px 34px 16px; border-radius: 10px;
+  background: radial-gradient(120% 140% at 50% 0%, #2c1913, #0e0806 70%); box-shadow: inset 0 0 0 3px #1a0e0a, inset 0 0 0 5px #d9a940, inset 0 0 0 7px #1a0e0a, 0 18px 36px rgba(0,0,0,.6), 0 0 40px rgba(243,210,122,.35); }
+.bn-plaque b { font-family: var(--font-myeongjo); font-weight: 800; font-size: 3.8rem; line-height: 1.05; letter-spacing: .12em; padding-left: .12em; white-space: nowrap;
+  background: linear-gradient(180deg, #fff6d0, #f0c450 55%, #a8761a); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 3px 0 rgba(0,0,0,.6)); }
+.bn-plaque::before, .bn-plaque::after { content: ""; position: absolute; top: -26px; width: 2px; height: 26px; background: linear-gradient(#c23a2a, #7a1a12); }
+.bn-plaque::before { left: 22%; } .bn-plaque::after { right: 22%; }
+.banner.show .bn-plaque { animation: bnDrop .6s cubic-bezier(.25,1.4,.5,1) both; transform-origin: 50% -26px; }
+@keyframes bnDrop { 0% { transform: translateY(-160px) rotate(-6deg); opacity: 0; } 55% { transform: translateY(8px) rotate(3deg); opacity: 1; } 80% { transform: translateY(-2px) rotate(-1.5deg); } 100% { transform: none; } }
+/* 먹 낙관 (뻑·불발) */
+.bn-ink { position: relative; display: grid; place-items: center; min-width: 110px; height: 110px; padding: 0 16px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #3a3f48, #14171c 70%); box-shadow: inset 0 0 0 3px rgba(200,60,50,.8), 0 12px 24px rgba(0,0,0,.6); }
+.bn-ink b { font-family: var(--font-brush); font-weight: 400; font-size: 3.6rem; color: #e65a4c; line-height: 1; white-space: nowrap; }
+.bn-ink::after { content: ""; position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
+  background: linear-gradient(115deg, transparent 47%, rgba(255,255,255,.55) 48%, transparent 50%), linear-gradient(60deg, transparent 58%, rgba(255,255,255,.4) 59%, transparent 60.5%); opacity: 0; }
+.banner.show .bn-ink { animation: bnThud .45s cubic-bezier(.3,1.5,.5,1) both; } .banner.show .bn-ink::after { animation: bnCrack .2s ease-out .3s forwards; }
+@keyframes bnThud { 0% { transform: scale(1.8); opacity: 0; } 70% { transform: scale(.95); opacity: 1; } 85% { transform: translateX(-4px); } 100% { transform: none; } }
+@keyframes bnCrack { to { opacity: 1; } }
+/* 보조 줄 (예: 첫뻑! +3점 · 엽전 +300) */
+.bn-sub { font-size: .9rem; font-weight: 700; color: #fff4dc; background: rgba(20,12,6,.8); padding: 3px 12px; border-radius: 999px; border: 1px solid rgba(214,186,128,.45); white-space: nowrap; }
+/* 긴 안내: 한지 띠 */
+.banner[data-kind="note"] { top: 22% !important; }
+.bn-note { display: block; max-width: 86vw; padding: 9px 22px; font-family: var(--font-myeongjo); font-weight: 800; font-size: .95rem; color: #2a1c10; text-align: center; white-space: normal;
+  background: linear-gradient(180deg, #f3e8cf, #e4d4b0); border-radius: 4px; box-shadow: inset 0 0 0 1px #c9a36a, inset 0 0 0 3px #f3e8cf, inset 0 0 0 4px #8a6a3a, 0 10px 22px rgba(0,0,0,.5); }
+.banner.show .bn-note { animation: bnNote .35s ease-out both; }
+@keyframes bnNote { from { transform: translateY(-16px) scaleX(.6); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* ===== 판은 항상 녹색 (판 테마 꾸미기는 테두리 색만) ===== */
+body[data-theme] { --felt: #1d5a43 !important; --felt-hi: #2a7558 !important; --felt-lo: #12392b !important; }
+body[data-theme="0"] .mat::before { border-color: rgba(214,169,96,.6) !important; }
+body[data-theme="1"] .mat::before { border-color: rgba(150,220,140,.55) !important; }
+body[data-theme="2"] .mat::before { border-color: rgba(120,180,240,.55) !important; }
+body[data-theme="3"] .mat::before { border-color: rgba(240,140,190,.55) !important; }
+body[data-theme="4"] .mat::before { border-color: rgba(190,160,255,.6) !important; }
+
+/* ===== 고 / 스톱 창 ===== */
+#gostop { align-items: center !important; }
+#gostop .sheet-card { text-align: center; display: grid; justify-items: center; gap: 10px; max-width: 380px; padding: 22px 18px 20px;
+  background: radial-gradient(120% 70% at 50% 0%, rgba(243,210,122,.16), transparent 60%), radial-gradient(140% 120% at 50% 0%, #22140f, #0e0806 75%) !important;
+  box-shadow: inset 0 0 0 2px #1a0e0a, inset 0 0 0 3px rgba(217,169,64,.7), 0 24px 50px rgba(0,0,0,.65) !important; border: 0 !important; }
+#gostop .sheet-kicker { justify-content: center; }
+#gostop #gs-title { font-size: 2.1rem; background: linear-gradient(180deg, #fff6d0, #f0c450 60%, #a8761a); -webkit-background-clip: text; background-clip: text; color: transparent; }
+#gostop #gs-sub { color: #d9c49a; font-size: .86rem; margin: 0; }
+#gostop .gs-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; width: 100%; margin-top: 6px; }
+#gostop .gs-btns .big { aspect-ratio: 1; min-height: 0 !important; border-radius: 50% !important; display: grid; place-items: center; font-family: var(--font-brush) !important; font-weight: 400 !important; font-size: 3.6rem !important; line-height: 1; padding: 0 !important; }
+#btn-go { color: #fff2e2 !important; border: 0 !important; background: radial-gradient(circle at 32% 28%, #e45446, #a5302a 55%, #6e1712) !important;
+  box-shadow: inset 0 0 0 4px rgba(255,236,214,.8), inset 0 0 0 8px #a5302a, 0 10px 24px rgba(0,0,0,.55), 0 0 26px rgba(229,84,70,.45) !important; animation: goPulse 1.6s ease-in-out infinite; }
+#btn-stop { color: #f3d27a !important; border: 0 !important; background: radial-gradient(circle at 32% 28%, #3a2a22, #140c08 70%) !important;
+  box-shadow: inset 0 0 0 3px #1a0e0a, inset 0 0 0 5px #d9a940, 0 10px 24px rgba(0,0,0,.55) !important; }
+#btn-go:active, #btn-stop:active { transform: scale(.95); }
+@keyframes goPulse { 50% { box-shadow: inset 0 0 0 4px rgba(255,236,214,.8), inset 0 0 0 8px #a5302a, 0 10px 24px rgba(0,0,0,.55), 0 0 42px rgba(229,84,70,.7); } }
+#gostop .gs-btns { grid-template-columns: repeat(2, 128px); justify-content: center; gap: 26px; }
+#gostop .gs-btns .big { width: 128px; font-size: 4.4rem !important; }
+#btn-stop { font-size: 3.4rem !important; }
