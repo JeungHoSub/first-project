@@ -1832,3 +1832,55 @@ body[data-frame=""] .seat.me .pname, body[data-cb=""] .back { }
 .res-card .sheet-kicker { justify-content: center; }
 .res-card #res-title, .res-card .formula, .res-card .res-badges { text-align: center; justify-content: center; }
 .res-card #res-title { font-size: 2rem; }
+
+/* ===== 홈 정리: 게임 시작 > 뽑기 > (캐릭터·아이템 | 상점), 설정은 톱니바퀴 ===== */
+#shop, #settings { z-index: 41; }
+#collection, #info { z-index: 43 !important; } #music { z-index: 43 !important; }
+#missions, #yut, #silver, #goldshop { z-index: 44 !important; }
+.home-inner { gap: 10px !important; }
+.home-start { min-height: 92px; font-size: 1.7rem !important; }
+.home-start small { font-size: .78rem !important; }
+.seg-level-sm { width: 100%; margin-top: -2px; }
+.seg-level-sm button { padding: 6px 0 !important; font-size: .78rem !important; }
+.home-duo { display: grid; grid-template-columns: 1.35fr 1fr; gap: 8px; width: 100%; }
+.home-duo .home-char { grid-template-columns: 44px 1fr; padding: 8px 10px; }
+.home-duo .home-char em { display: none; }
+.home-duo .home-char .hc-art svg { width: 44px; height: 55px; }
+.home-shop { display: grid; align-content: center; text-align: left; padding: 12px 14px !important; border-radius: 16px !important; }
+.home-shop b { font-family: var(--font-myeongjo); font-size: 1.05rem; }
+.home-shop span { font-size: .68rem !important; line-height: 1.35; }
+.home-gear { position: absolute; left: 12px; top: 10px; z-index: 5; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+  color: #e9d7a8; background: rgba(0,0,0,.45); border: 1px solid rgba(214,186,128,.35); }
+.home-gear svg { width: 22px; height: 22px; }
+.home-gear:active { transform: rotate(40deg); transition: transform .2s; }
+/* 상점 */
+.shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.shop-tile { display: grid; justify-items: center; gap: 4px; padding: 16px 8px 14px; border-radius: 16px; text-align: center; color: #f4ecdc;
+  background: radial-gradient(120% 100% at 50% 0%, rgba(214,186,128,.12), transparent 60%), rgba(255,255,255,.03); border: 1px solid rgba(214,186,128,.22); }
+.shop-tile:active { transform: scale(.98); }
+.shop-tile b { font-family: var(--font-myeongjo); font-weight: 800; font-size: 1rem; }
+.shop-tile span { font-size: .68rem; color: #c9ad74; }
+.shop-tile.ready { border-color: #f3d27a; box-shadow: 0 0 14px rgba(243,210,122,.3); }
+.st-ico { width: 46px; height: 46px; display: block; background: center / contain no-repeat; }
+.st-ms { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect x='10' y='6' width='28' height='36' rx='3' fill='%23efe4c8' stroke='%238a6a3a' stroke-width='2'/%3E%3Cpath d='M15 16h18M15 23h18M15 30h12' stroke='%238a6a3a' stroke-width='2' stroke-linecap='round'/%3E%3Ccircle cx='34' cy='34' r='8' fill='%23a5302a'/%3E%3Cpath d='M30.5 34l2.5 2.5 4.5-5' stroke='%23fff' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); }
+.st-yut { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cg transform='rotate(-18 24 24)'%3E%3Crect x='9' y='6' width='7' height='36' rx='3.5' fill='%23e8c98a' stroke='%237a5426' stroke-width='1.5'/%3E%3Crect x='19' y='6' width='7' height='36' rx='3.5' fill='%23e8c98a' stroke='%237a5426' stroke-width='1.5'/%3E%3Crect x='29' y='6' width='7' height='36' rx='3.5' fill='%239a6a34' stroke='%237a5426' stroke-width='1.5'/%3E%3C/g%3E%3C/svg%3E"); }
+.st-eun, .st-geum { border-radius: 50%; }
+.st-eun { background-image: var(--coin-eun, none); } .st-geum { background-image: var(--coin-geum, none); }
+/* 설정 */
+.set-list { display: grid; gap: 8px; }
+.set-row { display: grid; grid-template-columns: 1fr auto 18px; align-items: center; gap: 8px; padding: 14px 14px; border-radius: 14px; text-align: left; color: #f4ecdc; background: rgba(255,255,255,.03); border: 1px solid rgba(214,186,128,.18); }
+.set-row b { font-family: var(--font-myeongjo); font-weight: 800; font-size: 1rem; }
+.set-row span { font-size: .78rem; color: #c9ad74; } .set-row i { font-style: normal; color: #a9a291; }
+.set-row.off span { color: #a9a291; }
+.set-row.toggle i { width: 36px; height: 20px; border-radius: 999px; background: #4a7a52; position: relative; justify-self: end; }
+.set-row.toggle i::after { content: ""; position: absolute; top: 2px; left: 18px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: left .2s; }
+.set-row.toggle.off i { background: #3a3f48; } .set-row.toggle.off i::after { left: 2px; }
+.set-row.toggle { grid-template-columns: 1fr auto 40px; }
+/* 캐릭터 화면 안의 아이템 도감 */
+.ch-coll { display: grid; grid-template-columns: 1fr auto 14px; align-items: center; gap: 8px; padding: 12px 14px; border-radius: 14px; text-align: left; color: #f4ecdc;
+  background: linear-gradient(90deg, rgba(214,186,128,.12), rgba(255,255,255,.02)); border: 1px solid rgba(214,186,128,.3); }
+.ch-coll b { font-family: var(--font-myeongjo); font-weight: 800; } .ch-coll span { font-size: .8rem; color: #c9ad74; } .ch-coll i { font-style: normal; color: #c9ad74; }
+.home-duo .home-char { position: relative; }
+.home-duo .home-char em { display: block !important; position: absolute; right: 8px; top: 6px; font-size: .56rem !important; padding: 1px 6px !important; }
+.home-shop.ready { border-color: #f3d27a !important; box-shadow: 0 0 14px rgba(243,210,122,.35) !important; }
+.home-shop.ready span { color: #f3d27a !important; }

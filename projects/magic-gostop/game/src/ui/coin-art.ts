@@ -78,7 +78,8 @@ export function coinSvg(m: Metal, size = 120, detail = true): string {
 export function installCoinIcons() {
   const uri = (m: Metal) => `url("data:image/svg+xml,${encodeURIComponent(coinSvg(m, 64, false))}")`;
   const st = document.createElement('style');
-  st.textContent = `.cur-ico.yeop, .coin-ico { background: ${uri('yeop')} center / contain no-repeat !important; box-shadow: none !important; border-radius: 0 !important; }
+  st.textContent = `:root { --coin-eun: url("data:image/svg+xml,${encodeURIComponent(coinSvg('eun', 96))}"); --coin-geum: url("data:image/svg+xml,${encodeURIComponent(coinSvg('geum', 96))}"); }
+    .cur-ico.yeop, .coin-ico { background: ${uri('yeop')} center / contain no-repeat !important; box-shadow: none !important; border-radius: 0 !important; }
     .cur-ico.eun { background: ${uri('eun')} center / contain no-repeat !important; box-shadow: none !important; border-radius: 0 !important; }
     .cur-ico.geum { background: ${uri('geum')} center / contain no-repeat !important; box-shadow: none !important; border-radius: 0 !important; }
     .cur-ico::after, .coin-ico::after { display: none !important; }`;

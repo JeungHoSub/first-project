@@ -1278,7 +1278,7 @@ function renderMusic() {
 function syncHome() {
   syncCurrencies();
   renderProfiles();
-  { const n = missionReady(); const el = document.getElementById('home-ms'); if (el) { el.textContent = n ? `받을 은화 ${n}개` : '은화 받기'; el.parentElement!.classList.toggle('ready', n > 0); } }
+  { const n = missionReady(); const el = document.getElementById('home-ms'); if (el) { el.textContent = n ? `받을 보상 ${n}개` : '은화 받기'; el.parentElement!.classList.toggle('ready', n > 0); } const sh = document.getElementById('btn-shop'); if (sh) { sh.classList.toggle('ready', n > 0); const sub = document.getElementById('home-shop-sub'); if (sub) sub.textContent = n ? `미션 보상 ${n}개 받기` : '미션 · 윷놀이 · 은화 · 금화'; } }
   document.querySelectorAll('.coin-amt').forEach((e) => { e.textContent = fmt(coins()); });
   const label = AI_LEVELS.find((l) => l.id === level)!.label;
   $('home-level').textContent = label;
@@ -1420,6 +1420,10 @@ $('btn-cd-close').addEventListener('click', () => { $('caps-detail').hidden = tr
 $('btn-res-home').addEventListener('click', () => { sfx.click(); showHome(); });
 $('btn-home').addEventListener('click', () => { sfx.click(); showHome(); });
 $('btn-collection').addEventListener('click', () => { sfx.click(); renderCollection(); $('collection').hidden = false; });
+// 홈 정리: 상점(미션·윷놀이·은화·금화) / 설정(음악·효과음·규칙)
+for (const id of ['shop', 'settings']) $(id).querySelectorAll<HTMLElement>('[data-close]').forEach((b) => b.addEventListener('click', () => { $(id).hidden = true; syncHome(); }));
+$('btn-shop').addEventListener('click', () => { sfx.unlock(); sfx.click(); syncCurrencies(); $('shop').hidden = false; });
+$('btn-settings').addEventListener('click', () => { sfx.unlock(); sfx.click(); syncHome(); $('settings').hidden = false; });
 $('btn-id-close').addEventListener('click', () => { $('item-detail').hidden = true; });
 $('btn-coll-close').addEventListener('click', () => { $('collection').hidden = true; });
 $('btn-coll-x').addEventListener('click', () => { $('collection').hidden = true; });

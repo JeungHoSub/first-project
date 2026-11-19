@@ -171,6 +171,7 @@
     <rect x="-20" y="630" width="840" height="170" fill="url(#hb-wave)"/>
   </svg>
 </div>
+  <button type="button" class="home-gear" id="btn-settings" aria-label="설정"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.5 7.5 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.3 7.3 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7.3 7.3 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.5 7.5 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.3 7.3 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7.3 7.3 0 0 0 1.7-1l2.4 1 2-3.4zM13 15.5A3.5 3.5 0 1 1 13 8.5a3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg></button>
   <div class="cur-bar home-coin">
     <span class="cur-chip"><i class="cur-ico yeop" aria-hidden="true"></i><b data-cur="yeop">0</b><span class="sr">엽전</span></span>
     <span class="cur-chip"><i class="cur-ico eun" aria-hidden="true"></i><b data-cur="eun">0</b><span class="sr">은화</span></span>
@@ -181,24 +182,37 @@
     <h1 class="home-title">매직고스톱</h1>
     <p class="home-sub">한국 화투로 즐기는 맞고 · 아이템 수집</p>
     <button class="big go-btn home-start" id="btn-start" type="button">게임 시작<small>상대: <span id="home-level">쉬움</span></small></button>
+    <div class="seg seg-level-sm" id="seg-level" role="radiogroup" aria-label="상대 난이도"></div>
     <button class="big gacha-btn" id="btn-gacha" type="button">뽑기<small>엽전 · 은화 · 금화로 뽑기</small></button>
-    <button class="home-char" id="btn-chars" type="button" aria-label="캐릭터"></button>
-    <div class="home-trio">
-      <button class="home-tile" id="btn-missions" type="button"><b>오늘의 미션</b><span id="home-ms">은화 받기</span></button>
-      <button class="home-tile" id="btn-yut" type="button"><b>윷놀이 내기</b><span>엽전 걸기</span></button>
-      <button class="home-tile" id="btn-silver" type="button"><b>은화 상점</b><span>승급·구매</span></button>
+    <div class="home-duo">
+      <button class="home-char" id="btn-chars" type="button" aria-label="캐릭터와 아이템"></button>
+      <button class="home-tile home-shop" id="btn-shop" type="button"><b>상점</b><span id="home-shop-sub">미션 · 윷놀이 · 은화 · 금화</span></button>
     </div>
-    <div class="home-row">
-      <span class="home-label">난이도</span>
-      <div class="seg" id="seg-level" role="radiogroup" aria-label="상대 난이도"></div>
+  </div>
+</div>
+
+<div class="sheet" id="shop" hidden>
+  <div class="sheet-card inv-card">
+    <div class="inv-head"><div><div class="sheet-kicker">장터</div><div class="sheet-title">상점</div></div><button class="x-btn" data-close type="button" aria-label="닫기">✕</button></div>
+    <div class="cur-line"><i class="cur-ico yeop"></i> <b data-cur="yeop">0</b> · <i class="cur-ico eun"></i> <b data-cur="eun">0</b> · <i class="cur-ico geum"></i> <b data-cur="geum">0</b></div>
+    <div class="shop-grid">
+      <button class="shop-tile" id="btn-missions" type="button"><i class="st-ico st-ms" aria-hidden="true"></i><b>오늘의 미션</b><span id="home-ms">은화 받기</span></button>
+      <button class="shop-tile" id="btn-yut" type="button"><i class="st-ico st-yut" aria-hidden="true"></i><b>윷놀이 내기</b><span>엽전 걸기</span></button>
+      <button class="shop-tile" id="btn-silver" type="button"><i class="st-ico st-eun" aria-hidden="true"></i><b>은화 상점</b><span>승급 · 아이템 · 꾸미기</span></button>
+      <button class="shop-tile" data-open="gold" type="button"><i class="st-ico st-geum" aria-hidden="true"></i><b>금화 상점</b><span>엽전으로 바꾸기</span></button>
     </div>
-    <div class="home-grid">
-      <button class="home-tile" id="btn-collection" type="button"><b>아이템 도감</b><span id="home-coll">0 / 14</span></button>
-      <button class="home-tile" id="btn-home-rules" type="button"><b>규칙</b><span>점수·특수 룰</span></button>
-      <button class="home-tile toggle" id="btn-bgm" type="button"><b>음악</b><span>켜짐</span></button>
-      <button class="home-tile toggle" id="btn-sfx" type="button"><b>효과음</b><span>켜짐</span></button>
+  </div>
+</div>
+
+<div class="sheet" id="settings" hidden>
+  <div class="sheet-card inv-card">
+    <div class="inv-head"><div><div class="sheet-kicker">소리 · 규칙</div><div class="sheet-title">설정</div></div><button class="x-btn" data-close type="button" aria-label="닫기">✕</button></div>
+    <div class="set-list">
+      <button class="set-row" id="btn-bgm" type="button"><b>음악</b><span>켜짐</span><i aria-hidden="true">›</i></button>
+      <button class="set-row toggle" id="btn-sfx" type="button"><b>효과음</b><span>켜짐</span><i aria-hidden="true"></i></button>
+      <button class="set-row" id="btn-home-rules" type="button"><b>규칙</b><span>점수 · 특수 룰</span><i aria-hidden="true">›</i></button>
     </div>
-    <p class="home-note">게임 안 점수만 있습니다 · 현금 가치 없음</p>
+    <p class="dt-note">게임 안 점수와 재화만 있습니다 · 현금 가치 없음</p>
   </div>
 </div>
 
@@ -335,10 +349,11 @@
 
 <div class="sheet" id="chars" hidden>
   <div class="sheet-card inv-card ch-card">
-    <div class="inv-head"><div><div class="sheet-kicker">함께할 동료</div><div class="sheet-title">캐릭터</div></div><button class="x-btn" data-close type="button" aria-label="닫기">✕</button></div>
+    <div class="inv-head"><div><div class="sheet-kicker">함께할 동료 · 모은 아이템</div><div class="sheet-title">캐릭터</div></div><button class="x-btn" data-close type="button" aria-label="닫기">✕</button></div>
     <div class="cur-line"><i class="cur-ico eun"></i> 은화 <b data-cur="eun">0</b> · <i class="cur-ico geum"></i> 금화 <b data-cur="geum">0</b></div>
     <div class="ch-hero" id="ch-hero"></div>
     <div class="ch-list" id="ch-list"></div>
+    <button class="ch-coll" id="btn-collection" type="button"><b>아이템 도감</b><span id="home-coll">0 / 36</span><i aria-hidden="true">›</i></button>
     <p class="dt-note">한 판에 캐릭터 한 명만 데리고 나갑니다. 레벨은 은화로 올리고(최고 10), 능력은 아이템과 따로 적용됩니다. 금화 캐릭터는 확률 없이 정해진 값으로 영입합니다.</p>
     <button class="tk-close" data-close type="button">닫기</button>
   </div>
