@@ -162,7 +162,7 @@ function portraitBody(c: CharDef, k: string): string {
   }
 }
 /** 일러스트 파일(assets/chars/<id>.webp)이 있는 캐릭터. 없으면 코드로 그린 초상을 쓴다 */
-export const CHAR_ART = new Set<string>([]);
+export const CHAR_ART = new Set<string>(['hanryang', 'jumo', 'bobu', 'maehwa', 'janggun', 'dosa']);
 export function portrait(c: CharDef, lv = 1): string {
   const k = `ch${++seq}`;
   const ring = lv >= 10 ? '#f3d27a' : lv >= 7 ? '#d6b36a' : lv >= 4 ? '#b8a27a' : '#8f8a80';
