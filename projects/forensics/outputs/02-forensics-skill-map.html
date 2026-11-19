@@ -1,0 +1,200 @@
+<title>포렌식 기술 지도</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: 증거 보고서처럼 한 줄 컬럼. 각 그림은 '증거물 번호' 라벨이 붙은 판넬 */
+:root {
+  --bg: #f3f5f6;
+  --panel: #ffffff;
+  --ink: #17262b;
+  --muted: #5a6b70;
+  --line: #cdd6d9;
+  --tape: #e0a21b;      /* 증거 테이프 앰버 */
+  --hack: #c4453a;      /* 공격 */
+  --foren: #1f7a8c;     /* 포렌식 */
+  --rev: #6a55b0;       /* 리버싱 */
+  --heat1: #e3eef0; --heat2: #a9d0d7; --heat3: #1f7a8c; --heat3fg: #ffffff;
+  --sans: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1719; --panel: #172226; --ink: #e4ecee; --muted: #93a6ab; --line: #2c3b40;
+  --tape: #f0b73c; --hack: #ee7468; --foren: #4fb6c9; --rev: #a593ea;
+  --heat1: #1d2d31; --heat2: #2a5761; --heat3: #4fb6c9; --heat3fg: #0f1719; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0f1719; --panel: #172226; --ink: #e4ecee; --muted: #93a6ab; --line: #2c3b40;
+  --tape: #f0b73c; --hack: #ee7468; --foren: #4fb6c9; --rev: #a593ea;
+  --heat1: #1d2d31; --heat2: #2a5761; --heat3: #4fb6c9; --heat3fg: #0f1719; color-scheme: dark; }
+
+body { background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.65; }
+.wrap { max-width: 880px; margin: 0 auto; padding-block: 32px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 28px; }
+header { display: grid; gap: 8px; }
+.case { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; color: var(--muted); }
+h1 { font-size: 30px; line-height: 1.25; margin: 0; text-wrap: balance; }
+h2 { font-size: 20px; margin: 0; text-wrap: balance; }
+p { margin: 0; max-width: 65ch; }
+.lead { color: var(--muted); }
+section.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 20px; display: grid; gap: 14px; min-width: 0; }
+.tag { justify-self: start; font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+  background: var(--tape); color: #1a1400; padding: 2px 8px; border-radius: 2px; }
+.scroll { overflow-x: auto; }
+svg { display: block; width: 100%; min-width: 600px; height: auto; }
+svg text { font-family: var(--sans); fill: var(--ink); }
+svg .sub { fill: var(--muted); font-size: 12px; }
+svg .box { fill: var(--panel); stroke: var(--line); stroke-width: 1.5; }
+svg .box-main { fill: var(--foren); }
+svg .on-main { fill: var(--panel); font-weight: 700; }
+svg .edge { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+svg .edge-dash { stroke: var(--muted); stroke-width: 1.5; fill: none; stroke-dasharray: 5 4; }
+svg .chip { fill: var(--heat1); stroke: var(--foren); stroke-width: 1; }
+.c-h { fill: var(--hack); fill-opacity: .14; stroke: var(--hack); stroke-width: 2; }
+.c-f { fill: var(--foren); fill-opacity: .14; stroke: var(--foren); stroke-width: 2; }
+.c-r { fill: var(--rev); fill-opacity: .14; stroke: var(--rev); stroke-width: 2; }
+svg .t-h { fill: var(--hack); font-weight: 700; font-size: 16px; }
+svg .t-f { fill: var(--foren); font-weight: 700; font-size: 16px; }
+svg .t-r { fill: var(--rev); font-weight: 700; font-size: 16px; }
+svg .rg { font-size: 12.5px; }
+svg .rg-b { font-size: 12.5px; font-weight: 700; }
+svg .base { fill: var(--heat1); stroke: var(--line); }
+.notes { display: grid; gap: 6px; padding-left: 18px; margin: 0; max-width: 70ch; }
+table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: 13.5px; }
+th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: center; }
+th { font-weight: 500; color: var(--muted); background: var(--bg); }
+td.k { text-align: left; font-weight: 500; white-space: nowrap; }
+td.l1 { background: var(--heat1); } td.l2 { background: var(--heat2); }
+td.l3 { background: var(--heat3); color: var(--heat3fg); font-weight: 700; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--muted); }
+.sw { display: inline-block; width: 14px; height: 14px; border-radius: 2px; vertical-align: -2px; margin-right: 6px; border: 1px solid var(--line); }
+.verdict { border-left: 3px solid var(--tape); padding: 4px 0 4px 14px; }
+.verdict strong { color: var(--foren); }
+footer { color: var(--muted); font-size: 13px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="case">CASE NOTE · FORENSICS STUDY · 2026-11-19</div>
+    <h1>포렌식은 어디에 속하고, 무엇으로 이뤄져 있나</h1>
+    <p class="lead">계보(어디 소속인가), 겹침(해킹·리버싱과의 관계), 구성(직무별로 필요한 실력) 세 장으로 정리했다.</p>
+  </header>
+
+  <section class="panel">
+    <span class="tag">증거물 1 · 계보</span>
+    <h2>부모가 둘인 학문</h2>
+    <p>디지털 포렌식은 지문·DNA 감정과 형제인 <strong>법과학</strong>에서 "증거 다루는 법"을, <strong>정보보안</strong>의 방어 쪽에서 "시스템을 읽는 기술"을 물려받았다.</p>
+    <div class="scroll">
+      <svg viewBox="0 0 720 300" role="img" aria-label="법과학과 정보보안이 디지털 포렌식으로 이어지고, 그 아래 6개 세부 분야가 있는 계보도">
+        <rect class="box" x="50" y="16" width="250" height="66" rx="6"/>
+        <text x="175" y="44" text-anchor="middle" font-weight="700" font-size="16">법과학</text>
+        <text x="175" y="66" text-anchor="middle" class="sub">지문 · DNA · 필적 · 약독물 감정</text>
+        <rect class="box" x="420" y="16" width="250" height="66" rx="6"/>
+        <text x="545" y="44" text-anchor="middle" font-weight="700" font-size="16">정보보안</text>
+        <text x="545" y="66" text-anchor="middle" class="sub">공격(레드팀) · 방어(블루팀)</text>
+        <path class="edge" d="M175 82 C175 110 300 112 330 128"/>
+        <path class="edge" d="M545 82 C545 110 420 112 390 128"/>
+        <text x="215" y="118" class="sub" text-anchor="end">증거능력·절차</text>
+        <text x="505" y="118" class="sub">시스템·로그 지식</text>
+        <rect class="box-main" x="240" y="128" width="240" height="54" rx="6"/>
+        <text x="360" y="161" text-anchor="middle" class="on-main" font-size="17">디지털 포렌식</text>
+        <g>
+          <path class="edge" d="M360 182 V206 M66 206 H654 M66 206 V226 M181 206 V226 M296 206 V226 M424 206 V226 M539 206 V226 M654 206 V226"/>
+          <rect class="chip" x="16" y="226" width="100" height="40" rx="4"/><text x="66" y="251" text-anchor="middle" font-size="13">컴퓨터</text>
+          <rect class="chip" x="131" y="226" width="100" height="40" rx="4"/><text x="181" y="251" text-anchor="middle" font-size="13">모바일</text>
+          <rect class="chip" x="246" y="226" width="100" height="40" rx="4"/><text x="296" y="251" text-anchor="middle" font-size="12.5">메모리·네트워크</text>
+          <rect class="chip" x="374" y="226" width="100" height="40" rx="4"/><text x="424" y="251" text-anchor="middle" font-size="13">클라우드</text>
+          <rect class="chip" x="489" y="226" width="100" height="40" rx="4"/><text x="539" y="251" text-anchor="middle" font-size="13">멀티미디어</text>
+          <rect class="chip" x="604" y="226" width="100" height="40" rx="4"/><text x="654" y="251" text-anchor="middle" font-size="13">DFIR</text>
+        </g>
+        <path class="edge-dash" d="M670 50 C705 60 705 200 670 226"/>
+        <text x="360" y="292" text-anchor="middle" class="sub">DFIR(침해사고 대응)은 정보보안 방어팀 업무와 직접 겹친다 (점선)</text>
+      </svg>
+    </div>
+  </section>
+
+  <section class="panel">
+    <span class="tag">증거물 2 · 겹침</span>
+    <h2>해킹 · 포렌식 · 리버싱의 관계</h2>
+    <p>해킹은 흔적을 <strong>남기는</strong> 쪽, 포렌식은 흔적을 <strong>읽는</strong> 쪽이라 같은 지식을 반대 방향에서 쓴다. 리버싱은 독립된 분야라기보다 양쪽이 같이 쓰는 공구에 가깝다. 셋이 모두 겹치는 한가운데가 악성코드 분석과 침해사고 대응이다.</p>
+    <div class="scroll">
+      <svg viewBox="0 0 720 600" role="img" aria-label="해킹, 포렌식, 리버스 엔지니어링 세 원이 겹치는 벤다이어그램과 그 아래 공통 기반 막대">
+        <circle class="c-h" cx="260" cy="200" r="170"/>
+        <circle class="c-f" cx="460" cy="200" r="170"/>
+        <circle class="c-r" cx="360" cy="370" r="170"/>
+        <text x="165" y="100" text-anchor="middle" class="t-h">해킹(공격)</text>
+        <text x="555" y="100" text-anchor="middle" class="t-f">포렌식(조사)</text>
+        <text x="360" y="482" text-anchor="middle" class="t-r">리버스 엔지니어링</text>
+
+        <text x="165" y="150" text-anchor="middle" class="rg">침투 테스트</text>
+        <text x="165" y="170" text-anchor="middle" class="rg">취약점 공격</text>
+        <text x="165" y="190" text-anchor="middle" class="rg">사회공학</text>
+
+        <text x="555" y="150" text-anchor="middle" class="rg">증거 보존·해시</text>
+        <text x="555" y="170" text-anchor="middle" class="rg">연계보관 기록</text>
+        <text x="555" y="190" text-anchor="middle" class="rg">타임라인 분석</text>
+        <text x="555" y="210" text-anchor="middle" class="rg">법정 보고·증언</text>
+
+        <text x="360" y="506" text-anchor="middle" class="rg">디스어셈블·디컴파일</text>
+        <text x="360" y="524" text-anchor="middle" class="rg">난독화·패커 해제</text>
+
+        <text x="360" y="118" text-anchor="middle" class="rg">OS 내부·로그</text>
+        <text x="360" y="136" text-anchor="middle" class="rg">권한·지속성 기법</text>
+        <text x="360" y="154" text-anchor="middle" class="rg">안티포렌식</text>
+
+        <text x="245" y="318" text-anchor="middle" class="rg">취약점 분석</text>
+        <text x="245" y="336" text-anchor="middle" class="rg">익스플로잇 개발</text>
+
+        <text x="475" y="318" text-anchor="middle" class="rg">앱 DB 구조</text>
+        <text x="475" y="336" text-anchor="middle" class="rg">암호화 해제 연구</text>
+
+        <text x="360" y="250" text-anchor="middle" class="rg-b">악성코드 분석</text>
+        <text x="360" y="268" text-anchor="middle" class="rg-b">침해사고 대응</text>
+
+        <rect class="base" x="40" y="556" width="640" height="36" rx="4"/>
+        <text x="360" y="579" text-anchor="middle" font-size="13.5" font-weight="500">공통 기반 · 프로그래밍(Python·C·어셈블리) · 운영체제 · 네트워크</text>
+      </svg>
+    </div>
+  </section>
+
+  <section class="panel">
+    <span class="tag">증거물 3 · 구성</span>
+    <h2>"포렌식을 잘한다"는 무엇으로 이뤄져 있나</h2>
+    <p>직무마다 필요한 실력의 비중이 다르다. 실무 관점의 정성적 추정이며, 칸이 진할수록 그 직무에서 비중이 크다.</p>
+    <div class="legend">
+      <span><span class="sw" style="background:var(--heat1)"></span>있으면 좋음</span>
+      <span><span class="sw" style="background:var(--heat2)"></span>중요</span>
+      <span><span class="sw" style="background:var(--heat3)"></span>핵심</span>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>실력 \ 직무</th><th>수사기관 조사관</th><th>기업 내부조사</th><th>침해사고 대응</th><th>악성코드 분석가</th><th>포렌식 도구 개발자</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="k">시스템 내부 구조</td><td class="l3">핵심</td><td class="l2">중요</td><td class="l3">핵심</td><td class="l3">핵심</td><td class="l3">핵심</td></tr>
+          <tr><td class="k">조사 사고력 (가설·검증)</td><td class="l3">핵심</td><td class="l3">핵심</td><td class="l3">핵심</td><td class="l2">중요</td><td class="l1">보통</td></tr>
+          <tr><td class="k">법·절차 (증거능력)</td><td class="l3">핵심</td><td class="l3">핵심</td><td class="l2">중요</td><td class="l1">보통</td><td class="l2">중요</td></tr>
+          <tr><td class="k">보고·설명</td><td class="l3">핵심</td><td class="l3">핵심</td><td class="l2">중요</td><td class="l2">중요</td><td class="l1">보통</td></tr>
+          <tr><td class="k">프로그래밍</td><td class="l1">보통</td><td class="l2">중요</td><td class="l2">중요</td><td class="l3">핵심</td><td class="l3">핵심</td></tr>
+          <tr><td class="k">리버스 엔지니어링</td><td class="l1">보통</td><td class="l1">보통</td><td class="l2">중요</td><td class="l3">핵심</td><td class="l3">핵심</td></tr>
+          <tr><td class="k">공격 기법 이해</td><td class="l1">보통</td><td class="l1">보통</td><td class="l3">핵심</td><td class="l3">핵심</td><td class="l1">보통</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="verdict">
+      <p><strong>결론: 포렌식 실력 ≠ 프로그래밍 실력.</strong> 조사관·내부조사 직무는 시스템 이해, 조사 사고력, 법 절차, 보고 능력이 실력의 중심이다. 프로그래밍은 도구가 못 읽는 흔적을 직접 파싱하고 대량 작업을 자동화하게 해 주는 <strong>배율기</strong>이고, AI를 접목하려면 이 배율기가 꼭 필요하다.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <span class="tag">메모 · 공부 순서에 주는 의미</span>
+    <ol class="notes">
+      <li>운영체제·파일시스템 구조부터 (표의 첫 줄, 모든 직무의 공통 핵심)</li>
+      <li>증거 절차·보고서 쓰기를 실습과 함께 (조사 직무의 차별점)</li>
+      <li>Python으로 아티팩트 파서를 직접 짜 보기 (배율기이자 AI 접목의 입구)</li>
+      <li>리버싱·공격 기법은 침해사고 대응이나 악성코드 쪽으로 갈 때 확장</li>
+    </ol>
+  </section>
+
+  <footer>프로젝트 문서: projects/forensics/outputs/01-forensics-study-basics.md</footer>
+</div>

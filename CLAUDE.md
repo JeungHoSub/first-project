@@ -26,6 +26,7 @@
 | 쇼츠 편집·자동업로드 | `shorts-auto` | media-producer → content-writer → developer | youtube-upload, copyright-check |
 | 음악·동영상 업로드 | `music-video-upload` | researcher → media-producer → developer | copyright-check, youtube-upload |
 | 입찰 플랫폼 | `g2b-bid-platform` | researcher → planner → developer | g2b-bid-data |
+| 포렌식 공부·사업화 | `forensics` | (메인 직접) → researcher → planner → lecture-writer | — |
 
 공통: 모든 프로젝트의 마지막은 `reviewer` → 사용자 검토. 스킬이 없으면 `skill-scout`.
 업로드 모듈처럼 여러 프로젝트가 같이 쓰는 코드는 `projects/shared/`에 둔다.
