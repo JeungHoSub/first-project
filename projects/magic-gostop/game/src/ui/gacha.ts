@@ -5,6 +5,7 @@
 //      10회는 카드 10장이 깔린 뒤 한 장씩 뒤집히고, S 이상은 마지막에 따로 크게 뒤집힌다. 화면을 누르면 건너뛴다.
 import { ITEMS, bestGrade, TICKETS, GRADES, GRADE_COLOR, drawWithTicket, priceOf, curOf, itemArt, CATEGORY_LABEL, type Ticket, type Drop } from './collection';
 import { copyOf } from './item-copy';
+import { coinGroup, norigaeGroup } from './coin-art';
 import { ALL_CARDS, type Card } from '../engine';
 import { cardArt } from './art';
 import * as sfx from './sound';
@@ -78,68 +79,12 @@ function ticketArt(t: Ticket, i: number, mini = false): string {
     <linearGradient id="${id}g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff2c0"/><stop offset=".5" stop-color="#d6a640"/><stop offset="1" stop-color="#8a6420"/></linearGradient>
     <radialGradient id="${id}bg" cx="25%" cy="50%" r="80%"><stop offset="0" stop-color="${M.b}" stop-opacity=".22"/><stop offset="1" stop-color="#0d1015" stop-opacity="0"/></radialGradient>`;
   let obj = '';
-  if (i === 0) {
-    // 엽전: 둥근 몸통 + 네모 구멍 + 테두리 + 네 글자
-    const words = ['복', '록', '수', '강'];
-    const pos = [[0, -30], [30, 0], [0, 30], [-30, 0]];
-    obj = `<g transform="translate(${cx} ${cy})">
-      <circle r="55" fill="#000" opacity=".35" transform="translate(3 5)"/>
-      <circle r="54" fill="url(#${id}m)"/>
-      <circle r="54" fill="none" stroke="${M.a}" stroke-width="2"/>
-      <circle r="46" fill="none" stroke="${M.ink}" stroke-opacity=".55" stroke-width="2.2"/>
-      <circle r="44.5" fill="none" stroke="${M.c}" stroke-opacity=".5" stroke-width="1"/>
-      <rect x="-13" y="-13" width="26" height="26" fill="#0b0d12"/>
-      <rect x="-17" y="-17" width="34" height="34" fill="none" stroke="${M.ink}" stroke-opacity=".6" stroke-width="2.4"/>
-      <rect x="-16" y="-16" width="32" height="32" fill="none" stroke="${M.c}" stroke-opacity=".45" stroke-width="1"/>
-      ${words.map((w, k) => `<text x="${pos[k][0]}" y="${pos[k][1] + 6}" text-anchor="middle" font-size="16" font-weight="800" fill="${M.ink}" fill-opacity=".72" font-family="Nanum Myeongjo, Noto Serif KR, serif">${w}</text>`).join('')}
-      <circle r="54" fill="url(#${id}h)"/>
-    </g>`;
-  } else if (i <= 2) {
-    // 은화: 매화 돋을새김 / 금화: 해와 구름 돋을새김 — 구멍 없는 주화, 구슬 테
-    const beads = Array.from({ length: 36 }, (_, k) => { const an = (k / 36) * Math.PI * 2; return `<circle cx="${(48.5 * Math.cos(an)).toFixed(1)}" cy="${(48.5 * Math.sin(an)).toFixed(1)}" r="1.5" fill="${M.c}" opacity=".85"/>`; }).join('');
-    const emb = i === 1
-      ? `<g fill="${M.d}" stroke="${M.ink}" stroke-opacity=".35" stroke-width="1">${[0, 72, 144, 216, 288].map((a) => `<ellipse cx="0" cy="-13" rx="9.5" ry="12" transform="rotate(${a})"/>`).join('')}</g>
-         <circle r="6" fill="${M.c}" stroke="${M.ink}" stroke-opacity=".4"/>${[0, 72, 144, 216, 288].map((a) => `<circle cx="0" cy="-9" r="1.4" fill="${M.ink}" opacity=".5" transform="rotate(${a + 36})"/>`).join('')}
-         <path d="M-26 22 q8 -10 18 -6 M26 22 q-8 -10 -18 -6" stroke="${M.ink}" stroke-opacity=".4" stroke-width="2" fill="none"/>`
-      : `<circle r="13" fill="${M.c}" stroke="${M.ink}" stroke-opacity=".45" stroke-width="1.4"/>
-         <g stroke="${M.ink}" stroke-opacity=".45" stroke-width="2" stroke-linecap="round">${Array.from({ length: 12 }, (_, k) => `<path d="M0 -17 V-23" transform="rotate(${k * 30})"/>`).join('')}</g>
-         <path d="M-30 20 c4 -8 12 -8 14 -2 c3 -6 12 -5 13 2 c6 -1 8 4 4 6 h-28 c-6 0 -6 -4 -3 -6z M6 26 c3 -6 10 -6 11 -1 c3 -4 10 -3 10 2 c4 0 5 4 2 5 h-21 c-4 0 -4 -4 -2 -6z" fill="${M.d}" stroke="${M.ink}" stroke-opacity=".35" stroke-width="1"/>`;
-    obj = `<g transform="translate(${cx} ${cy})">
-      <circle r="55" fill="#000" opacity=".35" transform="translate(3 5)"/>
-      <circle r="54" fill="url(#${id}m)"/>
-      <circle r="54" fill="none" stroke="${M.a}" stroke-width="2"/>
-      ${beads}
-      <circle r="43" fill="none" stroke="${M.ink}" stroke-opacity=".5" stroke-width="1.6"/>
-      <circle r="41.5" fill="none" stroke="${M.c}" stroke-opacity=".5" stroke-width="1"/>
-      ${emb}
-      <circle r="54" fill="url(#${id}h)"/>
-    </g>`;
+  if (i <= 2) {
+    // 엽전·은화·금화: 상평통보 실물을 본뜬 주화 (coin-art.ts)
+    obj = `<g transform="translate(${cx} ${cy}) scale(.98)">${coinGroup((['yeop', 'eun', 'geum'] as const)[i])}</g>`;
   } else {
-    // 옥패(노리개): 매듭 끈 + 둥근 사각 옥 + 술. 용옥은 금테 + 금빛 용
-    const dragon = i === 4 ? `<g fill="none" stroke="url(#${id}g)" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M-12 30 C-30 16 -4 6 -12 -6 C-20 -18 2 -30 12 -22" stroke-width="5"/>
-        <path d="M-12 30 C-30 16 -4 6 -12 -6 C-20 -18 2 -30 12 -22" stroke="#0c2a22" stroke-opacity=".5" stroke-width="1.4" stroke-dasharray="2 3"/>
-        <path d="M12 -22 C18 -18 20 -12 14 -10 C10 -9 8 -12 10 -15" stroke-width="3"/>
-        <path d="M12 -24 L18 -32 M9 -25 L11 -34" stroke-width="1.6"/>
-        <path d="M17 -13 C24 -14 26 -8 22 -4 M15 -10 C20 -6 18 0 14 0" stroke-width="1.2"/>
-        <path d="M-21 18 l-6 2 m6 -2 l-5 -3 m5 3 l-2 5 M-17 -10 l-6 -1 m6 1 l-4 -4 m4 4 l-3 4" stroke-width="1.6"/>
-        <circle cx="14" cy="-17" r="1.3" fill="#fff2c0" stroke="none"/>
-      </g>
-      <circle cx="-4" cy="40" r="4" fill="url(#${id}g)" stroke="none"/>` : `<g fill="none" stroke="${M.ink}" stroke-opacity=".45" stroke-width="1.6">
-        <path d="M-18 -14 c6 -8 14 -8 16 -1 c4 -7 14 -6 15 2 c8 -1 10 6 4 9 c-12 3 -27 3 -35 -1 z"/>
-        <path d="M-14 16 c5 -6 12 -6 13 0 c4 -6 12 -5 13 2 c6 0 8 5 3 7 c-10 2 -22 2 -29 -1 z"/></g>`;
-    obj = `<g transform="translate(${cx} ${cy})">
-      <path d="M0 -66 C-6 -60 6 -56 0 -50" fill="none" stroke="#8a1f24" stroke-width="2.4"/>
-      <path d="M-7 -58 C-10 -52 -4 -50 0 -52 C4 -50 10 -52 7 -58 C4 -62 -4 -62 -7 -58 Z" fill="#a3262c"/>
-      <rect x="-34" y="-50" width="68" height="96" rx="20" fill="#000" opacity=".35" transform="translate(3 5)"/>
-      <rect x="-34" y="-50" width="68" height="96" rx="20" fill="url(#${id}m)"/>
-      ${i === 4 ? `<rect x="-34" y="-50" width="68" height="96" rx="20" fill="none" stroke="url(#${id}g)" stroke-width="3.2"/><rect x="-28" y="-44" width="56" height="84" rx="15" fill="none" stroke="url(#${id}g)" stroke-width="1" opacity=".7"/>`
-        : `<rect x="-34" y="-50" width="68" height="96" rx="20" fill="none" stroke="${M.a}" stroke-width="1.6"/><rect x="-28" y="-44" width="56" height="84" rx="15" fill="none" stroke="${M.c}" stroke-opacity=".35" stroke-width="1"/>`}
-      ${dragon}
-      <rect x="-34" y="-50" width="68" height="96" rx="20" fill="url(#${id}h)"/>
-      <path d="M-4 46 V52 M4 46 V52" stroke="#a3262c" stroke-width="2.4"/>
-      <path d="M-6 52 H6 L5 70 H-5 Z" fill="#a3262c"/><path d="M-4 54 V70 M0 54 V70 M4 54 V70" stroke="#6e1418" stroke-width=".8"/>
-    </g>`;
+    // 옥패·용옥패: 실물 노리개(투각 녹옥 원판·구슬·술)를 본뜸 (coin-art.ts)
+    obj = `<g transform="translate(${cx} ${cy - 2}) scale(.93)">${norigaeGroup(i === 4)}</g>`;
   }
   return `<svg class="tx-svg" viewBox="${mini ? '96 -6 128 152' : '0 0 320 140'}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
   <defs>${defs}</defs>

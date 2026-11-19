@@ -8,6 +8,8 @@ import * as sfx from './sound';
 import { initGacha, openGacha } from './gacha';
 import { initEconomy, record as missionRecord, missionReady, syncCurrencies } from './economy';
 import * as chars from './characters';
+import { installCoinIcons } from './coin-art';
+installCoinIcons();
 import { earn, lose, coins, fmt, COIN_PER_POINT, FIRST_PPEOK_COINS, add as addCur } from './wallet';
 import { ITEMS, GRADES, GRADE_RATE, CATEGORY_LABEL, EQUIP_LIMITS, DROP_RATE, itemArt, gradeFill, ownedOf, bestGrade, ownedKinds, rollDrop, type Drop, type ItemDef, type Category, MAGIC_IDS, magicParams, grantTestMagic, type MagicId } from './collection';
 
