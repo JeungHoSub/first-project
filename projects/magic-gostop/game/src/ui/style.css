@@ -2031,3 +2031,10 @@ body[data-theme="4"] .mat::before { border-color: rgba(190,160,255,.6) !importan
 #gostop .gs-btns { grid-template-columns: repeat(2, 128px); justify-content: center; gap: 26px; }
 #gostop .gs-btns .big { width: 128px; font-size: 4.4rem !important; }
 #btn-stop { font-size: 3.4rem !important; }
+
+/* 봇전 판돈: 점수 아래 엽전 환산, 방 이름 */
+.pmoney { position: absolute; left: 50%; bottom: -9px; transform: translateX(-50%); font-style: normal; font-size: .58rem; font-weight: 700; color: #f3e2b8; white-space: nowrap;
+  background: rgba(10,8,6,.85); border: 1px solid rgba(214,186,128,.35); border-radius: 999px; padding: 0 6px 0 16px; font-variant-numeric: tabular-nums; }
+.pmoney::before { content: ""; position: absolute; left: 3px; top: 50%; width: 10px; height: 10px; margin-top: -5px; background: var(--coin-yeop, radial-gradient(circle, #c0843a, #6e4316)) center / contain no-repeat; border-radius: 50%; }
+.seg-level-sm button { display: grid; gap: 0; line-height: 1.2; }
+.seg-level-sm button small { font-size: .6rem; opacity: .75; }

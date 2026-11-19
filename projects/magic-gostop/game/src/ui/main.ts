@@ -17,7 +17,7 @@ installCoinIcons();
   const sh = document.getElementById('btn-shop');
   if (sh) sh.insertAdjacentHTML('beforeend', `<span class="sp-coins" aria-hidden="true">${[0, 1, 2].map((i) => `<span style="--k:${i}">${coinSvg('yeop', 26, false)}</span>`).join('')}</span>`);
 }
-import { earn, lose, coins, fmt, COIN_PER_POINT, FIRST_PPEOK_COINS, add as addCur } from './wallet';
+import { earn, lose, coins, fmt, FIRST_PPEOK_COINS, add as addCur, ROOMS } from './wallet';
 import { ITEMS, GRADES, GRADE_RATE, CATEGORY_LABEL, EQUIP_LIMITS, DROP_RATE, itemArt, gradeFill, ownedOf, bestGrade, ownedKinds, rollDrop, type Drop, type ItemDef, type Category, MAGIC_IDS, magicParams, grantTestMagic, type MagicId } from './collection';
 
 // 화면 = 엔진 상태를 그리기만 한다. 규칙 판단은 전부 엔진(getLegalActions/applyAction)에 맡긴다.
@@ -207,6 +207,7 @@ function render(view: GameState) {
   for (const [p, sfx] of [[ME, 'my'], [AI, 'opp']] as const) {
     const b = $(`${sfx}-score`);
     b.textContent = String(sc[p].total);
+    { const m = document.getElementById(`${sfx}-money`); if (m) m.textContent = fmt(sc[p].total * ROOMS[level].per); }
     b.parentElement!.classList.toggle('hot', sc[p].total >= view.options.winScore);
     b.parentElement!.style.setProperty('--pct', String(Math.min(sc[p].total / view.options.winScore, 1)));
     const go = $(`${sfx}-go`);
@@ -1077,7 +1078,7 @@ try { const v = localStorage.getItem('mg-level'); if (v && AI_LEVELS.some((l) =>
 function syncLevel() {
   const i = AI_LEVELS.findIndex((l) => l.id === level);
   const b = $('btn-level');
-  b.textContent = `${AI_LEVELS[i].label} ▾`;
+  b.textContent = `${ROOMS[AI_LEVELS[i].id].name} ▾`; void i;
   b.dataset.level = level;
   renderProfiles();
 }
@@ -1132,7 +1133,7 @@ function showResult() {
     if ((x.bakMultiplier ?? 1) > 1) parts.push(`박 ×${x.bakMultiplier}`);
     if ((x.carry ?? 1) > 1) parts.push(`나가리 ×${x.carry}`);
     if ((r as unknown as { magicDouble?: boolean }).magicDouble) parts.push('황금 배수 ×2');
-    $('res-formula').textContent = `${parts.join(' · ')} = ${r.finalScore}점`;
+    $('res-formula').textContent = `${parts.join(' · ')} = ${r.finalScore}점 × ${fmt(ROOMS[level].per)}엽전`;
     if (x.bak?.pi) badge('피박');
     if (x.bak?.gwang) badge('광박');
     if (x.bak?.meong) badge('멍따');
@@ -1168,12 +1169,12 @@ function showResult() {
   else if (r.type === 'win' && r.winner === ME) {
     const ag = items.lossAfterGuard(r.finalScore, s.goCount[AI], AI); // 상대 해태 부적·고 보험
     const boost = chars.ability('coinBoost');
-    const got = Math.round(ag.lost * COIN_PER_POINT * (1 + boost / 100)); earn(got);
+    const got = Math.round(ag.lost * ROOMS[level].per * (1 + boost / 100)); earn(got);
     rc.innerHTML = `<i class="coin-ico" aria-hidden="true"></i> +${fmt(got)} 엽전 <small>${boost ? `${chars.current().def.name} +${boost}% · ` : ''}${ag.saved ? `${ag.why.join(' · ')} → ${ag.saved}점 덜 받음 · ` : ''}보유 ${fmt(coins())}</small>`; rc.hidden = false; rc.classList.remove('minus');
   } else if (r.type === 'win') {
     const guard = items.lossAfterGuard(r.finalScore, s.goCount[ME], ME);
     const cg = chars.ability('coinGuard');
-    const lost = lose(Math.round(guard.lost * COIN_PER_POINT * (1 - cg / 100)));
+    const lost = lose(Math.round(guard.lost * ROOMS[level].per * (1 - cg / 100)));
     rc.innerHTML = `<i class="coin-ico" aria-hidden="true"></i> -${fmt(lost)} 엽전 <small>${cg ? `${chars.current().def.name} -${cg}% · ` : ''}${guard.saved ? `${guard.why.join(' · ')} → ${guard.saved}점 덜 잃음 · ` : ''}보유 ${fmt(coins())}</small>`; rc.hidden = false; rc.classList.add('minus');
   } else rc.hidden = true;
   // 겹친 아이템 효과 → 엽전, 금은 보따리 → 은화·금화
@@ -1298,13 +1299,12 @@ function syncHome() {
   renderProfiles();
   { const n = missionReady(); const el = document.getElementById('home-ms'); if (el) { el.textContent = n ? `받을 보상 ${n}개` : '은화 받기'; el.parentElement!.classList.toggle('ready', n > 0); } const sh = document.getElementById('btn-shop'); if (sh) { sh.classList.toggle('ready', n > 0); const sub = document.getElementById('home-shop-sub'); if (sub) sub.textContent = n ? `미션 보상 ${n}개 받기` : '미션 · 윷놀이 · 환전'; } }
   document.querySelectorAll('.coin-amt').forEach((e) => { e.textContent = fmt(coins()); });
-  const label = AI_LEVELS.find((l) => l.id === level)!.label;
-  $('home-level').textContent = label;
+  $('home-level').textContent = `${ROOMS[level].name} · 점당 ${fmt(ROOMS[level].per)}엽전`;
   $('home-coll').textContent = `${ownedKinds()} / ${ITEMS.length}`;
   const seg = $('seg-level'); seg.innerHTML = '';
   for (const l of AI_LEVELS) {
     const b = document.createElement('button');
-    b.type = 'button'; b.textContent = l.label; b.setAttribute('role', 'radio');
+    b.type = 'button'; b.innerHTML = `${ROOMS[l.id as AiLevel].name}<small>점당 ${fmt(ROOMS[l.id as AiLevel].per)}</small>`; b.setAttribute('role', 'radio');
     b.setAttribute('aria-checked', String(l.id === level)); b.dataset.level = l.id;
     b.addEventListener('click', () => { setLevel(l.id as AiLevel); sfx.click(); });
     seg.append(b);
@@ -1421,10 +1421,15 @@ $('btn-level').addEventListener('click', () => {
   level = AI_LEVELS[(i + 1) % AI_LEVELS.length].id as AiLevel;
   try { localStorage.setItem('mg-level', level); } catch { /* 무시 */ }
   syncLevel(); syncHome();
-  banner(`상대: ${AI_LEVELS.find((l) => l.id === level)!.label}`);
+  banner(`${ROOMS[level].name} · 점당 ${fmt(ROOMS[level].per)}엽전`);
 });
 $('sp-cancel').addEventListener('click', () => { $('special').hidden = true; });
-$('btn-start').addEventListener('click', () => { sfx.unlock(); sfx.click(); sfx.startBgm(); picked = items.ownedAll(); $('home').hidden = true; newGame(); }); // 장착 없이 가진 아이템 모두 자동 적용
+$('btn-start').addEventListener('click', () => {
+  sfx.unlock(); sfx.click(); sfx.startBgm();
+  const room = ROOMS[level];
+  if (coins() < room.min) { banner(`${room.name}은 엽전 ${fmt(room.min)} 이상 있어야 들어갑니다`); sfx.buzz([40]); return; }
+  picked = items.ownedAll(); $('home').hidden = true; newGame();
+}); // 장착 없이 가진 아이템 모두 자동 적용
 $('btn-mp-go').addEventListener('click', () => { items.saveLoadout(picked); $('magic-pick').hidden = true; $('home').hidden = true; newGame(); });
 $('btn-mp-none').addEventListener('click', () => { picked = []; $('magic-pick').hidden = true; $('home').hidden = true; newGame(); });
 initGacha(() => syncHome());

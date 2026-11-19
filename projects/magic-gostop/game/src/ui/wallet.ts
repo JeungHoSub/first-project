@@ -2,7 +2,13 @@
 // 판에서 이기면 벌고, 판돈·윷놀이 내기에 쓴다. 나중에 첫뻑 보너스 등을 돈으로 바꿀 자리.
 const KEY = 'mg-coins-v1';
 export const START_COINS = 10000;
-export const COIN_PER_POINT = 100; // 이긴 판 점수 1점당 엽전
+export const COIN_PER_POINT = 100; // (기본값) 점수 1점당 엽전 — 봇전은 방(ROOMS)별 판돈을 쓴다
+/** 봇전 방: 난이도별 판돈(점당 엽전)과 입장에 필요한 최소 엽전. 상위 맞고 앱의 초보·중수·고수방 방식 */
+export const ROOMS: Record<'easy' | 'normal' | 'hard', { name: string; per: number; min: number }> = {
+  easy: { name: '초보방', per: 100, min: 3000 },
+  normal: { name: '중수방', per: 500, min: 15000 },
+  hard: { name: '고수방', per: 2000, min: 60000 },
+};
 export const COIN = '엽전';
 /** 첫뻑 보상(점수 +3과 함께 지급) */
 export const FIRST_PPEOK_COINS = 300;
