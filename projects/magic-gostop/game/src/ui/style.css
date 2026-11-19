@@ -1775,3 +1775,14 @@ body[data-frame=""] .seat.me .pname, body[data-cb=""] .back { }
 .tz-grades em { font-style: normal; font-size: .6rem; color: #1b140a; background: #f3d27a; padding: 2px 6px; border-radius: 999px; white-space: nowrap; }
 .tz-stack { margin: 0; font-size: .72rem; line-height: 1.5; color: #a9a291; } .tz-stack b { color: #c9ad74; margin-right: 4px; }
 @media (max-width: 380px) { .tz-top { grid-template-columns: 100px 1fr; } }
+
+/* 도깨비불 등롱: 기본은 접힌 작은 버튼 */
+.lantern:not(.open) { padding: 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; max-width: none !important; }
+.lantern:not(.open) .ln-body { display: none; }
+.ln-chip { font: inherit; font-size: .68rem; font-weight: 800; color: #7fe3c1; padding: 3px 9px; border-radius: 999px; border: 1px solid rgba(127,227,193,.45); background: rgba(8,20,16,.75); cursor: pointer; }
+.lantern.open .ln-chip { float: right; margin: 0 0 4px 6px; font-size: .6rem; padding: 1px 7px; }
+.lantern.open .ln-chip::after { content: " ✕"; }
+.table { position: relative; }
+.lantern { top: 8px !important; left: 8px !important; bottom: auto !important; z-index: 40 !important; }
+.lantern.open { max-width: min(300px, 78%) !important; background: rgba(8,14,12,.9) !important; }
+.lantern .ln-chip { pointer-events: auto; } .lantern.open { pointer-events: auto; }

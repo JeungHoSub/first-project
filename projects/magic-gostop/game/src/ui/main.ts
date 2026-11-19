@@ -151,7 +151,18 @@ function decorateItems(view: GameState) {
   const floorMonths = new Set(view.floor.map((c) => c.month));
   const months = Array.from({ length: 12 }, (_, i) => i + 1).filter((m) => lg >= 2 || myMonths.has(m) || (lg >= 1 && floorMonths.has(m)));
   const gwangMonths = new Set(unseen.filter((c) => c.kind === 'G').map((c) => c.month));
-  let html = `<div class="ln-title">도깨비불 등롱 <small>안 보인 패</small></div><div class="ln-months">${months.map((m) => {
+  // 기본은 접힌 작은 버튼 — 판을 가리지 않게. 누르면 펼침(이 기기에 기억)
+  if (!box.dataset.wired) {
+    box.dataset.wired = '1';
+    box.addEventListener('click', (e) => {
+      if (!(e.target as HTMLElement).closest('.ln-chip')) return;
+      const open = !box.classList.contains('open'); box.classList.toggle('open', open);
+      try { localStorage.setItem('mg-lantern-open', open ? '1' : '0'); } catch { /* 무시 */ }
+      sfx.click();
+    });
+    try { box.classList.toggle('open', localStorage.getItem('mg-lantern-open') === '1'); } catch { /* 무시 */ }
+  }
+  let html = `<button type="button" class="ln-chip" aria-label="도깨비불 등롱 정보 펼치기·접기">등롱</button><div class="ln-body"><div class="ln-title">도깨비불 등롱 <small>안 보인 패</small></div><div class="ln-months">${months.map((m) => {
     const n = unseen.filter((c) => c.month === m).length;
     return `<span class="${n ? '' : 'zero'}${lg >= 7 && gwangMonths.has(m) ? ' gw' : ''}"><b>${m}월</b>${n}</span>`;
   }).join('')}</div>`;
@@ -176,7 +187,7 @@ function decorateItems(view: GameState) {
       .map((e) => (e.type === 'capture' ? `${e.player === ME ? '나' : '상대'} ${e.cards.map((x) => byId(x).month).filter((m) => m <= 12).join('·')}월` : ''));
     if (log.length) html += `<div class="ln-row ln-log">먹기 기록 · ${log.join(' / ')}</div>`;
   }
-  box.innerHTML = html;
+  box.innerHTML = html + '</div>';
 }
 
 /** 상태 하나를 그린다. view가 진짜 상태이고 내 차례이며 연출 중이 아닐 때만 누를 수 있다. */
