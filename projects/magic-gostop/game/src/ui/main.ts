@@ -1061,6 +1061,19 @@ function syncLevel() {
   const b = $('btn-level');
   b.textContent = `${AI_LEVELS[i].label} ▾`;
   b.dataset.level = level;
+  renderProfiles();
+}
+/** 상대·나 프로필: 캐릭터 얼굴 + 이름 (상위 맞고 앱처럼 얼굴·닉네임·머니) */
+const OPP_BY_LEVEL: Record<string, string[]> = { easy: ['bobu', 'jumo'], normal: ['jumo', 'maehwa'], hard: ['janggun', 'dosa'] };
+function renderProfiles() {
+  const me = chars.current();
+  const oppId = (OPP_BY_LEVEL[level] ?? ['bobu']).find((x) => x !== me.def.id) ?? 'bobu';
+  const opp = chars.CHARS.find((c) => c.id === oppId)!;
+  const oa = $('opp-avatar'); oa.innerHTML = chars.portrait(opp, level === 'hard' ? 10 : level === 'normal' ? 6 : 3); oa.classList.add('has-art');
+  const ma = document.querySelector<HTMLElement>('.avatar.mine')!; ma.innerHTML = chars.portrait(me.def, me.lv); ma.classList.add('has-art');
+  const on = document.getElementById('opp-name'); if (on) on.textContent = opp.name;
+  const mn = document.getElementById('my-name'); if (mn) mn.innerHTML = `${me.def.name} <small>Lv.${me.lv}</small>`;
+  const mc = document.getElementById('my-coins'); if (mc) mc.innerHTML = `<i class="cur-ico yeop" aria-hidden="true"></i>${fmt(coins())}`;
 }
 
 // 나가리면 다음 판 점수에 배수가 붙는다 (×2, 최대 ×4)
@@ -1075,6 +1088,17 @@ function showResult() {
   const x = r as unknown as WinExtra;
   carry = x.nextCarry ?? 1;
   $('result').hidden = false;
+  // 결과 머리: 이긴 쪽 캐릭터 얼굴 + 승리/패배 낙관 (나가리는 둘 다)
+  {
+    const me = chars.current();
+    const oppId = (OPP_BY_LEVEL[level] ?? ['bobu']).find((q) => q !== me.def.id) ?? 'bobu';
+    const opp = chars.CHARS.find((c) => c.id === oppId)!;
+    const win = r.type === 'win' && r.winner === ME; const lose = r.type === 'win' && r.winner !== ME;
+    $('res-card').dataset.out = win ? 'win' : lose ? 'lose' : 'nagari';
+    $('res-hero').innerHTML = r.type === 'nagari'
+      ? `<div class="rh-face sm">${chars.portrait(me.def, me.lv)}</div><div class="rh-seal">무</div><div class="rh-face sm">${chars.portrait(opp, 3)}</div>`
+      : `<div class="rh-face">${chars.portrait(win ? me.def : opp, win ? me.lv : 6)}</div><div class="rh-seal">${win ? '승' : '패'}</div>`;
+  }
   const badges = $('res-badges'); badges.innerHTML = '';
   const badge = (t: string) => { const b = document.createElement('span'); b.className = 'res-badge'; b.textContent = t; badges.append(b); };
   if (r.type === 'nagari') {
@@ -1253,6 +1277,7 @@ function renderMusic() {
 
 function syncHome() {
   syncCurrencies();
+  renderProfiles();
   { const n = missionReady(); const el = document.getElementById('home-ms'); if (el) { el.textContent = n ? `받을 은화 ${n}개` : '은화 받기'; el.parentElement!.classList.toggle('ready', n > 0); } }
   document.querySelectorAll('.coin-amt').forEach((e) => { e.textContent = fmt(coins()); });
   const label = AI_LEVELS.find((l) => l.id === level)!.label;
@@ -1386,7 +1411,7 @@ $('btn-mp-go').addEventListener('click', () => { items.saveLoadout(picked); $('m
 $('btn-mp-none').addEventListener('click', () => { picked = []; $('magic-pick').hidden = true; $('home').hidden = true; newGame(); });
 initGacha(() => syncHome());
 initEconomy(() => syncHome(), (msg) => banner(msg));
-chars.initChars(() => syncCurrencies());
+chars.initChars(() => { syncCurrencies(); renderProfiles(); });
 $('btn-gacha').addEventListener('click', () => { sfx.unlock(); sfx.click(); sfx.startBgm(); openGacha(); });
 $('btn-mp-test').addEventListener('click', () => { grantTestMagic(); sfx.magic(); openMagicPick(); syncHome(); });
 $('magic-cancel').addEventListener('click', () => { selectMode = null; render(s); });

@@ -13,7 +13,7 @@
     <div class="seat-head">
       <div class="avatar ai" id="opp-avatar">AI</div>
       <div class="pinfo">
-        <div class="pname">상대 <button class="lv" id="btn-level" type="button" aria-label="난이도 바꾸기">쉬움</button><span class="turn-tag">차례</span></div>
+        <div class="pname"><span id="opp-name">상대</span> <button class="lv" id="btn-level" type="button" aria-label="난이도 바꾸기">쉬움</button><span class="turn-tag">차례</span></div>
         <button class="opp-items" id="opp-items" type="button" aria-label="상대 아이템 보기" hidden></button>
         <div class="opp-fan" id="opp-fan" aria-hidden="true"></div>
         <span class="sr" id="opp-hand">10</span>
@@ -39,7 +39,7 @@
     <div class="seat-head">
       <div class="avatar mine">나</div>
       <div class="pinfo">
-        <div class="pname">나<span class="turn-tag">내 차례</span></div>
+        <div class="pname"><span id="my-name">나</span><span class="my-coins" id="my-coins"></span><span class="turn-tag">내 차례</span></div>
         <div class="prompt" id="prompt"></div>
         <div class="magic-bar" id="magic-bar" hidden></div>
         <button class="text-btn magic-cancel" id="magic-cancel" type="button" hidden>취소</button>
@@ -91,7 +91,8 @@
 </div>
 
 <div class="sheet" id="result" hidden>
-  <div class="sheet-card">
+  <div class="sheet-card res-card" id="res-card">
+    <div class="res-hero" id="res-hero"></div>
     <div class="sheet-kicker" id="res-kicker">판 결과</div>
     <div class="sheet-title" id="res-title"></div>
     <div class="formula" id="res-formula"></div>
