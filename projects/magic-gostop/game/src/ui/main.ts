@@ -1423,8 +1423,8 @@ async function newGame() {
     if (no !== gameNo) return;
     await reveal(`${ct.player === ME ? '나' : '상대'} 총통!`, ct.cards);
     if (no !== gameNo) return;
-    banner('총통!'); sfx.bonus();
-    await wait(700);
+    banner('총통!'); sfx.chongtong(); sfx.buzz([40, 40, 40, 40, 120]);
+    await wait(2200);
     if (no !== gameNo) return;
     if (s.result?.type === 'win' && s.result.winner === ME) sfx.win(); else sfx.lose();
     showResult();

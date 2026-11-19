@@ -258,6 +258,34 @@ export function cannon() {
     tone(t + d, 0.7, 'sine', 70, 35, v * 0.6, 0.03);
   });
 }
+/** 총통: 같은 월 4장 — 패 4장 "착착착착" → 북 연타 → 징 → 태평소풍 팡파르 → 반짝이 방울 비 */
+export function chongtong() {
+  if (!ready()) return;
+  const t = now();
+  // ① 4장이 차례로 "착착착착" 내려꽂힘
+  [0, 0.11, 0.22, 0.36].forEach((d, i) => setTimeout(() => slap(0.75 + i * 0.08), d * 1000));
+  // ② 북 연타 "두두두둥!"
+  const drum = (at: number, v: number) => { tone(at, 0.5, 'sine', 125, 50, v, 0.003); noise(at, 0.07, 'lowpass', 700, v * 0.35, 0.8, 200); };
+  [0.5, 0.58, 0.66, 0.74, 0.86].forEach((d, i) => drum(t + d, i === 4 ? 0.75 : 0.35 + i * 0.06));
+  // ③ 징 "지이잉~" (길게 퍼지는 금속 울림)
+  const g = t + 0.86;
+  tone(g, 2.8, 'sine', 178, 174, 0.15, 0.02); tone(g, 2.0, 'sine', 356, 350, 0.06, 0.02); tone(g, 1.4, 'sine', 534, 528, 0.03, 0.02);
+  // ④ 태평소풍 팡파르: 5음계로 치솟았다가 높은 음을 길게 떨며
+  const c = ctx!;
+  const mel: [number, number, number][] = [[0.9, 0.12, 587], [1.02, 0.12, 659], [1.14, 0.12, 784], [1.26, 0.12, 880], [1.38, 0.9, 1175]];
+  for (const [d, dur, f] of mel) {
+    const st = t + d;
+    const o = c.createOscillator(); o.type = 'sawtooth'; o.frequency.setValueAtTime(f * 0.97, st); o.frequency.linearRampToValueAtTime(f, st + 0.03);
+    const lfo = c.createOscillator(); lfo.frequency.value = 6.5; const lg = c.createGain(); lg.gain.value = dur > 0.5 ? f * 0.012 : 0; lfo.connect(lg).connect(o.frequency);
+    const fl = c.createBiquadFilter(); fl.type = 'bandpass'; fl.frequency.value = f * 2; fl.Q.value = 0.9;
+    const gn = c.createGain(); gn.gain.setValueAtTime(0.0001, st); gn.gain.linearRampToValueAtTime(0.11, st + 0.02); gn.gain.setValueAtTime(0.1, st + dur * 0.8); gn.gain.exponentialRampToValueAtTime(0.0001, st + dur + 0.06);
+    o.connect(fl).connect(gn).connect(master!); o.start(st); lfo.start(st); o.stop(st + dur + 0.1); lfo.stop(st + dur + 0.1);
+  }
+  // ⑤ 반짝이 방울·엽전 비
+  [1.4, 1.5, 1.6, 1.7, 1.85, 2.0].forEach((d, i) => { const f = [2093, 2637, 3136, 2349, 3520, 2794][i]; tone(t + d, 0.9, 'sine', f, f, 0.05, 0.002); tone(t + d, 0.4, 'sine', f * 2.76, f * 2.76, 0.012, 0.002); });
+  setTimeout(() => coinRain(900), 1400);
+  noise(t + 1.38, 1.0, 'highpass', 7000, 0.05, 0.5);
+}
 /** 고 */
 /** 고: 큰 북 "둥!" — 2고는 "둥둥!", 3고부터는 징까지 울린다 */
 export function go(n = 1) {
