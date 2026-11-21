@@ -17,6 +17,7 @@
 | 음악 업로드 | [음악 업로드] music-video-upload | project/music-video-upload |
 | 입찰 플랫폼 | [입찰 플랫폼] g2b-bid-platform | project/g2b-bid-platform |
 | 클로드 강의 | [클로드 강의] claude-lecture | project/claude-lecture |
+| 수익화 아이디어 | 총괄 세션에 예약 브리핑 6회 도착 | claude/dazzling-feynman-13uash |
 
 ## 새 세션 시작할 때 첫 메시지 (세션을 새로 열어야 할 때 복사해서 사용)
 
@@ -29,6 +30,7 @@
 | 쇼츠 자동화 | `shorts-auto 프로젝트 시작. brief의 확인 필요부터 물어봐줘` |
 | 음악 업로드 | `music-video-upload 프로젝트 시작. brief의 확인 필요부터 물어봐줘` |
 | 입찰 플랫폼 | `g2b-bid-platform 프로젝트 시작. brief의 확인 필요부터 물어봐줘` |
+| 수익화 아이디어 | `money-ideas 이어서. 최근 브리핑이랑 feedback 확인해줘` |
 | 전체 점검 | `전체 프로젝트 현황이랑 review/QUEUE.md 정리해줘` |
 
 ## 세션이 끝나기 전
@@ -38,3 +40,17 @@
 ## 세션끼리 충돌 막기
 - 각 세션은 자기 프로젝트 폴더만 고친다.
 - 공용 파일(`style/`, `.claude/`, `review/QUEUE.md`, `projects/shared/`)을 고칠 때는 커밋 전에 최신 내용을 받아(pull) 합친다.
+
+## 예약 작업 (2026-11-17 등록)
+| 이름 | 시간(한국) | 하는 일 |
+|---|---|---|
+| 수익화 아침 브리핑 | 매일 07:52 | 새 아이디어 3개 |
+| 수익화 점심 브리핑 | 매일 12:22 | 아이디어 1개 심층 조사 |
+| 수익화 저녁 브리핑 | 매일 20:52 | 하루 정리 + 선택지 |
+| 수익화 속보 10시·15시·17시 | 매일 09:52·14:52·16:52 | 쓸 만한 것이 있을 때만 알림 |
+
+2026-11-18부터 모든 회차가 **총괄 세션 하나(이 저장소 시스템을 만든 "dazzling-feynman" 세션)로 들어온다.** 따로 새 세션이 생기지 않으니 어느 기기에서든 그 세션만 열면 된다. 답도 그 세션에서 하면 `feedback.md`에 기록된다.
+
+## 휴대폰·집 컴퓨터에서 확인
+- **휴대폰**: Claude 앱 → Code에서 세션 확인/답장. 파일은 GitHub 앱 → `jeunghosub/first-project` → 브랜치 선택.
+- **집 컴퓨터**: `git clone` 후 `git pull`로 최신화, 또는 claude.ai/code에서 같은 세션 열기.

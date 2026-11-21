@@ -4,3 +4,5 @@
 
 | 날짜 | 프로젝트 | 결과물 | 상태 | 피드백 |
 |---|---|---|---|---|
+| 2026-11-17 | money-ideas | [agent-recommendations.md](../projects/money-ideas/outputs/agent-recommendations.md) | 검토 대기 | |
+| 2026-11-17 | 공통 | [VISION.md](../VISION.md) | 검토 대기 | |
