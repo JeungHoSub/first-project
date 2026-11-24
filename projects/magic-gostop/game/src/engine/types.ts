@@ -74,7 +74,7 @@ export type GameEvent =
   | { type: 'steal'; player: PlayerId; from: PlayerId; card: string }
   | { type: 'firstPpeok'; player: PlayerId; points: number }
   | { type: 'shieldBlock'; player: PlayerId } // 방패가 피 뺏김을 막음 (player = 막은 사람)
-  | { type: 'magic'; player: PlayerId; magic: 'swap' | 'sweep' | 'take' | 'extraFlip'; cards: string[] }
+  | { type: 'magic'; player: PlayerId; magic: 'swap' | 'sweep' | 'take' | 'extraFlip'; cards: string[]; from?: 'floor' | 'opp' | 'deck' } // take: 어디서 가져왔는지
   | { type: 'dummy'; player: PlayerId }
   | { type: 'flip'; player: PlayerId; card: string }
   | { type: 'place'; player: PlayerId; card: string }

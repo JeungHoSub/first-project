@@ -7,6 +7,7 @@ import { chooseAction, AI_LEVELS, type AiLevel } from '../ai/simple';
 import { cardArt } from './art';
 import * as sfx from './sound';
 import { initNative, askConfirm } from './native';
+import { initSoundPanel, toggleSoundPanel } from './sound-panel';
 import { initMonet, openCharge, needCoins } from './monet';
 import { initGacha, openGacha, attachItemTip, onZoomChange } from './gacha';
 import { initEconomy, record as missionRecord, missionReady, syncCurrencies } from './economy';
@@ -970,6 +971,8 @@ function describe(events: GameEvent[]): string {
  */
 async function perform(a: Action) {
   if (busy || s.phase === 'ended') return;
+  // 고르는 창은 누르는 즉시 닫는다 (연출·상대 차례 동안 고/스톱 창이 남아 있으면 또 묻는 것처럼 보임)
+  for (const id of ['gostop', 'choose', 'special']) $(id).hidden = true;
   if (online) { busy = true; online.send(a); render(s); return; } // 온라인: 서버가 판정해서 보내 준 판으로 연출
   busy = true;
   const prev = s;
@@ -1407,7 +1410,7 @@ async function newGame() {
   $('special').hidden = true;
   $('choose').hidden = true;
   $('gukjin').hidden = true;
-  await dealIn(no);
+  await dealIn(no, magicNotes);
   if (no !== gameNo) return;
   if (magicNotes.length) { $('feed').innerHTML = `<b>아이템</b> · ${magicNotes.join(' · ')}`; sfx.magic(); }
   const seer = items.current()?.seerCards ?? [];
@@ -1446,9 +1449,26 @@ function preDeal(view: GameState): { pre: GameState; bonus: { card: string; with
   return { pre, bonus: evs.map((e) => ({ card: e.card, with: e.with })) };
 }
 
+/** 판 시작 때 동료·아이템 능력으로 가져온 패(magic take)를 되돌린 모습 → 연출로 다시 가져가게 */
+function undoStartTakes(view: GameState): { mid: GameState; takes: { player: PlayerId; cards: string[]; from: 'floor' | 'opp' | 'deck' }[] } {
+  const takes = view.events.filter((e) => e.type === 'magic' && e.magic === 'take') as { player: PlayerId; cards: string[]; from?: 'floor' | 'opp' | 'deck' }[];
+  if (!takes.length) return { mid: view, takes: [] };
+  const mid: GameState = structuredClone(view);
+  for (const t of [...takes].reverse()) {
+    const from = t.from ?? (t.cards.every((id) => allCards.get(id)?.month === 13) ? 'deck' : 'floor');
+    for (const id of t.cards) {
+      const c = mid.captured[t.player].find((x) => x.id === id); if (!c) continue;
+      mid.captured[t.player] = mid.captured[t.player].filter((x) => x.id !== id);
+      if (from === 'deck') mid.deck.unshift(c); else if (from === 'opp') mid.captured[(1 - t.player) as PlayerId].push(c); else mid.floor.push(c);
+    }
+  }
+  return { mid, takes: takes.map((t) => ({ player: t.player, cards: t.cards, from: t.from ?? 'floor' })) };
+}
+
 /** 새 판: 가운데 더미에서 손패·바닥(엎어서)으로 "촤라락" → 바닥 6장을 왼쪽부터 차례로 뒤집기 → 보너스 패면 "띵!" 하고 선이 가져감 */
-async function dealIn(no: number) {
-  const { pre, bonus } = preDeal(s);
+async function dealIn(no: number, abilityNotes: string[] = []) {
+  const { mid, takes } = undoStartTakes(s);
+  const { pre, bonus } = preDeal(mid);
   if (reduced) { render(s); return; }
   busy = true; render(pre);
   const floorEls = [...document.querySelectorAll<HTMLElement>('#floor .card')];
@@ -1492,9 +1512,33 @@ async function dealIn(no: number) {
     if (no !== gameNo) return;
     // 보너스 패는 선의 먹은 패로, 빈자리는 더미에서 한 장 뒤집어 채운다
     busy = false;
-    await show(s, { deck: new Set(bonus.map((b) => b.with).filter((x): x is string => !!x)) });
+    await show(mid, { deck: new Set(bonus.map((b) => b.with).filter((x): x is string => !!x)) });
     sfx.swish(1);
     if (no !== gameNo) return;
+  }
+  // 동료·아이템 능력으로 판 시작 때 가져오는 패: 어디서 누구에게 가는지 보이게
+  for (const t of takes) {
+    if (no !== gameNo) return;
+    const isBonus = t.cards.every((id) => allCards.get(id)?.month === 13);
+    const who = t.player === ME ? '내' : '상대';
+    const why = abilityNotes.find((n) => t.player === ME && (isBonus ? n.includes('보너스') : n.includes('피'))) ?? `${who} 동료·아이템 능력`;
+    banner(`${why} → ${who} 먹은 패로`);
+    t.cards.forEach((id) => document.querySelector<HTMLElement>(`[data-id="${CSS.escape(id)}"]`)?.classList.add('bonus-hit'));
+    if (isBonus) sfx.ding(); else sfx.magic();
+    await wait(700);
+    if (no !== gameNo) return;
+    busy = false;
+    const step: GameState = structuredClone(mid);
+    // 이 take까지 반영한 모습으로 이동
+    for (const id of t.cards) {
+      const c = allCards.get(id)!;
+      step.deck = step.deck.filter((x) => x.id !== id); step.floor = step.floor.filter((x) => x.id !== id);
+      step.captured[(1 - t.player) as PlayerId] = step.captured[(1 - t.player) as PlayerId].filter((x) => x.id !== id);
+      step.captured[t.player] = [...step.captured[t.player], c];
+    }
+    await show(step, t.from === 'deck' ? { deck: new Set(t.cards) } : {});
+    Object.assign(mid, step);
+    sfx.swish(1);
   }
   busy = false; render(s);
 }
@@ -1502,7 +1546,7 @@ async function dealIn(no: number) {
 function syncSoundBtn() {
   const b = $('btn-sound');
   b.classList.toggle('off', !sfx.isBgmOn());
-  b.setAttribute('aria-label', sfx.isBgmOn() ? '배경음악 끄기' : '배경음악 켜기');
+  b.setAttribute('aria-label', '소리 설정');
 }
 
 $('btn-go').addEventListener('click', () => perform({ type: 'go' }));
@@ -1511,7 +1555,8 @@ $('btn-new').addEventListener('click', () => { if (online) { onlineAgain(); retu
 $('btn-restart').addEventListener('click', newGame);
 $('btn-info').addEventListener('click', () => { $('info').hidden = false; });
 $('btn-info-close').addEventListener('click', () => { $('info').hidden = true; });
-$('btn-sound').addEventListener('click', () => { sfx.unlock(); sfx.setBgm(!sfx.isBgmOn()); syncSoundBtn(); sfx.click(); banner(sfx.isBgmOn() ? '배경음악 켬' : '배경음악 끔'); }); // 게임 안 ♪ = 배경음악 (효과음은 설정에서)
+$('btn-sound').addEventListener('click', () => { sfx.click(); toggleSoundPanel(); }); // 게임 안 ♪ = 소리 창 (곡·크기)
+initSoundPanel();
 document.addEventListener('pointerdown', () => sfx.unlock(), { capture: true });
 syncSoundBtn();
 syncLevel();

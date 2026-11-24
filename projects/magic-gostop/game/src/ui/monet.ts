@@ -23,9 +23,9 @@ export const RESCUE = { amount: 5000, below: ROOMS.easy.min };
 
 /** 유료 꾸미기 꾸러미 (능력치 없음). 가격은 출시 때 확정 */
 export const PACKS = [
-  { id: 'pack-moon', name: '달밤 꾸러미', price: 3300, has: ['판 테마 · 달밤 연못', '카드 뒷면 · 별빛', '이름표 · 금실 테두리'] },
-  { id: 'pack-spring', name: '벚꽃 꾸러미', price: 5500, has: ['판 테마 · 벚꽃 눈보라', '카드 뒷면 · 학과 소나무', '먹기 이펙트 · 꽃잎'] },
-  { id: 'pack-dragon', name: '용궁 꾸러미', price: 11000, has: ['판 테마 · 은하수 한옥 마당', '카드 뒷면 · 구미호 꼬리', '먹기 이펙트 · 용 비늘', '이름표 · 주홍 용 문양'] },
+  { id: 'pack-moon', name: '달밤 꾸러미', price: 3300, has: ['카드 뒷면 · 금실 테두리', '이름표 · 금실 테두리', '먹기 이펙트 · 별가루'] },
+  { id: 'pack-spring', name: '벚꽃 꾸러미', price: 5500, has: ['효과음 · 판소리 추임새 "얼쑤"', '먹기 이펙트 · 꽃잎', '이름표 · 청색 구름'] },
+  { id: 'pack-dragon', name: '용궁 꾸러미', price: 11000, has: ['카드 뒷면 · 흐르는 금빛 광택', '먹기 이펙트 · 용 비늘', '이름표 · 주홍 용 문양', '효과음 · 국악 오케스트라'] },
 ];
 
 let notify: (m: string) => void = () => {};

@@ -5,12 +5,28 @@ let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
 let muted = false;
 try { muted = localStorage.getItem('mg-muted') === '1'; } catch { /* 저장소 없음 */ }
+/** 크기 (0~1, 이 기기에 저장): 효과음 · 배경음악 */
+let sfxVol = 1, musicVol = 1;
+try { const a = localStorage.getItem('mg-sfx-vol'), b = localStorage.getItem('mg-bgm-vol'); if (a != null) sfxVol = Math.max(0, Math.min(1, +a)); if (b != null) musicVol = Math.max(0, Math.min(1, +b)); } catch { /* 무시 */ }
+const masterLevel = () => (muted ? 0 : 0.9 * sfxVol);
+export const sfxVolume = () => sfxVol;
+export const bgmVolume = () => musicVol;
+export function setSfxVolume(v: number) {
+  sfxVol = Math.max(0, Math.min(1, v));
+  try { localStorage.setItem('mg-sfx-vol', String(sfxVol)); } catch { /* 무시 */ }
+  if (master) master.gain.value = masterLevel();
+}
+export function setBgmVolume(v: number) {
+  musicVol = Math.max(0, Math.min(1, v));
+  try { localStorage.setItem('mg-bgm-vol', String(musicVol)); } catch { /* 무시 */ }
+  if (audio && fadeT === null) audio.volume = BGM_VOL * musicVol;
+}
 
 export function isMuted() { return muted; }
 export function setMuted(v: boolean) {
   muted = v;
   try { localStorage.setItem('mg-muted', v ? '1' : '0'); } catch { /* 무시 */ }
-  if (master) master.gain.value = v ? 0 : 0.9;
+  if (master) master.gain.value = masterLevel();
 }
 
 /** 첫 터치 때 호출해 오디오를 깨운다 */
@@ -20,7 +36,7 @@ export function unlock() {
     if (!AC) return;
     ctx = new AC();
     master = ctx.createGain();
-    master.gain.value = muted ? 0 : 0.9;
+    master.gain.value = masterLevel();
     master.connect(ctx.destination);
   }
   if (ctx.state === 'suspended') ctx.resume().catch(() => {});
@@ -828,8 +844,9 @@ const saveBgmPrefs = () => { try { localStorage.setItem('mg-bgm-track', trackId)
 export const bgmTrack = () => trackId;
 export const bgmFavs = () => [...favs];
 export const bgmMode = () => mode;
-let onTrackChange: (id: string) => void = () => {};
-export function onBgmTrack(f: (id: string) => void) { onTrackChange = f; }
+const trackListeners: ((id: string) => void)[] = [];
+const onTrackChange = (id: string) => trackListeners.forEach((f) => f(id));
+export function onBgmTrack(f: (id: string) => void) { trackListeners.push(f); }
 /** 곡 고르기: 바로 그 곡으로 바꿔 튼다 */
 export function setBgmTrack(id: string) {
   if (!REC.some((x) => x.id === id)) return;
@@ -863,7 +880,7 @@ export function startBgm() {
     audio = null; startBgm();
   });
   audio = a;
-  a.play().then(() => fadeTo(a, BGM_VOL, 1200)).catch(() => { if (audio === a) audio = null; });
+  a.play().then(() => fadeTo(a, BGM_VOL * musicVol, 1200)).catch(() => { if (audio === a) audio = null; });
 }
 export function stopBgm(now = false) {
   const a = audio; audio = null;
@@ -942,7 +959,7 @@ export function say(text: string, excited = false) {
   try {
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    u.voice = koVoice; u.lang = 'ko-KR'; u.rate = excited ? 1.18 : 1.08; u.pitch = excited ? 1.15 : 1; u.volume = 1;
+    u.voice = koVoice; u.lang = 'ko-KR'; u.rate = excited ? 1.18 : 1.08; u.pitch = excited ? 1.15 : 1; u.volume = sfxVol;
     speechSynthesis.speak(u);
   } catch { /* 무시 */ }
 }
