@@ -702,16 +702,27 @@ function askGukjin(): Promise<void> {
   return new Promise((done) => {
     const y = score(s.captured[ME], s.options, 'yeol').total;
     const p = score(s.captured[ME], s.options, 'pi').total;
-    $('gk-yeol-pts').textContent = `지금 점수 ${y}점`;
-    $('gk-pi-pts').textContent = `지금 점수 ${p}점`;
+    // 고/스톱 차례라면: 고른 쪽 점수로 고/스톱이 되는지까지 미리 알려 준다 (열끗으로 쓰면 7점 아래로 내려가 고/스톱이 없어질 수 있음)
+    const gsNow = s.phase === 'goStop' && s.turn === ME;
+    const extra = (s.extra?.[ME] ?? []).reduce((a, x) => a + x.points, 0);
+    const note = (t: number) => {
+      const tot = t + extra;
+      if (!gsNow) return `${tot}점`;
+      if (tot < s.options.winScore) return `${tot}점 · 7점이 안 돼 고/스톱 없이 넘어감`;
+      if (tot <= s.lastGoScore[ME]) return `${tot}점 · 지난 고(${s.lastGoScore[ME]}점)보다 안 올라 고/스톱 없음`;
+      return `${tot}점 · 고/스톱 할 수 있음`;
+    };
+    $('gk-yeol-pts').textContent = note(y);
+    $('gk-pi-pts').textContent = note(p);
     $('gk-card').innerHTML = '';
     $('gk-card').append(cardEl(byId('09-Y-0')));
     $('gukjin').hidden = false;
     sfx.click();
     const pick = (mode: 'yeol' | 'pi') => {
       $('gukjin').hidden = true;
+      const wasGs = s.phase === 'goStop';
       s = setGukjin(s, ME, mode);
-      banner(mode === 'pi' ? '국진 → 쌍피' : '국진 → 열끗');
+      banner(mode === 'pi' ? '국진 → 쌍피' : wasGs && s.phase !== 'goStop' ? '국진 → 열끗 · 점수가 모자라 고/스톱 없이 넘어갑니다' : '국진 → 열끗');
       sfx.click();
       render(s);
       done();
