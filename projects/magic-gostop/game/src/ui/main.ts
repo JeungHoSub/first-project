@@ -253,6 +253,7 @@ function render(view: GameState) {
   const onFloor = new Set(floorCards.map((c) => c.month));
   for (const [m] of slotOf) if (!onFloor.has(m)) slotOf.delete(m);
   { const ids = new Set(floorCards.map((c) => c.id)); for (const id of [...arrival.keys()]) if (!ids.has(id)) arrival.delete(id); }
+  floorCards.forEach((c) => arrivalOf(c.id)); // 배열 순서(=바닥에 온 순서)대로 먼저 번호를 매겨 둔다 → 새로 온 패는 항상 오른쪽
   for (const c of floorCards) {
     if (!slotOf.has(c.month)) {
       const used = new Set(slotOf.values());
@@ -503,7 +504,38 @@ function renderOppItems() {
   };
 }
 
-/** 꾸미기: 카드 뒷면·판 테마·먹기 이펙트·이름표 테두리·효과음 팩 (능력치 없음) */
+/** 꾸미기 "먹기 이펙트": 내가 먹은 패 자리에서 입자가 터진다. 단계(0~4): 먼지 · 꽃잎 · 별가루 · 불꽃 · 무지개 꽃비 */
+function captureFx(ids: string[]) {
+  const t = document.body.dataset.fx; if (!t || reduced) return;
+  const tier = +t;
+  const conf = [
+    { n: 8, chars: ['·'], colors: ['#d8d0bf', '#b9b0a0'], size: [10, 16], dist: 50 },
+    { n: 12, chars: ['❀', '✿'], colors: ['#ffb6d0', '#ffd1e0', '#ff8fb1'], size: [12, 18], dist: 80 },
+    { n: 16, chars: ['✦', '✧', '⋆'], colors: ['#fff3b0', '#ffd23a', '#ffffff'], size: [10, 18], dist: 95 },
+    { n: 18, chars: ['✹', '•'], colors: ['#ffb02e', '#ff6b3d', '#ffd23a'], size: [9, 16], dist: 110 },
+    { n: 26, chars: ['❀', '✦', '✿', '⋆'], colors: ['#ff5a5f', '#ffd23a', '#5bbf6a', '#4fb4ff', '#b678e8'], size: [12, 20], dist: 140 },
+  ][Math.max(0, Math.min(4, tier))];
+  const els = ids.map((id) => document.querySelector<HTMLElement>(`#floor [data-id="${CSS.escape(id)}"]`)).filter((x): x is HTMLElement => !!x);
+  if (!els.length) return;
+  const r = els[0].getBoundingClientRect(); const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  const layer = document.createElement('div'); layer.className = 'cfx-layer'; document.body.append(layer);
+  for (let i = 0; i < conf.n; i++) {
+    const p = document.createElement('i'); p.className = 'cfx';
+    p.textContent = conf.chars[i % conf.chars.length];
+    p.style.color = conf.colors[i % conf.colors.length];
+    p.style.fontSize = `${conf.size[0] + Math.random() * (conf.size[1] - conf.size[0])}px`;
+    Object.assign(p.style, { left: `${cx}px`, top: `${cy}px` });
+    layer.append(p);
+    const a = (i / conf.n) * Math.PI * 2 + Math.random() * 0.5, d = conf.dist * (0.5 + Math.random() * 0.6);
+    const fall = tier === 1 || tier === 4 ? 40 + Math.random() * 40 : 0; // 꽃잎은 아래로 살랑
+    p.animate([{ transform: 'translate(-50%,-50%) scale(.4) rotate(0)', opacity: 1 },
+      { transform: `translate(calc(-50% + ${Math.cos(a) * d}px), calc(-50% + ${Math.sin(a) * d + fall}px)) scale(1) rotate(${(Math.random() - 0.5) * 360}deg)`, opacity: 0 }],
+      { duration: 700 + Math.random() * 500, easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'forwards' });
+  }
+  setTimeout(() => layer.remove(), 1400);
+}
+
+/** 꾸미기: 카드 뒷면·판 배경·먹기 이펙트·이름표 테두리·효과음 팩 (능력치 없음) */
 function applyCosmetics() {
   const tier = (id: string) => { const g = items.cosmetic(id); return g < 0 ? '' : String(Math.min(4, Math.floor(g / 2))); };
   const b = document.body.dataset;
@@ -1094,6 +1126,7 @@ async function playOut(prev: GameState, next: GameState, notes: { text: string; 
   const captured = evs.filter((e) => e.type === 'capture').flatMap((e) => (e.type === 'capture' ? e.cards : []));
   if (captured.length) {
     captured.forEach((id) => document.querySelector(`#floor [data-id="${CSS.escape(id)}"]`)?.classList.add('flash'));
+    if (who === ME) captureFx(captured);
     await wait(reduced ? 0 : 220);
     sfx.capture(captured.length);
   }

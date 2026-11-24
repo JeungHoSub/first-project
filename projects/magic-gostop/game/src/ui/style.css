@@ -2146,8 +2146,8 @@ body.online .lv, body.online .pmoney, body.online #opp-items { display: none !im
     var(--hwatu-weave) 0 0 / 7px 7px,
     #c8121b;
 }
-.deck .back, .gf-back { background: var(--hwatu-back); border: 1px solid #6e0409; filter: none; }
-#floor .card.fd { background: var(--hwatu-back) !important; border: 1px solid #6e0409 !important; }
+.deck .back, .gf-back { background: var(--hwatu-back); border: 0; filter: none; }
+#floor .card.fd { background: var(--hwatu-back) !important; border: 0 !important; }
 .deck .back, #floor .card.fd {
   box-shadow: inset 0 -2px 3px rgba(0,0,0,.25), 0 2px 4px rgba(0,0,0,.5);
   overflow: hidden;
@@ -2156,9 +2156,9 @@ body.online .lv, body.online .pmoney, body.online #opp-items { display: none !im
   background: none; }
 .deck .back:nth-child(1), .deck .back:nth-child(2) { filter: none; box-shadow: 0 1px 0 #8e0a12, 0 2px 0 #5a0307; }
 .deck .back:nth-child(3) { box-shadow: 0 1px 0 #9a0c14, 0 2px 0 #6a0409, 0 3px 0 #9a0c14, 0 4px 0 #6a0409, 0 5px 0 #8a0a11, 0 6px 0 #4a0205, 0 10px 14px rgba(0,0,0,.45); }
-.opp-fan i { background: var(--hwatu-back) !important; background-size: auto, 5px 5px, auto !important; border-color: #6e0409 !important; }
+.opp-fan i { background: var(--hwatu-back) !important; background-size: auto, 5px 5px, auto !important; border: 0 !important; }
 /* 뽑기 연출의 화투 뒷면도 같은 진짜 뒷면 (크게 보이므로 짜임을 조금 크게) */
-.gx-back, .gf-back { background: var(--hwatu-back) !important; background-size: auto, 13px 13px, auto !important; border-color: #6e0409 !important; }
+.gx-back, .gf-back { background: var(--hwatu-back) !important; background-size: auto, 13px 13px, auto !important; border: 0 !important; }
 .floor-month:has(.card.fd) .stack-n { visibility: hidden; }
 /* 확인 창 · 저장 백업 */
 .cf-back { position: fixed; inset: 0; z-index: 96; display: grid; place-items: center; padding: 16px; background: rgba(4,6,8,.66); backdrop-filter: blur(3px); }
@@ -2173,15 +2173,7 @@ body.online .lv, body.online .pmoney, body.online #opp-items { display: none !im
 .bk-btn.sub { color: #f4ecdc; background: rgba(255,255,255,.06); border-color: rgba(214,186,128,.35); }
 .bk-code { width: 100%; box-sizing: border-box; margin-top: 8px; padding: 10px; border-radius: 10px; font: .72rem/1.4 ui-monospace, monospace; color: #e8dcc0; background: rgba(0,0,0,.35); border: 1px solid rgba(214,186,128,.25); resize: vertical; word-break: break-all; }
 #backup { z-index: 45; }
-/* 꾸미기 카드 뒷면: 바탕은 언제나 진짜 화투 뒷면(진홍 짜임). 등급에 따라 테두리·광택만 더한다 */
-body[data-cb="0"] .deck .back { border-color: #b08a3a; }
-body[data-cb="1"] .deck .back { border-color: #c9a04a; box-shadow: inset 0 0 0 2px rgba(201,160,74,.35); }
-body[data-cb="2"] .deck .back { border: 1.5px solid #f0c35a; box-shadow: inset 0 0 0 3px rgba(240,195,90,.45); }
-body[data-cb="3"] .deck .back { border: 1.5px solid #f0c35a; box-shadow: inset 0 0 0 3px rgba(240,195,90,.45), 0 0 10px rgba(255,214,120,.55); }
-body[data-cb="4"] .deck .back { border: 1.5px solid #f0c35a; }
-body[data-cb="4"] .deck .back::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 1;
-  background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,.45) 45%, rgba(255,230,160,.35) 50%, transparent 65%) 0 0 / 260% 100%; animation: cbShine 3.2s linear infinite; }
-@keyframes cbShine { from { background-position: 130% 0; } to { background-position: -130% 0; } }
+
 /* 게임 화면 소리 창 */
 .snd-pop { position: fixed; z-index: 70; width: min(300px, calc(100vw - 16px)); box-sizing: border-box; padding: 12px 14px; border-radius: 14px; display: grid; gap: 10px;
   background: linear-gradient(180deg, #24211c, #16140f); border: 1px solid rgba(214,186,128,.38); box-shadow: 0 14px 34px rgba(0,0,0,.6); color: #f4ecdc; animation: tzPop .22s ease-out; }
@@ -2220,3 +2212,23 @@ body[data-cb="4"] .deck .back::before { content: ""; position: absolute; inset: 
 .at-day.got { opacity: .5; } .at-day em { position: absolute; inset: auto 0 4px; font-style: normal; font-size: .62rem; color: #f3d27a; }
 .st-at { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect x='8' y='10' width='32' height='30' rx='4' fill='%23efe4c8' stroke='%238a6a3a' stroke-width='2'/%3E%3Crect x='8' y='10' width='32' height='8' rx='3' fill='%23a5302a'/%3E%3Cpath d='M16 6v8M32 6v8' stroke='%238a6a3a' stroke-width='2.4' stroke-linecap='round'/%3E%3Cpath d='M17 28l5 5 9-10' stroke='%23a5302a' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
 #attend { z-index: 46; }
+
+/* ===== 꾸미기 카드 뒷면 (테두리 없음): 더미 맨 위 패에 광택·금박 매화·흐르는 빛 ===== */
+body[data-cb] .deck .back:nth-child(3)::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 1; }
+body[data-cb="0"] .deck .back:nth-child(3)::before { background: radial-gradient(120% 80% at 25% 15%, rgba(255,255,255,.28), transparent 55%); }
+body[data-cb="1"] .deck .back:nth-child(3)::before { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-20 -20 40 40'%3E%3Cg fill='none' stroke='%23f3d27a' stroke-width='1.6'%3E%3Ccircle cx='0' cy='-9' r='6.2'/%3E%3Ccircle cx='8.6' cy='-2.8' r='6.2'/%3E%3Ccircle cx='5.3' cy='7.3' r='6.2'/%3E%3Ccircle cx='-5.3' cy='7.3' r='6.2'/%3E%3Ccircle cx='-8.6' cy='-2.8' r='6.2'/%3E%3Ccircle r='3.2' fill='%23f3d27a'/%3E%3C/g%3E%3C/svg%3E") center / 34% no-repeat, radial-gradient(120% 80% at 25% 15%, rgba(255,255,255,.28), transparent 55%); }
+body[data-cb="2"] .deck .back:nth-child(3)::before { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-20 -20 40 40'%3E%3Cg fill='none' stroke='%23f3d27a' stroke-width='1.6'%3E%3Ccircle cx='0' cy='-9' r='6.2'/%3E%3Ccircle cx='8.6' cy='-2.8' r='6.2'/%3E%3Ccircle cx='5.3' cy='7.3' r='6.2'/%3E%3Ccircle cx='-5.3' cy='7.3' r='6.2'/%3E%3Ccircle cx='-8.6' cy='-2.8' r='6.2'/%3E%3Ccircle r='3.2' fill='%23f3d27a'/%3E%3C/g%3E%3C/svg%3E") center / 58% no-repeat, radial-gradient(120% 80% at 25% 15%, rgba(255,255,255,.3), transparent 55%); }
+body[data-cb="3"] .deck .back:nth-child(3)::before { background: linear-gradient(115deg, transparent 35%, rgba(255,240,200,.55) 48%, transparent 62%) 0 0 / 260% 100%, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-20 -20 40 40'%3E%3Cg fill='none' stroke='%23f3d27a' stroke-width='1.6'%3E%3Ccircle cx='0' cy='-9' r='6.2'/%3E%3Ccircle cx='8.6' cy='-2.8' r='6.2'/%3E%3Ccircle cx='5.3' cy='7.3' r='6.2'/%3E%3Ccircle cx='-5.3' cy='7.3' r='6.2'/%3E%3Ccircle cx='-8.6' cy='-2.8' r='6.2'/%3E%3Ccircle r='3.2' fill='%23f3d27a'/%3E%3C/g%3E%3C/svg%3E") center / 58% no-repeat; animation: cbShine 3s linear infinite; }
+body[data-cb="4"] .deck .back:nth-child(3)::before { background: linear-gradient(115deg, transparent 30%, rgba(255,90,95,.45) 40%, rgba(255,210,58,.45) 46%, rgba(91,191,106,.45) 52%, rgba(79,180,255,.45) 58%, transparent 68%) 0 0 / 260% 100%, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-20 -20 40 40'%3E%3Cg fill='none' stroke='%23f3d27a' stroke-width='1.6'%3E%3Ccircle cx='0' cy='-9' r='6.2'/%3E%3Ccircle cx='8.6' cy='-2.8' r='6.2'/%3E%3Ccircle cx='5.3' cy='7.3' r='6.2'/%3E%3Ccircle cx='-5.3' cy='7.3' r='6.2'/%3E%3Ccircle cx='-8.6' cy='-2.8' r='6.2'/%3E%3Ccircle r='3.2' fill='%23f3d27a'/%3E%3C/g%3E%3C/svg%3E") center / 58% no-repeat; animation: cbShine 2.6s linear infinite; }
+@keyframes cbShine { from { background-position: 130% 0, center; } to { background-position: -130% 0, center; } }
+
+/* ===== 꾸미기 판 배경: 판(녹색 모포)은 그대로, 둘레 배경만 ===== */
+body[data-theme="0"] { background: radial-gradient(120% 80% at 50% 30%, #3d3426, #1d1812 75%) !important; }
+body[data-theme="1"] { background: repeating-linear-gradient(90deg, rgba(120,170,90,.10) 0 6px, transparent 6px 38px, rgba(120,170,90,.07) 38px 42px, transparent 42px 70px), radial-gradient(120% 90% at 50% 30%, #1c3a22, #0c1a10 75%) !important; }
+body[data-theme="2"] { background: radial-gradient(60% 30% at 20% 85%, rgba(30,60,40,.7), transparent 70%), radial-gradient(70% 35% at 85% 90%, rgba(20,45,30,.8), transparent 70%), linear-gradient(180deg, #2a3238, #111619 80%) !important; }
+body[data-theme="3"] { background: radial-gradient(circle at 82% 10%, #fff8d8 0 2.4%, rgba(255,240,190,.35) 2.6%, transparent 9%), radial-gradient(130% 90% at 50% 0%, #1d2a4a, #0a0f1e 75%) !important; }
+body[data-theme="4"] { background: radial-gradient(1px 1px at 12% 18%, #fff, transparent), radial-gradient(1px 1px at 72% 12%, #fff, transparent), radial-gradient(1.5px 1.5px at 40% 30%, #fffbe0, transparent), radial-gradient(1px 1px at 88% 40%, #fff, transparent), radial-gradient(1px 1px at 25% 60%, #fff, transparent), radial-gradient(1.5px 1.5px at 60% 75%, #fff, transparent), linear-gradient(120deg, transparent 30%, rgba(160,140,255,.12) 45%, rgba(255,200,240,.08) 55%, transparent 70%), radial-gradient(130% 90% at 50% 20%, #1e1646, #07051a 75%) !important; }
+
+/* ===== 꾸미기 먹기 이펙트 입자 ===== */
+.cfx-layer { position: fixed; inset: 0; z-index: 30; pointer-events: none; }
+.cfx { position: fixed; font-style: normal; line-height: 1; text-shadow: 0 0 6px currentColor; }

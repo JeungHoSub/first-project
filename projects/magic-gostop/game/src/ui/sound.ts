@@ -166,12 +166,14 @@ export function capture(count = 2) {
   // 먹은 패를 모아 쥐는 "착착": 장수만큼 빠르게 겹쳐 붙는 소리
   swish(count); // 가져올 때는 "슥슥"만 (치는 소리는 낼 때 이미 남)
   if (pack < 1) return;
-  // 가야금 뜯는 소리(1~), 장구(2~), 징(3~), 여러 음 꾸밈(6~)
+  // 등급별: 가야금 한 줄(1~) · 장구(2~) · 대금과 징(4~) · 풍물 장구 두 번(5~) · "얼쑤"(6~, 3장 이상) · 가야금 꾸밈 여러 음(8~)
   const base = PENTA[Math.floor(Math.random() * 4)];
-  tone(t + 0.02, 0.5, 'sawtooth', base * 2, base * 1.98, 0.035, 0.002);
-  if (pack >= 2) noise(t, 0.09, 'lowpass', 220, 0.35, 0.7, 120);
-  if (pack >= 3) tone(t + 0.04, 0.9, 'sine', 196, 188, 0.05, 0.01);
-  if (pack >= 6) for (let i = 1; i <= Math.min(pack - 4, 4); i++) tone(t + 0.07 * i, 0.3, 'triangle', PENTA[(i * 2) % PENTA.length] * 2, PENTA[(i * 2) % PENTA.length] * 2, 0.03);
+  gpluck(t + 0.03, base * 2, 0.09, 0.8);
+  if (pack >= 2) { tone(t + 0.02, 0.18, 'sine', 210, 95, 0.22, 0.002); noise(t + 0.02, 0.05, 'bandpass', 1800, 0.08, 1.2); }
+  if (pack >= 4) { tone(t + 0.06, 1.4, 'sine', 178, 175, 0.05, 0.03); tone(t + 0.05, 0.6, 'sine', base * 4, base * 4, 0.02, 0.06); }
+  if (pack >= 5) { tone(t + 0.16, 0.15, 'sine', 230, 100, 0.16, 0.002); }
+  if (pack >= 6 && count >= 3 && voiceOn) say('얼쑤!', true);
+  if (pack >= 8) for (let i = 1; i <= Math.min(pack - 6, 3); i++) gpluck(t + 0.08 * i, PENTA[(i * 2) % PENTA.length] * 2, 0.06, 0.6);
 }
 /** 피 뺏어 오기 */
 export function steal() {
