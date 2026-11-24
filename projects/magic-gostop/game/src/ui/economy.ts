@@ -3,6 +3,7 @@
 import { ITEMS, GRADES, GRADE_COLOR, itemArt, bestGrade, ownedOf, grantItem, upgradable, upgradeItem, UPGRADE_SILVER, UPGRADE_NEED, CATEGORY_LABEL } from './collection';
 import { bal, add, pay, fmt, curIco, EXCHANGE, exchange, onCoins, type Cur } from './wallet';
 import * as sfx from './sound';
+import { watchAd } from './monet';
 
 const $ = (id: string) => document.getElementById(id)!;
 const badge = (gi: number) => {
@@ -64,22 +65,27 @@ export const YUT = [
   { id: 'yut', name: '윷', flats: 4, mult: 7, eun: 2 },
   { id: 'mo', name: '모', flats: 0, mult: 35, eun: 5 },
 ];
-const BETS = [100, 500, 1000, 5000];
-const DAILY_THROWS = 30; // 하루 던지기 한도
+const BETS = [100, 500, 1000, 5000, 10000, 50000];
+/** 하루 던지기: 무료 20번, 광고 1편마다 +20번, 최대 100번 (돈으로는 안 팖 — monetization.md) */
+export const YUT_FREE = 20, YUT_AD = 20, YUT_MAX = 100;
 let yBet = 500; let yPick = 'gae'; let yBusy = false;
-interface YState { day: string; n: number }
-let ys: YState = { day: today(), n: 0 };
+interface YState { day: string; n: number; extra?: number }
+let ys: YState = { day: today(), n: 0, extra: 0 };
+const yLimit = () => Math.min(YUT_MAX, YUT_FREE + (ys.extra ?? 0));
 try { const v = JSON.parse(localStorage.getItem('mg-yut-v1') || 'null'); if (v && v.day) ys = v; } catch { /* 무시 */ }
 const saveY = () => { try { localStorage.setItem('mg-yut-v1', JSON.stringify(ys)); } catch { /* 무시 */ } };
 function renderYut() {
-  if (ys.day !== today()) { ys = { day: today(), n: 0 }; saveY(); }
+  if (ys.day !== today()) { ys = { day: today(), n: 0, extra: 0 }; saveY(); }
   $('yt-bets').innerHTML = BETS.map((b) => `<button type="button" class="yt-bet${b === yBet ? ' on' : ''}" data-b="${b}">${curIco('yeop')}${fmt(b)}</button>`).join('');
   $('yt-picks').innerHTML = YUT.map((y) => `<button type="button" class="yt-pick${y.id === yPick ? ' on' : ''}" data-id="${y.id}">${miniSticks(y.flats)}<b>${y.name}</b><small>×${y.mult}${y.eun ? ` · ${curIco('eun')}${y.eun}` : ''}</small></button>`).join('');
-  $('yt-left').textContent = `오늘 ${DAILY_THROWS - ys.n}번 남음`;
+  $('yt-left').textContent = `오늘 ${yLimit() - ys.n}번 남음 (하루 무료 ${YUT_FREE}번 · 광고 1편에 +${YUT_AD}번 · 최대 ${YUT_MAX}번)`;
   if (!$('yt-stage').innerHTML) $('yt-stage').innerHTML = [true, false, true, false].map((f, i) => stickHtml(f, i, false)).join('');
   const btn = $('yt-throw') as HTMLButtonElement;
-  btn.disabled = yBusy || ys.n >= DAILY_THROWS || bal('yeop') < yBet;
-  btn.innerHTML = ys.n >= DAILY_THROWS ? '오늘은 여기까지' : `던지기 · ${curIco('yeop')}${fmt(yBet)}`;
+  const out = ys.n >= yLimit();
+  const canAd = out && yLimit() < YUT_MAX;
+  btn.disabled = yBusy || (out && !canAd) || (!out && bal('yeop') < yBet);
+  btn.classList.toggle('ad', canAd);
+  btn.innerHTML = canAd ? `▶ 광고 보고 ${YUT_AD}번 더 던지기` : out ? '오늘은 여기까지 · 내일 다시' : `던지기 · ${curIco('yeop')}${fmt(yBet)}`;
   $('yt-bets').querySelectorAll<HTMLButtonElement>('.yt-bet').forEach((b) => b.addEventListener('click', () => { if (yBusy) return; yBet = +b.dataset.b!; sfx.click(); renderYut(); }));
   $('yt-picks').querySelectorAll<HTMLButtonElement>('.yt-pick').forEach((b) => b.addEventListener('click', () => { if (yBusy) return; yPick = b.dataset.id!; sfx.click(); renderYut(); }));
 }
@@ -108,7 +114,13 @@ function stickHtml(flat: boolean, i: number, land = true) {
 /** 고르기 버튼 아이콘: 그 결과가 나올 때의 윷가락 4개 (배=밝음, 등=진함) */
 const miniSticks = (flats: number) => `<span class="yt-mini">${[0, 1, 2, 3].map((i) => `<i class="${i < flats ? 'f' : 'r'}"></i>`).join('')}</span>`;
 async function throwYut() {
-  if (yBusy || ys.n >= DAILY_THROWS) return;
+  if (yBusy) return;
+  if (ys.n >= yLimit()) {
+    if (yLimit() >= YUT_MAX) return;
+    yBusy = true; const ok = await watchAd(); yBusy = false;
+    if (ok) { ys.extra = Math.min(YUT_MAX - YUT_FREE, (ys.extra ?? 0) + YUT_AD); saveY(); toast(`윷놀이 ${YUT_AD}번 더!`); sfx.reward(); }
+    renderYut(); return;
+  }
   if (!pay('yeop', yBet)) { sfx.buzz([40]); return; }
   yBusy = true; ys.n++; saveY(); record('yut');
   const faces = Array.from({ length: 4 }, () => Math.random() < P_FLAT);

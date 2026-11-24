@@ -183,6 +183,14 @@ export function chooseNormalFromView(v: View, legal: Action[]): Action {
   return ranked.length ? ranked[0].a : legal[0];
 }
 
+/** 첫 판(튜토리얼) 봇: 일부러 가장 나쁜 수. 고/스톱에선 고(판을 더 끌다 놓치게) */
+export function chooseGentle(s: GameState): Action {
+  const legal = getLegalActions(s);
+  if (s.phase === 'goStop') return legal.find((a) => a.type === 'go') ?? legal[0];
+  const ranked = rankActions(observe(s, s.turn, false), legal);
+  return ranked.length ? ranked[ranked.length - 1].a : legal[0];
+}
+
 export function chooseNormal(s: GameState): Action {
   const legal = getLegalActions(s);
   return chooseNormalFromView(observe(s, s.turn, false), legal);

@@ -7,6 +7,8 @@ import { chooseAction, AI_LEVELS, type AiLevel } from '../ai/simple';
 import { cardArt } from './art';
 import * as sfx from './sound';
 import { initNative, askConfirm } from './native';
+import { tutorialOnTurn, tutorialAfterMyMove, isFirstGame, markFirstGameDone, resetTutorial, openAttendance, attendReady } from './onboarding';
+import { chooseGentle } from '../ai/normal';
 import { initSoundPanel, toggleSoundPanel } from './sound-panel';
 import { initMonet, openCharge, needCoins } from './monet';
 import { initGacha, openGacha, attachItemTip, onZoomChange } from './gacha';
@@ -385,6 +387,7 @@ function render(view: GameState) {
     ($('btn-go') as HTMLButtonElement).hidden = !canGo;
   }
   decorateItems(view);
+  tutorialOnTurn(Boolean(myTurn && view.phase === 'play' && !busy && !online && $('home').hidden));
 }
 
 // ---------- 매직 카드 (실제 판 적용) ----------
@@ -1113,13 +1116,15 @@ async function playOut(prev: GameState, next: GameState, notes: { text: string; 
   }
   markMyTurnStart();
   if (online) { busy = false; render(s); return; }
+  if (who === ME && !s.result) await tutorialAfterMyMove(next.captured[ME].length - prev.captured[ME].length);
+  if (no !== gameNo) return;
   if (s.turn === AI) {
     busy = true; render(s);
     await wait(AI_THINK);
     if (no !== gameNo) return;
     busy = false;
     if ((s.phase as string) === 'ended' || !getLegalActions(s).length) return;
-    perform(chooseAction(s, level));
+    perform(isFirstGame() ? chooseGentle(s) : chooseAction(s, level));
   }
 }
 
@@ -1153,6 +1158,7 @@ type WinExtra = { by: string; bak?: { pi: boolean; gwang: boolean; meong: boolea
 
 const paidResults = new WeakSet<object>();
 function showResult() {
+  if (!online) markFirstGameDone();
   const r = s.result!;
   const sc = [scoreOf(s, 0), scoreOf(s, 1)];
   const x = r as unknown as WinExtra;
@@ -1627,6 +1633,10 @@ $('btn-sfx').addEventListener('click', () => { sfx.unlock(); sfx.setMuted(!sfx.i
 $('btn-reward-ok').addEventListener('click', () => { $('reward').hidden = true; });
 document.addEventListener('pointerdown', () => { if (!$('home').hidden) return; sfx.startBgm(); }, { capture: true });
 showHome();
+// 하루 첫 접속: 출석 보상 창
+if (attendReady()) setTimeout(() => openAttendance(() => syncHome(), (m) => banner(m)), 600);
+$('btn-attend').addEventListener('click', () => { sfx.unlock(); sfx.click(); openAttendance(() => syncHome(), (m) => banner(m)); });
+$('btn-tutorial').addEventListener('click', () => { sfx.click(); resetTutorial(); $('settings').hidden = true; banner('다음 판에서 안내를 다시 보여 드립니다'); });
 (window as unknown as { __mgTest?: unknown }).__mgTest = { explodeAt, askGukjin }; // 화면 점검용(폭탄 연출 미리보기)
 
 
