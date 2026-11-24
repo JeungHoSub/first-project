@@ -7,7 +7,7 @@
 
 | 위치 | 역할 |
 |---|---|
-| `style/` | 사용자의 취향·문체·선호 데이터. 모든 에이전트가 작업 전에 읽는다. |
+| `style/` | 사용자의 취향·문체·선호 데이터. 모든 에이전트가 작업 전에 읽는다. `style/profile.md`는 사용자 상황·경력·가치관 요약 |
 | `.claude/agents/` | 역할별 에이전트 정의 |
 | `.claude/skills/` | 에이전트가 쓰는 스킬(작업 절차서) |
 | `projects/<이름>/` | 프로젝트별 작업 공간. `brief.md`(목표), `log.md`(진행·인계 기록), `outputs/`(결과물) |
@@ -26,17 +26,21 @@
 | 쇼츠 편집·자동업로드 | `shorts-auto` | media-producer → content-writer → developer | youtube-upload, copyright-check |
 | 음악·동영상 업로드 | `music-video-upload` | researcher → media-producer → developer | copyright-check, youtube-upload |
 | 입찰 플랫폼 | `g2b-bid-platform` | researcher → planner → developer | g2b-bid-data |
+| 수익화 아이디어 | `money-ideas` | idea-planner → (추천 에이전트) → developer | idea-briefing, idea-scoring |
+| AI·메이커 실험실 | `ai-maker-lab` | 메인 세션 → developer | — |
+| 이 자리 몇 번 망했나 | `shop-history` | developer → planner | — |
 
 공통: 모든 프로젝트의 마지막은 `reviewer` → 사용자 검토. 스킬이 없으면 `skill-scout`.
 업로드 모듈처럼 여러 프로젝트가 같이 쓰는 코드는 `projects/shared/`에 둔다.
 세션 운영 방법은 `SESSIONS.md`, 할 일은 `TODO.md`.
+**수익화 판단 기준은 `VISION.md`** — 새 일을 시작하거나 우선순위를 정할 때 먼저 읽는다.
 
 ## 메인 세션(= 총괄 매니저)의 규칙
 
 메인 Claude 세션이 오케스트레이터다. 사용자가 일을 주면:
 
 1. **프로젝트 확인** — `projects/<이름>/brief.md`를 읽는다. 없으면 `projects/_template`을 복사해 만들고 목표를 적는다.
-2. **스타일 로드** — `style/style-guide.md`를 확인한다.
+2. **스타일 로드** — `style/style-guide.md`와 `style/profile.md`를 확인한다.
 3. **담당 에이전트 배정** — 프로젝트에 맞는 에이전트에 일을 넘긴다. 맞는 에이전트가 없으면 사용자에게 새 에이전트를 만들지 선택지를 준다.
 4. **스킬 부족 시** — `skill-scout` 에이전트를 불러 필요한 스킬을 찾거나 초안을 만든다.
 5. **인계** — 에이전트끼리 결과물은 `projects/<이름>/outputs/`에 파일로 남기고 `log.md`에 기록한다(`handoff` 스킬). 다음 에이전트는 그 파일을 읽고 이어서 작업한다.
@@ -46,6 +50,7 @@
 ## 원칙
 
 - 크레딧·시간 절약: 짧은 작업은 메인 세션이 직접 한다. 여러 단계·대량 작업일 때만 에이전트를 쓴다.
+- **사용자 성향(최우선)**: 틀에 박힌 것·일반적인 것을 싫어하고, 아무도 안 하는 생각과 여러 방법을 시도하는 것을 좋아한다. 무난한 정답보다 서로 다른 접근 2~3개(하나는 의외의 것)를 준다. 자세한 건 `style/profile.md`.
 - 판단이 애매하면 멈추고 사용자에게 2~4개 선택지를 준다(추천안 표시). 선택지와 "다음에 이렇게 입력하세요" 같은 추천 문구는 글로 쓰지 말고 **클릭할 수 있는 선택 버튼**(AskUserQuestion)으로 띄운다.
 - 사용자가 피드백을 주면 반복될 만한 것은 `style/style-guide.md`의 "학습된 선호"에 추가한다. 이렇게 스타일 데이터가 쌓인다.
 - 결과물은 반드시 파일로 남기고 커밋한다(클라우드 세션은 끝나면 사라짐).
