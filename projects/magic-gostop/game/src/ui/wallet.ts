@@ -4,6 +4,8 @@ const KEY = 'mg-coins-v1';
 export const START_COINS = 10000;
 export const COIN_PER_POINT = 100; // (기본값) 점수 1점당 엽전 — 봇전은 방(ROOMS)별 판돈을 쓴다
 /** 봇전 방: 난이도별 판돈(점당 엽전)과 입장에 필요한 최소 엽전. 상위 맞고 앱의 초보·중수·고수방 방식 */
+/** 한 판에 오가는 점수 한도 (이기든 지든 최대 50점 × 점당) — 밸런스 측정 balance-report.md */
+export const GAME_CAP_PTS = 50;
 export const ROOMS: Record<'easy' | 'normal' | 'hard', { name: string; per: number; min: number }> = {
   easy: { name: '초보방', per: 100, min: 3000 },
   normal: { name: '중수방', per: 500, min: 15000 },

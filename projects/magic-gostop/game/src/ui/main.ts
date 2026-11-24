@@ -23,7 +23,7 @@ installCoinIcons();
   const sh = document.getElementById('btn-shop');
   if (sh) sh.insertAdjacentHTML('beforeend', `<span class="sp-coins" aria-hidden="true">${[0, 1, 2].map((i) => `<span style="--k:${i}">${coinSvg('yeop', 26, false)}</span>`).join('')}</span>`);
 }
-import { earn, lose, coins, fmt, FIRST_PPEOK_COINS, add as addCur, ROOMS } from './wallet';
+import { earn, lose, coins, fmt, FIRST_PPEOK_COINS, add as addCur, ROOMS, GAME_CAP_PTS } from './wallet';
 import { ITEMS, GRADES, GRADE_RATE, CATEGORY_LABEL, EQUIP_LIMITS, DROP_RATE, itemArt, gradeFill, ownedOf, bestGrade, ownedKinds, rollDrop, type Drop, type ItemDef, type Category, MAGIC_IDS, magicParams, grantTestMagic, type MagicId } from './collection';
 
 // 화면 = 엔진 상태를 그리기만 한다. 규칙 판단은 전부 엔진(getLegalActions/applyAction)에 맡긴다.
@@ -1205,7 +1205,7 @@ function showResult() {
     if ((x.bakMultiplier ?? 1) > 1) parts.push(`박 ×${x.bakMultiplier}`);
     if ((x.carry ?? 1) > 1) parts.push(`나가리 ×${x.carry}`);
     if ((r as unknown as { magicDouble?: boolean }).magicDouble) parts.push('황금 배수 ×2');
-    $('res-formula').textContent = `${parts.join(' · ')} = ${r.finalScore}점${online ? '' : ` × ${fmt(ROOMS[level].per)}엽전`}`;
+    $('res-formula').textContent = `${parts.join(' · ')} = ${r.finalScore}점${online ? '' : `${r.finalScore > GAME_CAP_PTS ? ` → 한도 ${GAME_CAP_PTS}점` : ''} × ${fmt(ROOMS[level].per)}엽전`}`;
     if (x.bak?.pi) badge('피박');
     if (x.bak?.gwang) badge('광박');
     if (x.bak?.meong) badge('멍따');
@@ -1247,13 +1247,15 @@ function showResult() {
   else if (r.type === 'win' && r.winner === ME) {
     const ag = items.lossAfterGuard(r.finalScore, s.goCount[AI], AI); // 상대 해태 부적·고 보험
     const boost = chars.ability('coinBoost');
-    const got = Math.round(ag.lost * ROOMS[level].per * (1 + boost / 100)); earn(got);
-    rc.innerHTML = `<i class="coin-ico" aria-hidden="true"></i> +${fmt(got)} 엽전 <small>${boost ? `${chars.current().def.name} +${boost}% · ` : ''}${ag.saved ? `${ag.why.join(' · ')} → ${ag.saved}점 덜 받음 · ` : ''}보유 ${fmt(coins())}</small>`; rc.hidden = false; rc.classList.remove('minus');
+    const capped = Math.min(GAME_CAP_PTS, ag.lost);
+    const got = Math.round(capped * ROOMS[level].per * (1 + boost / 100)); earn(got);
+    rc.innerHTML = `<i class="coin-ico" aria-hidden="true"></i> +${fmt(got)} 엽전 <small>${capped < ag.lost ? `한 판 한도 ${GAME_CAP_PTS}점까지 · ` : ''}${boost ? `${chars.current().def.name} +${boost}% · ` : ''}${ag.saved ? `${ag.why.join(' · ')} → ${ag.saved}점 덜 받음 · ` : ''}보유 ${fmt(coins())}</small>`; rc.hidden = false; rc.classList.remove('minus');
   } else if (r.type === 'win') {
     const guard = items.lossAfterGuard(r.finalScore, s.goCount[ME], ME);
     const cg = chars.ability('coinGuard');
-    const lost = lose(Math.round(guard.lost * ROOMS[level].per * (1 - cg / 100)));
-    rc.innerHTML = `<i class="coin-ico" aria-hidden="true"></i> -${fmt(lost)} 엽전 <small>${cg ? `${chars.current().def.name} -${cg}% · ` : ''}${guard.saved ? `${guard.why.join(' · ')} → ${guard.saved}점 덜 잃음 · ` : ''}보유 ${fmt(coins())}</small>`; rc.hidden = false; rc.classList.add('minus');
+    const lcap = Math.min(GAME_CAP_PTS, guard.lost);
+    const lost = lose(Math.round(lcap * ROOMS[level].per * (1 - cg / 100)));
+    rc.innerHTML = `<i class="coin-ico" aria-hidden="true"></i> -${fmt(lost)} 엽전 <small>${lcap < guard.lost ? `한 판 한도 ${GAME_CAP_PTS}점까지 · ` : ''}${cg ? `${chars.current().def.name} -${cg}% · ` : ''}${guard.saved ? `${guard.why.join(' · ')} → ${guard.saved}점 덜 잃음 · ` : ''}보유 ${fmt(coins())}</small>`; rc.hidden = false; rc.classList.add('minus');
   } else rc.hidden = true;
   // 겹친 아이템 효과 → 엽전, 금은 보따리 → 은화·금화
   if (firstTime) {
