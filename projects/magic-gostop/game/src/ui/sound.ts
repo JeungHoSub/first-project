@@ -324,6 +324,24 @@ export function sweep() {
   [0.5, 0.6, 0.7, 0.85].forEach((d, i) => { const f = [2093, 2637, 3136, 3520][i]; tone(d0 + d, 0.9, 'sine', f, f, 0.05, 0.002); });
   setTimeout(() => coinRain(1000), 1300);
 }
+/** 분해: 카드가 "드르르륵" 떨며 기운이 차오르고(상승음) → "쩌억-쨍!" 갈라져 부서짐 → 조각이 "짤랑짤랑" 흩어짐 */
+export function dismantle() {
+  if (!ready()) return;
+  const t = now();
+  // ① 떨림 + 차오르는 기운 (0~0.6초)
+  for (let i = 0; i < 12; i++) clack(t + i * 0.045 + Math.random() * 0.01, 0.06 + i * 0.012, 1.5 + i * 0.04);
+  tone(t, 0.6, 'sine', 220, 880, 0.07, 0.15);
+  tone(t, 0.6, 'triangle', 330, 1320, 0.035, 0.2);
+  noise(t, 0.6, 'bandpass', 1200, 0.06, 2, 5000);
+  // ② "쩌억": 금 가는 소리 → "쨍!": 부서짐
+  const b = t + 0.6;
+  noise(b - 0.06, 0.06, 'bandpass', 2600, 0.22, 4, 1400);
+  noise(b, 0.05, 'highpass', 3500, 0.5, 0.7);
+  noise(b, 0.22, 'bandpass', 2200, 0.35, 1, 600);
+  tone(b, 0.25, 'sine', 140, 50, 0.4, 0.001);
+  // ③ 조각이 흩어지며 짤랑짤랑
+  for (let i = 0; i < 14; i++) { const at = b + 0.04 + Math.random() * 0.55; const f = 2600 + Math.random() * 3400; tone(at, 0.18, 'sine', f, f * 0.98, 0.04 * (1 - (at - b) / 0.8), 0.001); }
+}
 /** 고 */
 /** 고: 큰 북 "둥!" — 2고는 "둥둥!", 3고부터는 징까지 울린다 */
 export function go(n = 1) {

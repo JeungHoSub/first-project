@@ -3,10 +3,10 @@
 // 연출: 뽑기권이 날아와 빛나며 찢어짐 → 화투 뒷면이 사선 축으로 빨라지며 회전(잔상) + 빛 입자가 빨려 듦
 //      (높은 등급이면 화면 흔들림·번개) → 충격파와 함께 폭발 → 카드가 3D로 뒤집히며 공개.
 //      10회는 카드 10장이 깔린 뒤 한 장씩 뒤집히고, S 이상은 마지막에 따로 크게 뒤집힌다. 화면을 누르면 건너뛴다.
-import { ownedOf, upgradeItem, dismantleItem, UPGRADE_NEED, UPGRADE_SILVER, DISMANTLE_RATE } from './collection';
+import { type DismantleResult, ownedOf, upgradeItem, dismantleItem, UPGRADE_NEED, UPGRADE_SILVER, DISMANTLE_RATE } from './collection';
 import { ITEMS, bestGrade, TICKETS, GRADES, GRADE_COLOR, drawWithTicket, priceOf, curOf, itemArt, CATEGORY_LABEL, type Ticket, type Drop } from './collection';
 import { copyOf, USE_LABEL } from './item-copy';
-import { coinGroup, norigaeGroup } from './coin-art';
+import { coinGroup, norigaeGroup, coinSvg } from './coin-art';
 import { ALL_CARDS, type Card } from '../engine';
 import { cardArt } from './art';
 import * as sfx from './sound';
@@ -342,6 +342,43 @@ function ownedBlock(id: string) {
     <p class="tz-dis-rate">분해하면 1장이 사라지고 <b>엽전 ${DISMANTLE_RATE.yeop}%</b> · <b>은화 ${DISMANTLE_RATE.eun}%</b> · <b>같은 등급 다른 카드 ${DISMANTLE_RATE.card}%</b> 중 하나가 나옵니다. 양은 등급이 높을수록 많습니다.</p>
     <div class="tz-msg" aria-live="polite"></div>`;
 }
+/** 분해 연출: 카드가 떨리며 빛나다 금이 가고 → "쨍" 산산조각 → 결과(엽전·은화·새 카드)가 튀어나옴 */
+async function dismantleFx(z: HTMLElement, gi: number, r: DismantleResult) {
+  const art = z.querySelector<HTMLElement>('.tz-art'); if (!art) return;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const sleep = (ms: number) => new Promise((res) => setTimeout(res, reduce ? 0 : ms));
+  art.style.setProperty('--gc', gcol(gi));
+  sfx.dismantle();
+  art.classList.add('dz-charge');
+  await sleep(620);
+  // 산산조각: 그림 위치에서 조각들이 사방으로
+  const rc = art.getBoundingClientRect();
+  const layer = document.createElement('div'); layer.className = 'dz-layer'; document.body.append(layer);
+  const flash = document.createElement('div'); flash.className = 'dz-flash';
+  Object.assign(flash.style, { left: `${rc.left + rc.width / 2}px`, top: `${rc.top + rc.height / 2}px` }); layer.append(flash);
+  if (!reduce) for (let i = 0; i < 18; i++) {
+    const sh = document.createElement('i'); sh.className = 'dz-shard';
+    const w = 8 + Math.random() * 16, h = 10 + Math.random() * 22;
+    Object.assign(sh.style, { left: `${rc.left + rc.width * (0.2 + Math.random() * 0.6)}px`, top: `${rc.top + rc.height * (0.15 + Math.random() * 0.7)}px`, width: `${w}px`, height: `${h}px`, '--c': gcol(gi) });
+    layer.append(sh);
+    const a = Math.random() * Math.PI * 2, d = 90 + Math.random() * 140;
+    sh.animate([{ transform: 'translate(-50%,-50%) rotate(0)', opacity: 1 }, { transform: `translate(calc(-50% + ${Math.cos(a) * d}px), calc(-50% + ${Math.sin(a) * d + 60}px)) rotate(${(Math.random() - 0.5) * 720}deg)`, opacity: 0 }], { duration: 700 + Math.random() * 400, easing: 'cubic-bezier(.15,.7,.4,1)', fill: 'forwards' });
+  }
+  art.classList.remove('dz-charge'); art.classList.add('dz-gone');
+  await sleep(380);
+  // 결과가 튀어나옴
+  const drop = document.createElement('div'); drop.className = `dz-drop ${r.kind}`;
+  Object.assign(drop.style, { left: `${rc.left + rc.width / 2}px`, top: `${rc.top + rc.height / 2}px` });
+  drop.innerHTML = r.kind === 'card'
+    ? `<div class="dz-card">${itemArt(r.item, r.gi)}</div><b>${r.item.name}</b>`
+    : `${coinSvg(r.kind, 84)}<b>+${fmt(r.amount)}</b>`;
+  if (r.kind === 'card') drop.style.setProperty('--gc', gcol(r.gi));
+  layer.append(drop);
+  if (r.kind === 'card') sfx.reward(); else { sfx.coinToss(); if (r.kind === 'eun' || r.amount >= 2000) setTimeout(() => sfx.coinRain(450), 120); }
+  await sleep(1150);
+  drop.classList.add('out'); await sleep(260);
+  layer.remove();
+}
 export function openItemZoom(id: string, from?: HTMLElement) {
   const it = ITEMS.find((x) => x.id === id); if (!it) return;
   const totalW = ITEMS.reduce((a, x) => a + x.weight, 0);
@@ -386,8 +423,12 @@ export function openItemZoom(id: string, from?: HTMLElement) {
     const last = (ownedOf(id)[GRADES[gi]] ?? 0) === 1 && bestGrade(id) === gi;
     if (last && b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = '정말?'; b.classList.add('warn'); msg('가장 높은 등급의 마지막 1장입니다. 한 번 더 누르면 분해합니다.'); return; }
     const r = dismantleItem(id, gi); if (!r) return;
-    if (r.kind === 'card') { sfx.reward(); rerender(`<b>분해</b> → 다른 카드 <b>${r.item.name}</b> ${badge(r.gi)} 획득!`); }
-    else { add(r.kind, r.amount); sfx.coinToss(); rerender(`<b>분해</b> → ${curIco(r.kind)} ${CUR_NAME[r.kind]} ${fmt(r.amount)} 획득`); }
+    if (r.kind !== 'card') add(r.kind, r.amount);
+    z!.querySelectorAll<HTMLButtonElement>('.tz-up, .tz-dis').forEach((x) => { x.disabled = true; });
+    void dismantleFx(z!, gi, r).then(() => {
+      if (r.kind === 'card') rerender(`<b>분해</b> → 다른 카드 <b>${r.item.name}</b> ${badge(r.gi)} 획득!`);
+      else rerender(`<b>분해</b> → ${curIco(r.kind)} ${CUR_NAME[r.kind]} ${fmt(r.amount)} 획득`);
+    });
   }));
   z.querySelector('.tz-x')!.addEventListener('click', close);
   const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { close(); removeEventListener('keydown', onKey); } };
