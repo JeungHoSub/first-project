@@ -38,11 +38,7 @@ function closeTop(): boolean {
 let lastBack = 0;
 async function onBack(h: NativeHooks) {
   if (closeTop()) return;
-  if (h.inGame()) {
-    // 판이 끝나지 않았는데 나가면: 확인
-    if (await askConfirm('판을 그만둘까요?', h.online() ? '온라인 대전에서 나가면 기권패가 됩니다.' : '진행 중인 판은 저장되지 않고 처음 화면으로 갑니다.', '그만두기', '계속하기')) h.goHome();
-    return;
-  }
+  if (h.inGame()) { h.quit(); return; } // 판 중: 기권 확인 (main.ts)
   const now = Date.now();
   if (now - lastBack < 2000) { void capApp()?.exitApp(); return; }
   lastBack = now; h.toast('한 번 더 누르면 종료됩니다');
@@ -116,7 +112,7 @@ function backupSheet(h: NativeHooks) {
   return s;
 }
 
-export interface NativeHooks { inGame(): boolean; online(): boolean; goHome(): void; toast(m: string): void }
+export interface NativeHooks { inGame(): boolean; quit(): void; toast(m: string): void }
 export function initNative(h: NativeHooks) {
   capApp()?.addListener('backButton', () => { void onBack(h); });
   addEventListener('keydown', (e) => { if (e.key === 'Escape' && !document.getElementById('tx-zoom')?.offsetParent) closeTop(); });

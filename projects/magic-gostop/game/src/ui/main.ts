@@ -1543,12 +1543,21 @@ for (const id of ['opp-caps', 'my-caps']) $(id).addEventListener('click', () => 
 $('btn-cd-close').addEventListener('click', () => { $('caps-detail').hidden = true; });
 $('btn-res-home').addEventListener('click', () => { sfx.click(); showHome(); });
 const inGame = () => $('home').hidden && $('result').hidden && !s.result;
+/** 봇전 중도 포기 = 기권패: 상대가 7점으로 이긴 것으로 보고 그 방 점당 엽전만큼 낸다 */
+const forfeitCost = () => Math.min(coins(), 7 * ROOMS[level].per);
+const quitText = () => online && !online.ended ? '온라인 대전에서 나가면 기권패가 됩니다.' : `지금 나가면 기권패로 엽전 ${fmt(forfeitCost())}을 냅니다 (상대 7점 승리로 계산).`;
+async function quitGame(): Promise<boolean> {
+  if (!(await askConfirm('판을 그만둘까요?', quitText(), '기권하기', '계속하기'))) return false;
+  if (!online && inGame()) { const n = forfeitCost(); if (n > 0) { lose(n); banner(`기권패 · 엽전 -${fmt(n)}`); } }
+  showHome();
+  return true;
+}
 $('btn-home').addEventListener('click', async () => {
   sfx.click();
-  if (inGame() && !(await askConfirm('판을 그만둘까요?', online && !online.ended ? '온라인 대전에서 나가면 기권패가 됩니다.' : '진행 중인 판은 저장되지 않고 처음 화면으로 갑니다.', '그만두기', '계속하기'))) return;
+  if (inGame()) { await quitGame(); return; }
   showHome();
 });
-initNative({ inGame, online: () => !!online && !online.ended, goHome: () => showHome(), toast: (m) => banner(m) });
+initNative({ inGame, quit: () => { void quitGame(); }, toast: (m) => banner(m) });
 onZoomChange(() => { if (!$('collection').hidden) renderCollection(); });
 $('btn-collection').addEventListener('click', () => { sfx.click(); renderCollection(); $('collection').hidden = false; });
 // 홈 정리: 상점(미션·윷놀이·은화·금화) / 설정(음악·효과음·규칙)

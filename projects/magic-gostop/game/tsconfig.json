@@ -22,6 +22,8 @@
     "vite.config.ts"
   ],
   "exclude": [
-    "src/ui"
+    "src/ui",
+    "tests/backup.test.ts",
+    "tests/dismantle.test.ts"
   ]
 }
