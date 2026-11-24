@@ -49,7 +49,7 @@ function renderMissions() {
   $('ms-list').querySelectorAll<HTMLButtonElement>('.ms-claim').forEach((b) => b.addEventListener('click', () => {
     const m = MISSIONS.find((x) => x.id === b.dataset.id)!;
     if (ms.claimed.includes(m.id) || (ms.prog[m.id] ?? 0) < m.goal) return;
-    ms.claimed.push(m.id); saveM(); add('eun', m.reward); add('yeop', m.yeop); sfx.reward(); sfx.coinRain(500);
+    ms.claimed.push(m.id); saveM(); add('eun', m.reward); add('yeop', m.yeop); sfx.reward();
     if (ms.claimed.length === MISSIONS.length) { add('geum', 1); toast('오늘 미션 모두 완료! 금화 +1'); }
     renderMissions(); onChange();
   }));

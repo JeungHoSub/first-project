@@ -224,12 +224,14 @@ export function bonus() {
   slap(1);
   [784, 988, 1175, 1568].forEach((fq, i) => tone(t + 0.06 + i * 0.07, 0.22, 'triangle', fq, fq, 0.1));
 }
-/** 판 밖(메뉴·상점·미션·뽑기) 보상음: 화투 치는 소리 없이 맑은 방울 + 엽전 소리 */
+/** 판 밖(메뉴·상점·미션·뽑기) 보상음: 화투 치는 소리·전자음 없이, 가야금 두 줄을 부드럽게 뜯고 맑은 방울 + 엽전 한 번 */
 export function reward() {
   if (!ready()) return;
   const t = now();
-  [784, 988, 1175, 1568].forEach((fq, i) => tone(t + i * 0.07, 0.24, 'triangle', fq, fq, 0.1));
-  coin(1);
+  gpluck(t, 784, 0.12, 0.9);          // 솔
+  gpluck(t + 0.09, 1175, 0.1, 1.1);   // 레 (위로)
+  tone(t + 0.16, 1.2, 'sine', 2349, 2349, 0.04, 0.01);  // 방울 여운 (살짝 늦게, 부드럽게 시작)
+  setTimeout(() => coin(0.95), 230);
 }
 /** 흔들기: 패를 "착착착" 흔드는 소리 */
 export function shake() {
