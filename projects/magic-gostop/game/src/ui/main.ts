@@ -6,6 +6,7 @@ import type { Action, Card, GameEvent, GameState, PlayerId } from '../engine';
 import { chooseAction, AI_LEVELS, type AiLevel } from '../ai/simple';
 import { cardArt } from './art';
 import * as sfx from './sound';
+import { initNative, askConfirm } from './native';
 import { initMonet, openCharge, needCoins } from './monet';
 import { initGacha, openGacha, attachItemTip, onZoomChange } from './gacha';
 import { initEconomy, record as missionRecord, missionReady, syncCurrencies } from './economy';
@@ -1541,7 +1542,13 @@ $('magic-cancel').addEventListener('click', () => { selectMode = null; render(s)
 for (const id of ['opp-caps', 'my-caps']) $(id).addEventListener('click', () => { if (s) { sfx.click(); showCapsDetail(); } });
 $('btn-cd-close').addEventListener('click', () => { $('caps-detail').hidden = true; });
 $('btn-res-home').addEventListener('click', () => { sfx.click(); showHome(); });
-$('btn-home').addEventListener('click', () => { sfx.click(); showHome(); });
+const inGame = () => $('home').hidden && $('result').hidden && !s.result;
+$('btn-home').addEventListener('click', async () => {
+  sfx.click();
+  if (inGame() && !(await askConfirm('판을 그만둘까요?', online && !online.ended ? '온라인 대전에서 나가면 기권패가 됩니다.' : '진행 중인 판은 저장되지 않고 처음 화면으로 갑니다.', '그만두기', '계속하기'))) return;
+  showHome();
+});
+initNative({ inGame, online: () => !!online && !online.ended, goHome: () => showHome(), toast: (m) => banner(m) });
 onZoomChange(() => { if (!$('collection').hidden) renderCollection(); });
 $('btn-collection').addEventListener('click', () => { sfx.click(); renderCollection(); $('collection').hidden = false; });
 // 홈 정리: 상점(미션·윷놀이·은화·금화) / 설정(음악·효과음·규칙)

@@ -2145,18 +2145,36 @@ body.online .lv, body.online .pmoney, body.online #opp-items { display: none !im
 /* ===== 실제 화투 뒷면: 무늬 없는 진홍 플라스틱 + 오돌토돌한 엠보 결 + 비스듬한 광택 + 검은 옆면 ===== */
 :root {
   --hwatu-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.25' numOctaves='2' seed='4' stitchTiles='stitch'/%3E%3CfeDiffuseLighting lighting-color='%23fff' surfaceScale='1.6'%3E%3CfeDistantLight azimuth='225' elevation='52'/%3E%3C/feDiffuseLighting%3E%3C/filter%3E%3Crect width='90' height='90' filter='url(%23g)'/%3E%3C/svg%3E");
+  --hwatu-weave: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23a92640'/%3E%3Crect x='0.6' y='0.6' width='6.8' height='3.0' rx='.7' fill='%23d94560'/%3E%3Crect x='0.6' y='0.6' width='6.8' height='1.0499999999999998' rx='.7' fill='%23ec6a80' opacity='0.55'/%3E%3Crect x='0.6' y='0.6' width='6.8' height='3.0' rx='.7' fill='%23ec6a80' opacity='0'/%3E%3Crect x='0.6' y='4.4' width='6.8' height='3.0' rx='.7' fill='%23d94560'/%3E%3Crect x='0.6' y='4.4' width='6.8' height='1.0499999999999998' rx='.7' fill='%23ec6a80' opacity='0.55'/%3E%3Crect x='0.6' y='4.4' width='6.8' height='3.0' rx='.7' fill='%23ec6a80' opacity='0'/%3E%3Crect x='8.6' y='0.6' width='3.0' height='6.8' rx='.7' fill='%23d94560'/%3E%3Crect x='8.6' y='0.6' width='3.0' height='6.8' rx='.7' fill='%23ec6a80' opacity='0'/%3E%3Crect x='8.6' y='0.6' width='1.0499999999999998' height='6.8' rx='.7' fill='%23ec6a80' opacity='0.55'/%3E%3Crect x='12.4' y='0.6' width='3.0' height='6.8' rx='.7' fill='%23d94560'/%3E%3Crect x='12.4' y='0.6' width='3.0' height='6.8' rx='.7' fill='%23ec6a80' opacity='0'/%3E%3Crect x='12.4' y='0.6' width='1.0499999999999998' height='6.8' rx='.7' fill='%23ec6a80' opacity='0.55'/%3E%3Crect x='0.6' y='8.6' width='3.0' height='6.8' rx='.7' fill='%23d94560'/%3E%3Crect x='0.6' y='8.6' width='3.0' height='6.8' rx='.7' fill='%23ec6a80' opacity='0'/%3E%3Crect x='0.6' y='8.6' width='1.0499999999999998' height='6.8' rx='.7' fill='%23ec6a80' opacity='0.55'/%3E%3Crect x='4.4' y='8.6' width='3.0' height='6.8' rx='.7' fill='%23d94560'/%3E%3Crect x='4.4' y='8.6' width='3.0' height='6.8' rx='.7' fill='%23ec6a80' opacity='0'/%3E%3Crect x='4.4' y='8.6' width='1.0499999999999998' height='6.8' rx='.7' fill='%23ec6a80' opacity='0.55'/%3E%3Crect x='8.6' y='8.6' width='6.8' height='3.0' rx='.7' fill='%23d94560'/%3E%3Crect x='8.6' y='8.6' width='6.8' height='1.0499999999999998' rx='.7' fill='%23ec6a80' opacity='0.55'/%3E%3Crect x='8.6' y='8.6' width='6.8' height='3.0' rx='.7' fill='%23ec6a80' opacity='0'/%3E%3Crect x='8.6' y='12.4' width='6.8' height='3.0' rx='.7' fill='%23d94560'/%3E%3Crect x='8.6' y='12.4' width='6.8' height='1.0499999999999998' rx='.7' fill='%23ec6a80' opacity='0.55'/%3E%3Crect x='8.6' y='12.4' width='6.8' height='3.0' rx='.7' fill='%23ec6a80' opacity='0'/%3E%3C/svg%3E");
   --hwatu-back:
-    linear-gradient(125deg, rgba(255,255,255,.34) 0%, rgba(255,255,255,.08) 22%, transparent 38%, transparent 70%, rgba(0,0,0,.18) 100%),
-    linear-gradient(160deg, #d8232c 0%, #b3141d 55%, #8c0f17 100%);
+    linear-gradient(125deg, rgba(255,255,255,.22) 0%, rgba(255,255,255,.06) 25%, transparent 45%, transparent 75%, rgba(80,0,20,.16) 100%),
+    var(--hwatu-weave) 0 0 / 7px 7px,
+    #c23650;
 }
-.deck .back, .gf-back { background: var(--hwatu-back); border: 1.5px solid #1a0507; }
-#floor .card.fd { background: var(--hwatu-back) !important; border: 1.5px solid #1a0507 !important; }
+.deck .back, .gf-back { background: var(--hwatu-back); border: 1px solid #e9c7cd; filter: none; }
+#floor .card.fd { background: var(--hwatu-back) !important; border: 1px solid #e9c7cd !important; }
 .deck .back, #floor .card.fd {
   box-shadow: inset 0 0 0 1px rgba(255,150,150,.22), inset 0 -2px 3px rgba(0,0,0,.25), 0 2px 4px rgba(0,0,0,.5);
   overflow: hidden;
 }
 .deck .back::after, #floor .card.fd::before, .gf-back::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
-  background: var(--hwatu-grain) 0 0 / 46px 46px; mix-blend-mode: multiply; opacity: .55; }
-.deck .back:nth-child(1) { box-shadow: 0 1px 0 #1a0507, 0 2px 0 #1a0507; }
-.deck .back:nth-child(3) { box-shadow: inset 0 0 0 1px rgba(255,150,150,.22), 0 1px 0 #2a0a0c, 0 2px 0 #1a0507, 0 3px 0 #2a0a0c, 0 4px 0 #1a0507, 0 8px 12px rgba(0,0,0,.55); }
-.opp-fan i { background: var(--hwatu-back) !important; border-color: #1a0507 !important; }
+  background: var(--hwatu-grain) 0 0 / 46px 46px; mix-blend-mode: multiply; opacity: .25; }
+.deck .back:nth-child(1), .deck .back:nth-child(2) { filter: none; box-shadow: 0 1px 0 #f2e4e6, 0 2px 0 #d8a9b2; }
+.deck .back:nth-child(3) { box-shadow: inset 0 0 0 1px rgba(255,220,225,.35), 0 1px 0 #f4e8ea, 0 2px 0 #d9aab3, 0 3px 0 #f4e8ea, 0 4px 0 #d9aab3, 0 5px 0 #f4e8ea, 0 6px 0 #c9909b, 0 10px 14px rgba(0,0,0,.45); }
+.opp-fan i { background: var(--hwatu-back) !important; background-size: auto, 4px 4px, auto !important; border-color: #e9c7cd !important; }
+/* 뽑기 연출의 화투 뒷면도 같은 진짜 뒷면 (크게 보이므로 짜임을 조금 크게) */
+.gx-back, .gf-back { background: var(--hwatu-back) !important; background-size: auto, 11px 11px, auto !important; border-color: #f0d3d8 !important; }
+.floor-month:has(.card.fd) .stack-n { visibility: hidden; }
+/* 확인 창 · 저장 백업 */
+.cf-back { position: fixed; inset: 0; z-index: 96; display: grid; place-items: center; padding: 16px; background: rgba(4,6,8,.66); backdrop-filter: blur(3px); }
+.cf-card { width: min(100%, 340px); padding: 20px 18px 16px; border-radius: 16px; background: linear-gradient(180deg, #23201b, #15130f); border: 1px solid rgba(214,186,128,.35); box-shadow: 0 18px 40px rgba(0,0,0,.6); color: #f4ecdc; text-align: center; animation: tzPop .3s cubic-bezier(.3,1.5,.5,1); }
+.cf-card b { font-family: var(--font-myeongjo); font-size: 1.15rem; font-weight: 800; }
+.cf-card p { margin: 8px 0 16px; font-size: .84rem; color: #c9bea6; line-height: 1.5; }
+.cf-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.cf-row button { font: inherit; font-weight: 800; padding: 11px; border-radius: 11px; cursor: pointer; }
+.cf-no { color: #e8dcc0; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.14); }
+.cf-yes { color: #2a1c08; background: linear-gradient(180deg, #f7dc8c, #c9952e); border: 1px solid rgba(255,230,160,.6); }
+.bk-btn { width: 100%; margin: 6px 0; padding: 12px; border-radius: 12px; font: inherit; font-weight: 800; color: #2a1c08; background: linear-gradient(180deg, #f7dc8c, #c9952e); border: 1px solid rgba(255,230,160,.6); cursor: pointer; }
+.bk-btn.sub { color: #f4ecdc; background: rgba(255,255,255,.06); border-color: rgba(214,186,128,.35); }
+.bk-code { width: 100%; box-sizing: border-box; margin-top: 8px; padding: 10px; border-radius: 10px; font: .72rem/1.4 ui-monospace, monospace; color: #e8dcc0; background: rgba(0,0,0,.35); border: 1px solid rgba(214,186,128,.25); resize: vertical; word-break: break-all; }
+#backup { z-index: 45; }
