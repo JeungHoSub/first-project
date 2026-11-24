@@ -107,7 +107,7 @@ export function openAttendance(onDone: () => void, toast: (m: string) => void) {
     const r = ATTEND[cur.n % 7];
     for (const [c, n] of Object.entries(r) as [Cur, number][]) add(c, n);
     put(ATT_KEY, JSON.stringify({ last: today(), n: cur.n + 1 }));
-    sfx.reward(); sfx.coinRain(700); toast(`출석 ${cur.n % 7 + 1}일째 보상!`);
+    sfx.attend(); toast(`출석 ${cur.n % 7 + 1}일째 보상!`);
     openAttendance(onDone, toast); onDone();
   });
 }

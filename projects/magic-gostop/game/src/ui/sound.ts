@@ -368,6 +368,29 @@ export function ding() {
   tone(t + 0.09, 1.1, 'sine', 2093, 2093, 0.1, 0.002);
   noise(t, 0.03, 'highpass', 6000, 0.05, 0.7);
 }
+/** 줄을 뜯는 소리(가야금 비슷): 짧은 튕김 + 배음이 빨리 사그라짐 */
+function gpluck(t: number, f: number, vol: number, len = 0.9) {
+  const c = ctx!;
+  const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+  const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.setValueAtTime(f * 6, t); lp.frequency.exponentialRampToValueAtTime(f * 1.5, t + len * 0.6);
+  lp.connect(g).connect(master!);
+  for (const [m, a] of [[1, 1], [2, 0.45], [3, 0.18], [4.02, 0.08]] as const) {
+    const o = c.createOscillator(); o.type = 'sine';
+    o.frequency.setValueAtTime(f * m * 1.006, t); o.frequency.exponentialRampToValueAtTime(f * m, t + 0.06); // 뜯을 때 살짝 높았다가 자리 잡음
+    const og = c.createGain(); og.gain.value = a; o.connect(og).connect(lp);
+    o.start(t); o.stop(t + len + 0.05);
+  }
+  noise(t, 0.012, 'bandpass', f * 4, vol * 0.25, 1.2); // 손톱이 줄에 닿는 소리
+}
+/** 출석 보상 받기: 가야금 5음 오름 → 맑은 방울 한 번 → 엽전 꾸러미 "짤랑" */
+export function attend() {
+  if (!ready()) return;
+  const t = now();
+  [587, 659, 784, 880, 1175].forEach((f, i) => gpluck(t + i * 0.085, f, 0.16 - i * 0.012, 1.0));
+  const b = t + 0.48;
+  tone(b, 1.6, 'sine', 2349, 2349, 0.07, 0.003); tone(b, 1.0, 'sine', 2349 * 2.76, 2349 * 2.76, 0.015, 0.003);
+  [0.62, 0.7, 0.81].forEach((d, i) => setTimeout(() => coin(0.9 + i * 0.06), d * 1000));
+}
 /** 고 */
 /** 고: 큰 북 "둥!" — 2고는 "둥둥!", 3고부터는 징까지 울린다 */
 export function go(n = 1) {
