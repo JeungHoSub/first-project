@@ -75,6 +75,8 @@ const SLOTS: [number, number][] = [
 ];
 const SLOT_ORDER = [1, 2, 5, 6, 0, 3, 4, 7, 8, 9, 10, 11]; // 더미 둘레 위·아래 두 줄부터 고르게
 const slotOf = new Map<number, number>();
+const arrival = new Map<string, number>(); let arrivalSeq = 0;
+const arrivalOf = (id: string) => { let v = arrival.get(id); if (v === undefined) { v = ++arrivalSeq; arrival.set(id, v); } return v; };
 function hash(t: string) { let h = 7; for (const ch of t) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return h; }
 
 const allCards = new Map<string, Card>();
@@ -250,6 +252,7 @@ function render(view: GameState) {
   floor.querySelectorAll('.floor-month').forEach((n) => n.remove());
   const onFloor = new Set(floorCards.map((c) => c.month));
   for (const [m] of slotOf) if (!onFloor.has(m)) slotOf.delete(m);
+  { const ids = new Set(floorCards.map((c) => c.id)); for (const id of [...arrival.keys()]) if (!ids.has(id)) arrival.delete(id); }
   for (const c of floorCards) {
     if (!slotOf.has(c.month)) {
       const used = new Set(slotOf.values());
@@ -266,7 +269,8 @@ function render(view: GameState) {
     grp.style.left = `${x}%`;
     grp.style.top = `${y}%`;
     grp.style.setProperty('--rot', `${((j % 5) - 2) * 0.6}deg`); // 아주 살짝만 — 가지런하게
-    for (const c of floorCards.filter((f) => f.month === m)) {
+    // 같은 월 더미 안의 순서는 바닥에 도착한 순서로 고정 (중간 연출과 최종 상태의 배열 순서가 달라도 패가 다시 섞여 겹쳐 보이지 않게)
+    for (const c of floorCards.filter((f) => f.month === m).sort((a, b) => arrivalOf(a.id) - arrivalOf(b.id))) {
       if (pickable.has(c.id)) {
         const el = cardEl(c); el.classList.add('pick');
         grp.append(el);
@@ -1045,7 +1049,7 @@ async function playOut(prev: GameState, next: GameState, notes: { text: string; 
       const card = take(v.hands[who]) ?? take(v.floor) ?? take(v.deck) ?? byId(id);
       v.captured[who].push(card);
       if (ev.from === 'hand') fromOpp?.add(id);
-      banner('보너스!'); sfx.bonus();
+      banner(ev.from === 'flip' ? '보너스! 더미에서 한 장 더 뒤집습니다' : '보너스! 더미에서 한 장 더 받습니다'); sfx.bonus();
       await show(v, { opp: fromOpp, deck: ev.from === 'flip' && !document.querySelector(`[data-id="${CSS.escape(id)}"]`) ? new Set([id]) : undefined }, MOVE + BEAT + 120);
     } else if (T(e) === 'draw' && ev.card) {
       // 보너스를 낸 뒤 더미에서 한 장 받아 온다
