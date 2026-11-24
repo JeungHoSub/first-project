@@ -1108,9 +1108,9 @@ async function playOut(prev: GameState, next: GameState, notes: { text: string; 
     }
     else if (kind === 'ppeokEat') {
       const x = special as { self?: boolean; fromPpeok?: boolean };
-      banner(x.fromPpeok === false ? '3장 먹기!' : x.self ? '자뻑! 피 2장' : '뻑 먹기!'); sfx.bonus(); shakeScreen();
+      banner(x.fromPpeok === false ? '3장 먹기!' : x.self ? '자뻑! 피 2장' : '뻑 먹기!'); sfx.bonus(); if (who === ME) sfx.packFlourish(true); shakeScreen();
     }
-    else { banner(kind === 'jjok' ? '쪽!' : kind === 'ttadak' ? '따닥!' : '싹쓸이!'); if (kind === 'jjok') sfx.jjok(); else if (kind === 'ttadak') sfx.ttadak(); else sfx.sweep(); shakeScreen(); sfx.buzz(kind === 'ttadak' ? [40, 50, 60] : kind === 'sweep' ? [30, 30, 30, 30, 30, 30, 150] : 40); if (kind === 'sweep') await wait(900); }
+    else { banner(kind === 'jjok' ? '쪽!' : kind === 'ttadak' ? '따닥!' : '싹쓸이!'); if (kind === 'jjok') sfx.jjok(); else if (kind === 'ttadak') sfx.ttadak(); else sfx.sweep(); if (who === ME) sfx.packFlourish(kind !== 'jjok'); shakeScreen(); sfx.buzz(kind === 'ttadak' ? [40, 50, 60] : kind === 'sweep' ? [30, 30, 30, 30, 30, 30, 150] : 40); if (kind === 'sweep') await wait(900); }
     await wait(650);
     if (no !== gameNo) return;
   }
@@ -1411,6 +1411,7 @@ function syncHome() {
   syncCurrencies();
   renderProfiles();
   { const n = missionReady(); const el = document.getElementById('home-ms'); if (el) { el.textContent = n ? `받을 보상 ${n}개` : '은화 받기'; el.parentElement!.classList.toggle('ready', n > 0); } const sh = document.getElementById('btn-shop'); if (sh) { sh.classList.toggle('ready', n > 0); const sub = document.getElementById('home-shop-sub'); if (sub) sub.textContent = n ? `미션 보상 ${n}개 받기` : '미션 · 윷놀이 · 환전'; } }
+  { const n = missionReady(); $('hq-ms').textContent = n ? `${n}개 받기` : ''; $('hq-ms-dot').hidden = !n; $('hq-attend-dot').hidden = !attendReady(); }
   document.querySelectorAll('.coin-amt').forEach((e) => { e.textContent = fmt(coins()); });
   $('home-level').textContent = `${ROOMS[level].name} · 점당 ${fmt(ROOMS[level].per)}엽전`;
   $('home-coll').textContent = `${ownedKinds()} / ${ITEMS.length}`;
@@ -1685,6 +1686,9 @@ document.addEventListener('pointerdown', () => { if (!$('home').hidden) return; 
 showHome();
 // 하루 첫 접속: 출석 보상 창
 if (attendReady()) setTimeout(() => openAttendance(() => syncHome(), (m) => banner(m)), 600);
+$('hq-attend').addEventListener('click', () => { sfx.unlock(); sfx.click(); openAttendance(() => syncHome(), (m) => banner(m)); });
+$('hq-missions').addEventListener('click', () => { sfx.unlock(); ($('btn-missions') as HTMLButtonElement).click(); });
+$('hq-charge').addEventListener('click', () => { sfx.unlock(); sfx.click(); openCharge(); });
 $('btn-attend').addEventListener('click', () => { sfx.unlock(); sfx.click(); openAttendance(() => syncHome(), (m) => banner(m)); });
 $('btn-tutorial').addEventListener('click', () => { sfx.click(); resetTutorial(); $('settings').hidden = true; banner('다음 판에서 안내를 다시 보여 드립니다'); });
 (window as unknown as { __mgTest?: unknown }).__mgTest = { explodeAt, askGukjin }; // 화면 점검용(폭탄 연출 미리보기)

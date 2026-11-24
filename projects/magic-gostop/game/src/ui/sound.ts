@@ -162,18 +162,19 @@ export function setPack(g: number) { pack = g; }
 const PENTA = [392, 440, 523, 587, 659, 784, 880]; // 평조풍 5음
 export function capture(count = 2) {
   if (!ready()) return;
-  const t = now();
   // 먹은 패를 모아 쥐는 "착착": 장수만큼 빠르게 겹쳐 붙는 소리
   swish(count); // 가져올 때는 "슥슥"만 (치는 소리는 낼 때 이미 남)
-  if (pack < 1) return;
-  // 등급별: 가야금 한 줄(1~) · 장구(2~) · 대금과 징(4~) · 풍물 장구 두 번(5~) · "얼쑤"(6~, 3장 이상) · 가야금 꾸밈 여러 음(8~)
+}
+/** 꾸미기 "효과음 팩": 먹을 때마다가 아니라 쪽·따닥·싹쓸이·뻑 먹기 같은 특별한 순간에만 국악 소리를 얹는다 */
+export function packFlourish(big = false) {
+  if (!ready() || pack < 1) return;
+  const t = now() + 0.25;
   const base = PENTA[Math.floor(Math.random() * 4)];
-  gpluck(t + 0.03, base * 2, 0.09, 0.8);
-  if (pack >= 2) { tone(t + 0.02, 0.18, 'sine', 210, 95, 0.22, 0.002); noise(t + 0.02, 0.05, 'bandpass', 1800, 0.08, 1.2); }
-  if (pack >= 4) { tone(t + 0.06, 1.4, 'sine', 178, 175, 0.05, 0.03); tone(t + 0.05, 0.6, 'sine', base * 4, base * 4, 0.02, 0.06); }
-  if (pack >= 5) { tone(t + 0.16, 0.15, 'sine', 230, 100, 0.16, 0.002); }
-  if (pack >= 6 && count >= 3 && voiceOn) say('얼쑤!', true);
-  if (pack >= 8) for (let i = 1; i <= Math.min(pack - 6, 3); i++) gpluck(t + 0.08 * i, PENTA[(i * 2) % PENTA.length] * 2, 0.06, 0.6);
+  gpluck(t, base * 2, 0.08, 0.8);
+  if (pack >= 2) tone(t, 0.18, 'sine', 210, 95, 0.18, 0.002);
+  if (pack >= 4) tone(t + 0.05, 1.3, 'sine', 178, 175, 0.045, 0.03);
+  if (pack >= 6 && big) [523, 659, 784].forEach((f, i) => gpluck(t + 0.12 + i * 0.07, f * 2, 0.05, 0.7)); // 목소리 대신 가야금 꾸밈
+  if (pack >= 8) for (let i = 1; i <= Math.min(pack - 6, 3); i++) gpluck(t + 0.08 * i, PENTA[(i * 2) % PENTA.length] * 2, 0.05, 0.6);
 }
 /** 피 뺏어 오기 */
 export function steal() {

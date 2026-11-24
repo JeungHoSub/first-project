@@ -2232,3 +2232,23 @@ body[data-theme="4"] { background: radial-gradient(1px 1px at 12% 18%, #fff, tra
 /* ===== 꾸미기 먹기 이펙트 입자 ===== */
 .cfx-layer { position: fixed; inset: 0; z-index: 30; pointer-events: none; }
 .cfx { position: fixed; font-style: normal; line-height: 1; text-shadow: 0 0 6px currentColor; }
+/* ===== 첫 화면: 아래 빠른 줄 · 달 ===== */
+.home-quick { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.hq { position: relative; display: grid; justify-items: center; gap: 2px; padding: 9px 4px 8px; border-radius: 13px; color: #f4ecdc;
+  background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.02)); border: 1px solid rgba(214,186,128,.25); }
+.hq:active { transform: scale(.97); }
+.hq-ico { width: 28px; height: 28px; display: block; background-position: center; background-size: contain; background-repeat: no-repeat; }
+.hq b { font-size: .76rem; font-weight: 700; } .hq small { font-size: .6rem; color: #f3d27a; min-height: .8em; }
+.hq em { position: absolute; top: 6px; right: 10px; width: 8px; height: 8px; border-radius: 50%; background: #e2453c; box-shadow: 0 0 0 2px rgba(0,0,0,.4), 0 0 8px #e2453c; }
+.home-bg .hb-moon { filter: drop-shadow(0 0 10px rgba(255,240,200,.55)); }
+/* 작은 폰(높이 700 이하): 판 화면을 눌러 담아 손패가 잘리지 않게 */
+@media (max-width: 699px) and (max-height: 700px) {
+  :root { --cw-floor: min(11vw, 46px); --cw-cap: min(5.4vw, 22px); --cw-hand: min(14vw, 52px); }
+  .app { gap: 3px; padding-block: 4px 2px; }
+  .seat { padding-block: 4px !important; }
+  .seat .tray { min-height: 0 !important; }
+  .feed { font-size: .7rem; padding-block: 2px; }
+  .top .brand { font-size: .9rem; }
+}
+/* PC·태블릿: 판이 너무 넓게 퍼지지 않게 가운데로 모음 */
+@media (min-width: 700px) { .app { max-width: min(880px, 96vw) !important; } }

@@ -139,7 +139,7 @@
       <linearGradient id="hb-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#10161f"/><stop offset=".55" stop-color="#1a2a2c"/><stop offset="1" stop-color="#121a18"/></linearGradient>
       <radialGradient id="hb-moon" cx=".45" cy=".42" r=".6"><stop offset="0" stop-color="#fbf6ea"/><stop offset="1" stop-color="#d9cba6"/></radialGradient>
       <radialGradient id="hb-sun" cx=".45" cy=".42" r=".6"><stop offset="0" stop-color="#c8665a"/><stop offset="1" stop-color="#8a3a32"/></radialGradient>
-      <radialGradient id="hb-glow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#f3ead8" stop-opacity=".22"/><stop offset="1" stop-color="#f3ead8" stop-opacity="0"/></radialGradient>
+      <radialGradient id="hb-glow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fff4d6" stop-opacity=".38"/><stop offset="1" stop-color="#f3ead8" stop-opacity="0"/></radialGradient>
       <linearGradient id="hb-peak" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6e9a8e"/><stop offset=".5" stop-color="#3d6660"/><stop offset="1" stop-color="#1c3330"/></linearGradient>
       <linearGradient id="hb-hill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4b6f5a"/><stop offset="1" stop-color="#1a2b22"/></linearGradient>
       <linearGradient id="hb-sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a4a5a"/><stop offset="1" stop-color="#101c24"/></linearGradient>
@@ -148,10 +148,12 @@
       </pattern>
     </defs>
     <rect width="800" height="800" fill="url(#hb-sky)"/>
-    <circle cx="250" cy="200" r="90" fill="url(#hb-glow)"/>
-    <circle cx="250" cy="200" r="34" fill="url(#hb-moon)" opacity=".92"/>
-    <circle cx="550" cy="200" r="80" fill="url(#hb-glow)" opacity=".6"/>
-    <circle cx="550" cy="200" r="32" fill="url(#hb-sun)" opacity=".9"/>
+    <circle cx="290" cy="96" r="70" fill="url(#hb-glow)"/>
+    <circle cx="290" cy="96" r="38" fill="url(#hb-glow)"/>
+    <g class="hb-moon">
+      <circle cx="290" cy="96" r="22" fill="url(#hb-moon)"/>
+      <circle cx="283" cy="91" r="4.5" fill="#d6c79f" opacity=".45"/><circle cx="297" cy="103" r="3" fill="#d6c79f" opacity=".4"/><circle cx="295" cy="87" r="2" fill="#d6c79f" opacity=".35"/>
+    </g>
     <g class="hb-clouds" fill="none" stroke="#e9e2cf" stroke-opacity=".28" stroke-width="1.4">
       <path d="M300 300 c10 -14 30 -14 36 -2 c8 -12 28 -10 30 4 c14 -4 22 10 10 16 c-20 6 -60 6 -80 0 c-10 -4 -4 -16 4 -18 z"/>
       <path d="M450 280 c10 -12 26 -12 32 -2 c8 -10 24 -8 26 4 c12 -2 18 8 8 13 c-18 5 -50 5 -66 0 c-8 -3 -4 -13 0 -15 z"/>
@@ -189,6 +191,11 @@
     <div class="home-duo">
       <button class="home-char" id="btn-chars" type="button" aria-label="캐릭터와 아이템"></button>
       <button class="home-tile home-shop" id="btn-shop" type="button"><b>상점</b><span id="home-shop-sub">미션 · 윷놀이 · 환전</span></button>
+    </div>
+    <div class="home-quick">
+      <button type="button" class="hq" id="hq-attend"><i class="hq-ico st-at" aria-hidden="true"></i><b>출석</b><em id="hq-attend-dot" hidden></em></button>
+      <button type="button" class="hq" id="hq-missions"><i class="hq-ico st-ms" aria-hidden="true"></i><b>오늘의 미션</b><small id="hq-ms"></small><em id="hq-ms-dot" hidden></em></button>
+      <button type="button" class="hq" id="hq-charge"><i class="hq-ico st-ch" aria-hidden="true"></i><b>무료 충전</b></button>
     </div>
   </div>
 </div>
