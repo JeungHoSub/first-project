@@ -87,7 +87,7 @@ export type GameEvent =
   | { type: 'jjok'; player: PlayerId; month: number }
   | { type: 'ttadak'; player: PlayerId; month: number }
   | { type: 'sweep'; player: PlayerId }
-  | { type: 'bonus'; player: PlayerId; card: string; from: 'hand' | 'flip' | 'deal' } // 보너스 패 획득
+  | { type: 'bonus'; player: PlayerId; card: string; from: 'hand' | 'flip' | 'deal'; slot?: number; with?: string } // 보너스 패 획득 (deal: 바닥 slot번째 자리에서, 더미의 with로 채움)
   | { type: 'draw'; player: PlayerId; card: string } // 보너스를 내고 더미에서 손패로 가져옴
   | { type: 'end'; result: GameResult };
 
@@ -129,6 +129,8 @@ export interface GameState {
   pending: PendingChoice | null;
   goCount: [number, number];
   lastGoScore: [number, number];
+  /** 이번 차례가 시작될 때 차례인 사람이 먹은 패 수 — 이번 차례에 한 장도 못 먹었으면 고/스톱을 묻지 않는다 */
+  turnCaps?: number;
   shakes: [number, number]; // 흔들기+폭탄 횟수 (배수 2^n)
   dummies: [number, number]; // 손패에 든 빈 패 장수 (더미 뒤집기 전용)
   events: GameEvent[]; // 추가만 되는 로그 (3·4단계 훅/연출용)

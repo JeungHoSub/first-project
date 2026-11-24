@@ -342,6 +342,16 @@ export function dismantle() {
   // ③ 조각이 흩어지며 짤랑짤랑
   for (let i = 0; i < 14; i++) { const at = b + 0.04 + Math.random() * 0.55; const f = 2600 + Math.random() * 3400; tone(at, 0.18, 'sine', f, f * 0.98, 0.04 * (1 - (at - b) / 0.8), 0.001); }
 }
+/** 보너스 패가 나왔을 때 "띵!": 맑은 종 한 번 (배음 + 긴 여운) */
+export function ding() {
+  if (!ready()) return;
+  const t = now();
+  tone(t, 1.3, 'sine', 1568, 1568, 0.2, 0.002);
+  tone(t, 0.9, 'sine', 1568 * 2.76, 1568 * 2.76, 0.05, 0.002);
+  tone(t, 0.5, 'sine', 1568 * 5.4, 1568 * 5.4, 0.02, 0.001);
+  tone(t + 0.09, 1.1, 'sine', 2093, 2093, 0.1, 0.002);
+  noise(t, 0.03, 'highpass', 6000, 0.05, 0.7);
+}
 /** 고 */
 /** 고: 큰 북 "둥!" — 2고는 "둥둥!", 3고부터는 징까지 울린다 */
 export function go(n = 1) {

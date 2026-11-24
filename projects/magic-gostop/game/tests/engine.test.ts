@@ -335,20 +335,19 @@ describe('폭탄', () => {
     const types = s.events.map((e) => e.type).filter((t) => t !== 'deal');
     expect(types).toEqual(['bomb', 'capture', 'flip', 'place']);
   });
-  it('상대 피 1장을 가져온다 (일반 피 우선, 없으면 쌍피, 없으면 없음) + steal 이벤트 순서', () => {
+  it('상대 피 무조건 2장을 가져온다 (가치와 상관없이 장수로, 작은 피부터, 없으면 있는 만큼)', () => {
     const mk = () => setup({ hand: [...H3, '05-P-0'], floor: ['03-G-0'], deck: ['09-P-0'] });
     let s = mk();
-    s.captured[1] = cards('12-D-0', '06-P-0');
+    s.captured[1] = cards('12-D-0', '06-P-0', '07-P-0');
     s = applyAction(s, { type: 'bomb', month: 3 });
     expect(s.captured[1].map((c) => c.id)).toEqual(['12-D-0']);
-    expect(s.captured[0].map((c) => c.id)).toContain('06-P-0');
-    expect(s.events.map((e) => e.type).filter((t) => t !== 'deal')).toEqual(['bomb', 'capture', 'steal', 'flip', 'place']);
-    expect(s.events.find((e) => e.type === 'steal')).toEqual({ type: 'steal', player: 0, from: 1, card: '06-P-0' });
+    expect(s.captured[0].map((c) => c.id)).toEqual(expect.arrayContaining(['06-P-0', '07-P-0']));
+    expect(s.events.filter((e) => e.type === 'steal')).toHaveLength(2);
     let d = mk();
-    d.captured[1] = cards('12-D-0', '01-G-0');
+    d.captured[1] = cards('12-D-0', '06-P-0', '01-G-0');
     d = applyAction(d, { type: 'bomb', month: 3 });
-    expect(d.captured[1].map((c) => c.id)).toEqual(['01-G-0']);
-    expect(d.captured[0].map((c) => c.id)).toContain('12-D-0');
+    expect(d.captured[1].map((c) => c.id)).toEqual(['01-G-0']); // 일반 피 1장 + 쌍피 1장 = 2장
+    expect(d.captured[0].map((c) => c.id)).toEqual(expect.arrayContaining(['06-P-0', '12-D-0']));
     let n = mk();
     n.captured[1] = cards('01-G-0');
     n = applyAction(n, { type: 'bomb', month: 3 });
@@ -1080,5 +1079,31 @@ describe('캐릭터: 보너스 패 가져오기', () => {
     const s = createGame('fixed', { bonus: { two: 0, three: 0 } });
     const r = magicTakeBonus(s, 0, 1);
     expect(r.taken).toEqual([]); expect(r.state.events.length).toBe(s.events.length);
+  });
+});
+
+describe('고/스톱은 패를 먹은 차례에만', () => {
+  it('7점 이상이어도 이번 차례에 못 먹었으면 묻지 않는다', async () => {
+    const { createGame, applyAction, getLegalActions, scoreOf } = await import('../src/engine');
+    let asked = 0, wrong = 0;
+    for (let seed = 1; seed <= 60; seed++) {
+      let s = createGame(seed);
+      let guard = 0;
+      while (!s.result && guard++ < 200) {
+        const p = s.turn; const before = s.captured[p].length;
+        const acts = getLegalActions(s);
+        const a = acts.find((x) => x.type === 'go') ?? acts[0];
+        const prevPhase = s.phase;
+        s = applyAction(s, a);
+        if (s.phase === 'goStop' && prevPhase !== 'goStop') {
+          asked++;
+          if (s.captured[s.turn].length <= (s.turnCaps ?? 0)) wrong++;
+          expect(scoreOf(s, s.turn).total).toBeGreaterThanOrEqual(7);
+        }
+        void before;
+      }
+    }
+    expect(asked).toBeGreaterThan(0);
+    expect(wrong).toBe(0);
   });
 });

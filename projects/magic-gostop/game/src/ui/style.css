@@ -2135,3 +2135,28 @@ body.online .lv, body.online .pmoney, body.online #opp-items { display: none !im
 .ad-left { display: block; font-size: 2.4rem; margin: 8px 0 12px; color: #fff; }
 .ad-x { font: inherit; font-size: .75rem; color: #aaa; background: none; border: 1px solid #555; border-radius: 8px; padding: 6px 12px; }
 #charge { z-index: 44; }
+/* 분배: 바닥 패 엎어 두기 · 보너스 패 반짝 */
+#floor .card.fd > * { visibility: hidden; }
+#floor .card.bonus-hit { animation: bonusHit .9s ease-out; z-index: 5; }
+@keyframes bonusHit { 0% { box-shadow: 0 0 0 0 rgba(255,230,140,0); } 25% { box-shadow: 0 0 0 3px #ffe9a0, 0 0 26px 10px rgba(255,214,90,.85); transform: scale(1.14) translateY(-4px); } 100% { box-shadow: 0 0 0 2px #f3d27a, 0 0 14px 4px rgba(255,214,90,.5); } }
+/* ===== 바닥 담요 문양 없앰 (무늬 없는 녹색 모포) ===== */
+.mat::after { display: none !important; }
+.mat::before { display: none !important; }
+/* ===== 실제 화투 뒷면: 무늬 없는 진홍 플라스틱 + 오돌토돌한 엠보 결 + 비스듬한 광택 + 검은 옆면 ===== */
+:root {
+  --hwatu-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.25' numOctaves='2' seed='4' stitchTiles='stitch'/%3E%3CfeDiffuseLighting lighting-color='%23fff' surfaceScale='1.6'%3E%3CfeDistantLight azimuth='225' elevation='52'/%3E%3C/feDiffuseLighting%3E%3C/filter%3E%3Crect width='90' height='90' filter='url(%23g)'/%3E%3C/svg%3E");
+  --hwatu-back:
+    linear-gradient(125deg, rgba(255,255,255,.34) 0%, rgba(255,255,255,.08) 22%, transparent 38%, transparent 70%, rgba(0,0,0,.18) 100%),
+    linear-gradient(160deg, #d8232c 0%, #b3141d 55%, #8c0f17 100%);
+}
+.deck .back, .gf-back { background: var(--hwatu-back); border: 1.5px solid #1a0507; }
+#floor .card.fd { background: var(--hwatu-back) !important; border: 1.5px solid #1a0507 !important; }
+.deck .back, #floor .card.fd {
+  box-shadow: inset 0 0 0 1px rgba(255,150,150,.22), inset 0 -2px 3px rgba(0,0,0,.25), 0 2px 4px rgba(0,0,0,.5);
+  overflow: hidden;
+}
+.deck .back::after, #floor .card.fd::before, .gf-back::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: var(--hwatu-grain) 0 0 / 46px 46px; mix-blend-mode: multiply; opacity: .55; }
+.deck .back:nth-child(1) { box-shadow: 0 1px 0 #1a0507, 0 2px 0 #1a0507; }
+.deck .back:nth-child(3) { box-shadow: inset 0 0 0 1px rgba(255,150,150,.22), 0 1px 0 #2a0a0c, 0 2px 0 #1a0507, 0 3px 0 #2a0a0c, 0 4px 0 #1a0507, 0 8px 12px rgba(0,0,0,.55); }
+.opp-fan i { background: var(--hwatu-back) !important; border-color: #1a0507 !important; }

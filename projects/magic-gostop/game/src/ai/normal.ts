@@ -77,7 +77,7 @@ function pOppHas(x: Ctx, month: number): number {
 const pFlip = (x: Ctx, month: number) => (x.U > 0 ? x.unseenByMonth[month] / x.U : 0);
 
 /** 튜닝값 (대전 측정으로 정함) */
-export const TUNE = { deny: 1.5, goBias: -1.5, alwaysStop: false, base: 1, pi: 5, part: 0.8, ppeok: 5, safe: 0.05 };
+export const TUNE = { deny: 1.5, goBias: 1.5, alwaysStop: false, base: 1, pi: 5, part: 0.8, ppeok: 5, safe: 0.05 };
 
 // ---------- 행동 평가 ----------
 function evalPlay(x: Ctx, c: Card, shake: boolean): number {

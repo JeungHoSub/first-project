@@ -56,12 +56,14 @@ export function createGame(seed: string | number, options: Partial<RuleOptions> 
   // 처음 바닥에 깔린 보너스 패: 선이 가져가고 더미에서 채운다 (또 보너스면 반복)
   for (let i = 0; i < state.floor.length; i++) {
     while (isBonus(state.floor[i])) {
-      const [b] = state.floor.splice(i, 1, ...(state.deck.length ? state.deck.splice(0, 1) : []));
+      const fill = state.deck.length ? state.deck.splice(0, 1) : [];
+      const [b] = state.floor.splice(i, 1, ...fill);
       state.captured[opts.dealer].push(b);
-      state.events.push({ type: 'bonus', player: opts.dealer, card: b.id, from: 'deal' });
+      state.events.push({ type: 'bonus', player: opts.dealer, card: b.id, from: 'deal', slot: i, ...(fill[0] ? { with: fill[0].id } : {}) });
       if (i >= state.floor.length) break;
     }
   }
+  state.turnCaps = state.captured[state.turn].length;
   checkChongtong(state);
   return state;
 }
@@ -189,7 +191,7 @@ export function applyAction(state: GameState, action: Action, hooks?: EngineHook
       s.events.push({ type: 'bomb', player: p, month: action.month, cards: three.map((c) => c.id) });
       s.shakes[p] += 1;
       capture(s, [...three, ...s.floor.filter((c) => c.month === action.month)]);
-      steal(s, p);
+      s.stealDue += 2; // 폭탄: 상대 피 무조건 2장 (일반 피·쌍피·3피 상관없이 장수로 2장). 자뻑도 2장
       s.dummies[p] += 2;
       flipAndSettle(ctx, null);
       break;
@@ -242,7 +244,7 @@ function capture(s: GameState, cards: Card[]) {
   s.events.push({ type: 'capture', player: s.turn, cards: cards.map((c) => c.id) });
 }
 
-/** 상대 획득 패에서 피 1장 가져오기 (일반 피 우선, 없으면 쌍피, 없으면 없음 - R18) */
+/** 상대 획득 패에서 피 1장 가져오기 (가치와 상관없이 1장 — 폭탄·자뻑은 이걸 2번) (일반 피 우선, 없으면 쌍피, 없으면 없음 - R18) */
 function steal(s: GameState, p: PlayerId) {
   const from = (1 - p) as PlayerId;
   // 매직 카드 "방패": 빼앗기는 쪽의 방패가 남아 있으면 한 번 막는다
@@ -436,7 +438,9 @@ function canGoStop(s: GameState, p: PlayerId): boolean {
 function endTurn(ctx: Ctx) {
   ctx.call('beforeScore');
   const s = ctx.s;
-  if (canGoStop(s, s.turn)) s.phase = 'goStop';
+  // 이번 차례에 패를 한 장이라도 먹었을 때만 고/스톱을 묻는다 (첫뻑·아이템 점수만 오른 차례는 넘어감)
+  const took = s.captured[s.turn].length > (s.turnCaps ?? 0);
+  if (took && canGoStop(s, s.turn)) s.phase = 'goStop';
   else nextTurn(ctx);
 }
 
@@ -445,6 +449,7 @@ function nextTurn(ctx: Ctx) {
   if (handsLeft(s) === 0) return finish(s, null, 'exhaust');
   s.turn = (1 - s.turn) as PlayerId;
   s.phase = 'play';
+  s.turnCaps = s.captured[s.turn].length;
   ctx.call('onTurnStart');
 }
 

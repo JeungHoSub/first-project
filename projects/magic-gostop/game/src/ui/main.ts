@@ -1406,7 +1406,6 @@ async function newGame() {
   $('special').hidden = true;
   $('choose').hidden = true;
   $('gukjin').hidden = true;
-  render(s);
   await dealIn(no);
   if (no !== gameNo) return;
   if (magicNotes.length) { $('feed').innerHTML = `<b>아이템</b> · ${magicNotes.join(' · ')}`; sfx.magic(); }
@@ -1432,10 +1431,27 @@ async function newGame() {
   }
 }
 
-/** 새 판: 가운데 더미에서 손패·바닥으로 한 장씩 날아가는 연출 */
+/** 분배 직후 바닥 보너스 패를 선이 가져가기 "전" 모습 (엔진 bonus 이벤트의 slot·with로 되돌림) */
+function preDeal(view: GameState): { pre: GameState; bonus: { card: string; with?: string }[] } {
+  const evs = view.events.filter((e) => e.type === 'bonus' && (e as { from?: string }).from === 'deal') as { player: PlayerId; card: string; slot?: number; with?: string }[];
+  if (!evs.length) return { pre: view, bonus: [] };
+  const pre: GameState = structuredClone(view);
+  for (const e of [...evs].reverse()) {
+    const b = pre.captured[e.player].find((c) => c.id === e.card); if (!b) continue;
+    pre.captured[e.player] = pre.captured[e.player].filter((c) => c.id !== e.card);
+    const at = e.with ? pre.floor.findIndex((c) => c.id === e.with) : -1;
+    if (at >= 0) { const [w] = pre.floor.splice(at, 1, b); pre.deck.unshift(w); } else pre.floor.splice(e.slot ?? pre.floor.length, 0, b);
+  }
+  return { pre, bonus: evs.map((e) => ({ card: e.card, with: e.with })) };
+}
+
+/** 새 판: 가운데 더미에서 손패·바닥(엎어서)으로 "촤라락" → 바닥 6장을 왼쪽부터 차례로 뒤집기 → 보너스 패면 "띵!" 하고 선이 가져감 */
 async function dealIn(no: number) {
-  if (reduced) return;
-  busy = true; render(s);
+  const { pre, bonus } = preDeal(s);
+  if (reduced) { render(s); return; }
+  busy = true; render(pre);
+  const floorEls = [...document.querySelectorAll<HTMLElement>('#floor .card')];
+  floorEls.forEach((el) => el.classList.add('fd'));
   const deck = $('deck').getBoundingClientRect();
   // 맞고 순서처럼 상대·나·바닥을 번갈아 한 장씩
   const groups = ['#opp-fan i', '#hand .card', '#floor .card'].map((q) => [...document.querySelectorAll<HTMLElement>(q)]);
@@ -1451,6 +1467,34 @@ async function dealIn(no: number) {
   });
   await wait(els.length * 38 + 420);
   if (no !== gameNo) return;
+  // 바닥 패를 왼쪽에서 오른쪽으로 한 장씩 뒤집는다
+  const order = floorEls.map((el) => ({ el, r: el.getBoundingClientRect() })).sort((a, b) => a.r.left - b.r.left || a.r.top - b.r.top).map((x) => x.el);
+  const bonusIds = new Set(bonus.map((b) => b.card));
+  for (const el of order) {
+    if (no !== gameNo) return;
+    const isBonus = bonusIds.has(el.dataset.id!);
+    el.animate([{ transform: 'rotateY(0deg)' }, { transform: 'rotateY(90deg) scale(1.08)' }], { duration: 110, easing: 'ease-in' }).onfinish = () => {
+      el.classList.remove('fd');
+      el.animate([{ transform: 'rotateY(90deg) scale(1.08)' }, { transform: 'none' }], { duration: 130, easing: 'ease-out' });
+    };
+    sfx.flip();
+    if (isBonus) {
+      setTimeout(() => { if (no !== gameNo) return; el.classList.add('bonus-hit'); sfx.ding(); sfx.buzz(30); }, 200);
+      await wait(620);
+    } else await wait(230);
+  }
+  await wait(250);
+  if (no !== gameNo) return;
+  if (bonus.length) {
+    banner(`보너스 패! 선(${s.options.dealer === ME ? '나' : '상대'})이 가져갑니다`);
+    await wait(500);
+    if (no !== gameNo) return;
+    // 보너스 패는 선의 먹은 패로, 빈자리는 더미에서 한 장 뒤집어 채운다
+    busy = false;
+    await show(s, { deck: new Set(bonus.map((b) => b.with).filter((x): x is string => !!x)) });
+    sfx.swish(1);
+    if (no !== gameNo) return;
+  }
   busy = false; render(s);
 }
 

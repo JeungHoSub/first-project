@@ -24,7 +24,7 @@ export function chooseEasy(s: GameState): Action {
   if (s.phase === 'goStop') {
     const total = score(s.captured[s.turn], s.options).total;
     const go = legal.find((a) => a.type === 'go');
-    return go && s.hands[s.turn].length >= 3 && total < 10 ? go : { type: 'stop' };
+    return go && s.hands[s.turn].length >= 2 && total < 12 ? go : { type: 'stop' };
   }
   if (s.phase === 'chooseMatch') {
     const opts = s.floor.filter((c) => s.pending!.options.includes(c.id));
