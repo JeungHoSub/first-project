@@ -1,5 +1,5 @@
 // 재화 경제: 오늘의 미션(은화) · 윷놀이 내기(엽전 → 엽전·은화) · 은화 상점(승급·직접 구매·꾸미기) · 금화 상점(금화 → 엽전).
-// 원칙: 금화는 결제로만 얻는다(지금은 테스트 충전). 어떤 내기로도 금화를 얻을 수 없다. 은화는 돈으로 살 수 없다.
+// 원칙(monet.ts): 어떤 재화도 돈으로 팔지 않는다. 금화는 무료로만(광고 하루 1번·오늘 미션 모두 완료·금은 보따리). 윷놀이 내기로는 금화를 얻을 수 없다.
 import { ITEMS, GRADES, GRADE_COLOR, itemArt, bestGrade, ownedOf, grantItem, upgradable, upgradeItem, UPGRADE_SILVER, UPGRADE_NEED, CATEGORY_LABEL } from './collection';
 import { bal, add, pay, fmt, curIco, EXCHANGE, exchange, onCoins, type Cur } from './wallet';
 import * as sfx from './sound';
@@ -48,7 +48,9 @@ function renderMissions() {
   $('ms-list').querySelectorAll<HTMLButtonElement>('.ms-claim').forEach((b) => b.addEventListener('click', () => {
     const m = MISSIONS.find((x) => x.id === b.dataset.id)!;
     if (ms.claimed.includes(m.id) || (ms.prog[m.id] ?? 0) < m.goal) return;
-    ms.claimed.push(m.id); saveM(); add('eun', m.reward); add('yeop', m.yeop); sfx.reward(); sfx.coinRain(500); renderMissions(); onChange();
+    ms.claimed.push(m.id); saveM(); add('eun', m.reward); add('yeop', m.yeop); sfx.reward(); sfx.coinRain(500);
+    if (ms.claimed.length === MISSIONS.length) { add('geum', 1); toast('오늘 미션 모두 완료! 금화 +1'); }
+    renderMissions(); onChange();
   }));
 }
 

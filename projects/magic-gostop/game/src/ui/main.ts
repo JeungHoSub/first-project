@@ -6,6 +6,7 @@ import type { Action, Card, GameEvent, GameState, PlayerId } from '../engine';
 import { chooseAction, AI_LEVELS, type AiLevel } from '../ai/simple';
 import { cardArt } from './art';
 import * as sfx from './sound';
+import { initMonet, openCharge, needCoins } from './monet';
 import { initGacha, openGacha, attachItemTip, onZoomChange } from './gacha';
 import { initEconomy, record as missionRecord, missionReady, syncCurrencies } from './economy';
 import * as chars from './characters';
@@ -1480,13 +1481,15 @@ $('sp-cancel').addEventListener('click', () => { $('special').hidden = true; });
 $('btn-start').addEventListener('click', () => {
   sfx.unlock(); sfx.click(); sfx.startBgm();
   const room = ROOMS[level];
-  if (coins() < room.min) { banner(`${room.name}은 엽전 ${fmt(room.min)} 이상 있어야 들어갑니다`); sfx.buzz([40]); return; }
+  if (coins() < room.min) { sfx.buzz([40]); if (coins() < ROOMS.easy.min) needCoins(room.min); else banner(`${room.name}은 엽전 ${fmt(room.min)} 이상 있어야 들어갑니다`); return; }
   picked = items.ownedAll(); $('home').hidden = true; newGame();
 }); // 장착 없이 가진 아이템 모두 자동 적용
 $('btn-mp-go').addEventListener('click', () => { items.saveLoadout(picked); $('magic-pick').hidden = true; $('home').hidden = true; newGame(); });
 $('btn-mp-none').addEventListener('click', () => { picked = []; $('magic-pick').hidden = true; $('home').hidden = true; newGame(); });
 initGacha(() => syncHome());
 initEconomy(() => syncHome(), (msg) => banner(msg));
+initMonet(() => { syncCurrencies(); syncHome(); }, (msg) => banner(msg));
+$('btn-charge').addEventListener('click', () => { sfx.unlock(); sfx.click(); openCharge(); });
 chars.initChars(() => { syncCurrencies(); renderProfiles(); });
 $('btn-gacha').addEventListener('click', () => { sfx.unlock(); sfx.click(); sfx.startBgm(); openGacha(); });
 $('btn-mp-test').addEventListener('click', () => { grantTestMagic(); sfx.magic(); openMagicPick(); syncHome(); });
